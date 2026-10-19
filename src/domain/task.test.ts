@@ -16,6 +16,8 @@ const d = calendarDay;
 
 function stateOf(recurrence: Recurrence, dueDate: string): TaskState {
   const task: RecurringTask = {
+    kind: "recurring",
+    checklist: [],
     id: "task-1",
     title: "Bad putzen",
     recurrence,
@@ -129,6 +131,7 @@ describe("Abhaken hält fest, wer es wann erledigt hat", () => {
         completedBy: "personB",
         previousDueDate: "2026-10-19",
         nextDueDate: "2026-10-28",
+        checkedItemIds: [],
       },
     ]);
   });
