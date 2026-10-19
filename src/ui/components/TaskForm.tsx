@@ -1,8 +1,10 @@
 import { Trash2 } from "lucide-preact";
 import { useState } from "preact/hooks";
+import type { ChecklistItem } from "../../domain/checklist";
 import type { CalendarDay } from "../../domain/date";
 import type { Person, Task } from "../../domain/task";
 import {
+  checklistItemError,
   checkTaskForm,
   firstTaskFormError,
   MAX_DUE_DATE,
@@ -17,6 +19,7 @@ import { DEFAULT_TASK_SYMBOL } from "../../domain/taskSymbols";
 import type { PersonNames } from "../../storage/appData";
 import { routeHash } from "../route";
 import { ErrorAlert } from "./Alert";
+import { ChecklistEditor } from "./ChecklistEditor";
 import {
   type Choice,
   FieldGroup,
@@ -61,6 +64,7 @@ const FOCUS_TARGET: Record<TaskFormField, string> = {
   dueDate: "task-dueDate",
   assignee: "task-assignee-personA",
   note: "task-note",
+  checklist: "task-checklist-new",
 };
 
 function initialInput(task: Task | undefined, today: CalendarDay, person: Person): TaskFormInput {
@@ -96,12 +100,17 @@ function messageOf(error: unknown): string {
 }
 
 /**
- * Creates or changes a task (F1, F3, symbol F8). Every field has a visible label; a message about a field
- * stands at that field. A submit with errors puts the focus on the first field with an error.
+ * Creates or changes a task (F1, F3, symbol F8, checklist F4). Every field has a visible label; a
+ * message about a field stands at that field. A submit with errors puts the focus on the first
+ * field with an error.
  */
 export function TaskForm({ task, names, today, currentPerson, onSubmit, onDelete }: TaskFormProps) {
   const [kind, setKind] = useState<TaskKind>(task?.kind ?? "recurring");
   const [input, setInput] = useState(() => initialInput(task, today, currentPerson));
+  const [checklist, setChecklist] = useState<readonly ChecklistItem[]>(task?.checklist ?? []);
+  /** The text in the field for a new item; saving the form adds it, so it is never lost. */
+  const [draft, setDraft] = useState("");
+  const [draftError, setDraftError] = useState<string>();
   const [errors, setErrors] = useState<TaskFormErrors>({});
   const [saveError, setSaveError] = useState<string>();
   const [saving, setSaving] = useState(false);
@@ -128,16 +137,30 @@ export function TaskForm({ task, names, today, currentPerson, onSubmit, onDelete
       return;
     }
     setSaveError(undefined);
-    const checked = checkTaskForm(kind, input);
-    if (!checked.ok) {
-      setErrors(checked.errors);
-      const first = firstTaskFormError(checked.errors);
+    const pendingText = draft.trim();
+    const pendingError = pendingText === "" ? undefined : checklistItemError(draft);
+    const items =
+      pendingText !== "" && pendingError === undefined
+        ? [...checklist, { id: crypto.randomUUID(), text: pendingText, checked: false }]
+        : checklist;
+    const checked = checkTaskForm(kind, { ...input, checklist: items });
+    if (!checked.ok || pendingError !== undefined) {
+      const found: TaskFormErrors = checked.ok ? {} : checked.errors;
+      setErrors(found);
+      setDraftError(pendingError);
+      // A draft that cannot be added is a problem of the checklist field, the last of the form.
+      const first = firstTaskFormError(
+        pendingError === undefined ? found : { ...found, checklist: pendingError },
+      );
       if (first !== undefined) {
         document.getElementById(FOCUS_TARGET[first])?.focus();
       }
       return;
     }
     setErrors({});
+    setDraftError(undefined);
+    setChecklist(items);
+    setDraft("");
     setSaving(true);
     try {
       await onSubmit(kind, checked.values);
@@ -241,6 +264,23 @@ export function TaskForm({ task, names, today, currentPerson, onSubmit, onDelete
         value={input.note}
         error={errors.note}
         onInput={(note) => change("note", note)}
+      />
+
+      <ChecklistEditor
+        id="task-checklist-new"
+        items={checklist}
+        onChange={(items) => {
+          setChecklist(items);
+          setErrors(withoutError(errors, "checklist"));
+        }}
+        draft={draft}
+        onDraft={(text) => {
+          setDraft(text);
+          setDraftError(undefined);
+        }}
+        draftError={draftError}
+        onDraftError={setDraftError}
+        error={errors.checklist}
       />
 
       {saveError && <ErrorAlert title="Nicht gespeichert">{saveError}</ErrorAlert>}

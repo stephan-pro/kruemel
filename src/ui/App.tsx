@@ -1,9 +1,16 @@
 import { useEffect, useState } from "preact/hooks";
 import type { DemoInfo } from "../demo/start";
+import type { TakeOverMode } from "../domain/assignment";
 import type { PersonNameInput } from "../domain/personNames";
 import type { Completion, Person, Task } from "../domain/task";
 import { type TaskFormValues, type TaskKind, taskFromForm, updateTask } from "../domain/taskForm";
-import { completeInData, deleteTask, undoInData } from "../domain/taskManagement";
+import {
+  completeInData,
+  deleteTask,
+  setChecklistItemInData,
+  takeOverInData,
+  undoInData,
+} from "../domain/taskManagement";
 import type { AppData } from "../storage/appData";
 import { requestPersistentStorage } from "../storage/localStorage";
 import {
@@ -207,6 +214,27 @@ export function App({ storage, demo }: AppProps) {
     return result.task;
   }
 
+  /** "Übernehmen": the person of this device takes the task over, once or permanently (F5). */
+  async function takeOverTask(taskId: string, mode: TakeOverMode): Promise<Task> {
+    const person = state.status === "ready" ? state.device.currentPerson : undefined;
+    if (state.status !== "ready" || person === undefined) {
+      throw new Error("Die App ist noch nicht bereit.");
+    }
+    const result = takeOverInData(state.data, taskId, person, mode);
+    await saveData(result.data);
+    return result.task;
+  }
+
+  /** Ticks or unticks one item of a task's checklist (F4). */
+  async function setChecklistItem(taskId: string, itemId: string, checked: boolean): Promise<Task> {
+    if (state.status !== "ready") {
+      throw new Error("Die App ist noch nicht bereit.");
+    }
+    const result = setChecklistItemInData(state.data, taskId, itemId, checked);
+    await saveData(result.data);
+    return result.task;
+  }
+
   async function discard() {
     await storage.discard();
     await load();
@@ -310,6 +338,8 @@ export function App({ storage, demo }: AppProps) {
               today={today}
               onComplete={completeTask}
               onUndo={undoCompletion}
+              onTakeOver={takeOverTask}
+              onChecklistItem={setChecklistItem}
             />
           )}
           {inApp && route === "done" && <PlaceholderPage route={route} />}

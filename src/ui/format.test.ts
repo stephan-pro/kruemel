@@ -14,6 +14,7 @@ import {
   formatDay,
   formatShortDay,
   formatWeekLabel,
+  takeOverNotice,
   undoNotice,
   weekdayName,
   weekdayShort,
@@ -57,6 +58,28 @@ describe("Anzeige der Wochenübersicht (F6)", () => {
     expect(undoNotice("Bad putzen", calendarDay("2026-10-19"))).toBe(
       "Rückgängig gemacht: „Bad putzen“ ist wieder offen, fällig am Mo, 19.10.2026.",
     );
+  });
+});
+
+describe("Hinweis nach „Übernehmen“ (F5)", () => {
+  it("F5 Eine wiederkehrende Aufgabe „nur dieses Mal“ sagt, dass es bei diesem Mal bleibt", () => {
+    expect(takeOverNotice("Bad putzen", "recurring", "personB", names, "once")).toBe(
+      "„Bad putzen“ ist jetzt bei Robin, nur dieses Mal.",
+    );
+  });
+
+  it("F5 Dauerhaft übernommen heißt: gehört jetzt der Person", () => {
+    expect(takeOverNotice("Bad putzen", "recurring", "personA", names, "permanently")).toBe(
+      "„Bad putzen“ gehört jetzt dauerhaft Alex.",
+    );
+  });
+
+  it("F5 Eine einmalige Aufgabe ist einfach umgewiesen, gleich welche Art gewählt ist", () => {
+    for (const mode of ["once", "permanently"] as const) {
+      expect(takeOverNotice("Paket abholen", "oneOff", "personA", names, mode)).toBe(
+        "„Paket abholen“ ist jetzt bei Alex.",
+      );
+    }
   });
 });
 

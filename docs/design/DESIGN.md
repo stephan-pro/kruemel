@@ -72,8 +72,9 @@ Fokus: in beiden Themes deutlich sichtbar, 3 px Umriss in `--accent` mit 2 px Ab
 
 - **Wochenkopf:** Label „KW 43 · 19.–25. OKTOBER“, darunter Titel „Diese Woche“, daneben Knöpfe „Vorherige Woche“ / „Nächste Woche“ (Pfeil-Symbole mit `aria-label`).
 - **Filter:** Segment-Schalter „Alle / Nur meine“ mit `aria-pressed`.
-- **Heute-Kachel:** je Aufgabe eine Zeile: Symbolkachel 44 px · Titel + Metazeile („Person · Rhythmus“, bei Checklisten „Person · 3 von 5“ plus Fortschrittsbalken) · Abhak-Knopf 44 px rechts. Am PC Checklisten-Einträge direkt in der Zeile abhakbar; „Übernehmen“ als Knopf in der Zeile.
-- **Überfällig-Kachel:** dringendste überfällige Aufgabe, darunter „Übernehmen“ (und am PC „Erledigt“). Mehrere überfällige: Hinweis „+ N weitere“ mit Link zur Liste. Keine überfälligen: Kachel entfällt.
+- **Heute-Kachel:** je Aufgabe eine Zeile: Symbolkachel 44 px · Titel + Metazeile („Person · Rhythmus“, bei Checklisten „Person · 3 von 5“ plus Fortschrittsbalken) · Abhak-Knopf 44 px rechts. Symbol und Text sind ein Knopf, der die Detailansicht öffnet (Paket 10). Darunter, eingerückt: „Übernehmen“ als Knopf (wo es zutrifft) und die Checklisten-Einträge als abhakbare Chips (Kästchen + Text, 44 px hoch); am PC immer sichtbar, am Handy hinter dem Knopf „Checkliste“ aufklappbar.
+- **Überfällig-Kachel:** dringendste überfällige Aufgabe (Titel, Symbol und Meta-Zeile sind ein Knopf für die Detailansicht), darunter „Abhaken“ und „Übernehmen“ (wo es zutrifft; beide in der Knopffarbe der Kachel).
+- **Detailansicht (Paket 10):** Fenster über der Seite (`<dialog>`, Kachel-Stil, 22 px Radius): Symbolkachel + Titel, Angaben als Liste (Zuständig, Rhythmus, Termin, Notiz), Checkliste mit großen Zeilen (48 px) zum Abhaken, unten „Bearbeiten“, „Übernehmen“ (Sekundärknöpfe) und „Schließen“ (Hauptknopf). Escape schließt; der Fokus kehrt auf die Aufgabe zurück. Mehrere überfällige: Hinweis „+ N weitere“ mit Link zur Liste. Keine überfälligen: Kachel entfällt.
 - **Stand-Kachel:** „erledigt / fällig“ für die angezeigte Woche (fällig = alle Durchgänge mit Termin in dieser Woche, erledigte eingeschlossen) mit Fortschrittsbalken.
 - **Rest der Woche:** mobil 7 Tagesfelder mit Anzahl (Link zum Tag); am PC 7 Spalten mit allen Aufgaben als Chips, in einem waagerecht scrollbaren Bereich, falls der Platz nicht reicht.
 - **Navigation:** mobil Leiste unten (Woche, Aufgaben, Erledigt, Einstellungen), am PC Seitenleiste links. „Woche“ nutzt ein Kalender-Symbol.
@@ -84,7 +85,7 @@ Fokus: in beiden Themes deutlich sichtbar, 3 px Umriss in `--accent` mit 2 px Ab
 
 - Bibliothek: Lucide (Lizenz ISC, verträglich mit EUPL-1.2). Nur genutzte Symbole einbinden.
 - Navigations- und Bediensymbole aus derselben Bibliothek.
-- Symbol pro Aufgabe (F8, umgesetzt in Paket R2): Auswahl aus einer festen Liste von 21 Haushaltssymbolen mit festem Farbton (`src/domain/taskSymbols.ts`), Standardsymbol (Haus, Blau) für Aufgaben ohne Auswahl. Im Formular als Radio-Gruppe aus Symbolkacheln (52 px, gewählt mit 3-px-Rahmen in `--accent`); auf der Kachel „Überfällig“ nur das Bild in der Textfarbe, auf den Chips am PC nur das Bild im Ton.
+- Symbol pro Aufgabe (F8, umgesetzt in Paket R2): Auswahl aus einer festen Liste von 21 Haushaltssymbolen mit festem Farbton (`src/domain/taskSymbols.ts`), Standardsymbol (Haus, Blau) für Aufgaben ohne Auswahl. Im Formular als Radio-Gruppe aus quadratischen Symbolkacheln (44–53 px, gewählt mit 3-px-Rahmen in `--accent`) in einem Raster mit 7, 6 oder 3 Spalten je nach Breite, sodass nie eine einzelne Kachel allein in der letzten Reihe steht (Paket 10); auf der Kachel „Überfällig“ nur das Bild in der Textfarbe, auf den Chips am PC nur das Bild im Ton.
 
 ## 8. Bewegung
 

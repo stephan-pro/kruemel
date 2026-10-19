@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { addChecklistItem } from "./checklist";
 import type { Completion } from "./task";
 import { d, oneOffTask, recurringTask, stateOf, tickOff } from "./task.fixtures";
 import {
@@ -6,6 +7,8 @@ import {
   completionCount,
   deleteTask,
   groupOpenTasks,
+  setChecklistItemInData,
+  takeOverInData,
   undoInData,
 } from "./taskManagement";
 
@@ -172,5 +175,79 @@ describe("F2 Abhaken und Rückgängig in den Daten", () => {
 
   it("F2 Eine unbekannte Erledigung lässt sich nicht rückgängig machen", () => {
     expect(() => undoInData(data, "gibt-es-nicht")).toThrow(RangeError);
+  });
+});
+
+describe("F5 Übernehmen in den Daten", () => {
+  const bad = recurringTask({ id: "bad", assignee: "personA" });
+  const paket = oneOffTask({ id: "paket", assignee: "personA" });
+  const data = { schemaVersion: 2, tasks: [bad, paket], completions: [] as Completion[] };
+
+  it("F5 „Nur dieses Mal“ setzt die Übernahme und lässt die feste Zuständigkeit stehen", () => {
+    const result = takeOverInData(data, "bad", "personB", "once");
+
+    expect(result.task).toMatchObject({ assignee: "personA", takenOverBy: "personB" });
+    expect(result.data.tasks[0]).toBe(result.task);
+    expect(result.data.tasks[1]).toBe(paket);
+  });
+
+  it("F5 „Dauerhaft“ macht die Person zur festen Zuständigen", () => {
+    const result = takeOverInData(data, "bad", "personB", "permanently");
+
+    expect(result.task).toMatchObject({ assignee: "personB" });
+    expect("takenOverBy" in result.task).toBe(false);
+  });
+
+  it("F5 Eine einmalige Aufgabe wird ohne Rückfrage umgewiesen, gleich welche Art gewählt ist", () => {
+    const result = takeOverInData(data, "paket", "personB", "once");
+
+    expect(result.task).toMatchObject({ kind: "oneOff", assignee: "personB" });
+    expect(result.data.tasks[1]).toBe(result.task);
+  });
+
+  it("F5 Übernehmen lässt Erledigungen und übrige Felder der Daten unverändert", () => {
+    const done = tickOff(stateOf(bad), "2026-10-19", "c-1");
+    const withCompletion = { ...data, tasks: [done.task, paket], completions: done.completions };
+
+    const result = takeOverInData(withCompletion, "bad", "personB", "once");
+
+    expect(result.data.completions).toBe(done.completions);
+    expect(result.data.schemaVersion).toBe(2);
+    expect(data.tasks[0]).toBe(bad);
+  });
+
+  it("F5 Eine unbekannte Aufgabe lässt sich nicht übernehmen", () => {
+    expect(() => takeOverInData(data, "gibt-es-nicht", "personB", "once")).toThrow(RangeError);
+  });
+});
+
+describe("F4 Checkliste abhaken in den Daten", () => {
+  const withItems = addChecklistItem(
+    addChecklistItem(recurringTask({ id: "bad" }), { id: "i-1", text: "Waschbecken" }),
+    { id: "i-2", text: "Dusche" },
+  );
+  const other = oneOffTask({ id: "paket" });
+  const data = { schemaVersion: 2, tasks: [withItems, other], completions: [] as Completion[] };
+
+  it("F4 Ein Eintrag lässt sich abhaken und wieder abwählen; die anderen bleiben", () => {
+    const ticked = setChecklistItemInData(data, "bad", "i-2", true);
+
+    expect(ticked.task.checklist.map((item) => item.checked)).toEqual([false, true]);
+    expect(ticked.data.tasks[0]).toBe(ticked.task);
+    expect(ticked.data.tasks[1]).toBe(other);
+
+    const unticked = setChecklistItemInData(ticked.data, "bad", "i-2", false);
+    expect(unticked.task.checklist.map((item) => item.checked)).toEqual([false, false]);
+  });
+
+  it("F4 Die ursprünglichen Daten bleiben unverändert", () => {
+    setChecklistItemInData(data, "bad", "i-1", true);
+
+    expect(data.tasks[0]?.checklist.every((item) => !item.checked)).toBe(true);
+  });
+
+  it("F4 Eine unbekannte Aufgabe oder ein unbekannter Eintrag lässt sich nicht abhaken", () => {
+    expect(() => setChecklistItemInData(data, "gibt-es-nicht", "i-1", true)).toThrow(RangeError);
+    expect(() => setChecklistItemInData(data, "bad", "gibt-es-nicht", true)).toThrow(RangeError);
   });
 });

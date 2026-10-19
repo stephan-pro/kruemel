@@ -3,6 +3,7 @@
 // shown right next to its field.
 
 import { reassign } from "./assignment";
+import type { ChecklistItem } from "./checklist";
 import { type CalendarDay, isCalendarDay } from "./date";
 import {
   type Assignee,
@@ -19,6 +20,9 @@ import { isTaskSymbolId, type TaskSymbolId } from "./taskSymbols";
 
 export const MAX_TITLE_LENGTH = 80;
 export const MAX_NOTE_LENGTH = 500;
+/** Longest text of one checklist item, and most items a task can carry (F4). */
+export const MAX_CHECKLIST_ITEM_LENGTH = 80;
+export const MAX_CHECKLIST_ITEMS = 50;
 /** Highest "every N" accepted; far more than anyone needs, but keeps dates inside the calendar. */
 export const MAX_RECURRENCE_INTERVAL = 365;
 /** Due dates outside these years are almost surely typos (and would break the date arithmetic). */
@@ -38,6 +42,11 @@ export interface TaskFormInput {
   /** Only used for recurring tasks. */
   readonly interval: string;
   readonly unit: string;
+  /**
+   * The items of the checklist as the form holds them (F4), ticks included. Missing = the form has
+   * no checklist field and the task keeps the one it has.
+   */
+  readonly checklist?: readonly ChecklistItem[];
 }
 
 export type TaskFormField =
@@ -47,7 +56,8 @@ export type TaskFormField =
   | "unit"
   | "dueDate"
   | "assignee"
-  | "note";
+  | "note"
+  | "checklist";
 
 /** The fields in the order the form shows them; the first one with an error gets the focus. */
 export const TASK_FORM_FIELD_ORDER: readonly TaskFormField[] = [
@@ -58,6 +68,7 @@ export const TASK_FORM_FIELD_ORDER: readonly TaskFormField[] = [
   "dueDate",
   "assignee",
   "note",
+  "checklist",
 ];
 
 /** One message per field that is wrong; fields that are fine are missing. */
@@ -72,6 +83,8 @@ export interface TaskFormValues {
   readonly note?: string;
   /** Present for recurring tasks only. */
   readonly recurrence?: Recurrence;
+  /** The checklist to keep; missing = a new task has none, a changed task keeps its own. */
+  readonly checklist?: readonly ChecklistItem[];
 }
 
 export type TaskFormResult =
@@ -103,6 +116,27 @@ function dueDateError(dueDate: string): string | undefined {
     return `Bitte ein Datum zwischen ${MIN_DUE_DATE.slice(0, 4)} und ${MAX_DUE_DATE.slice(0, 4)} wählen.`;
   }
   return undefined;
+}
+
+/** What is wrong with the text of a new checklist item, if anything. The text is trimmed first. */
+export function checklistItemError(text: string): string | undefined {
+  const trimmed = text.trim();
+  if (trimmed === "") {
+    return "Bitte einen Text für den Eintrag eingeben.";
+  }
+  if (trimmed.length > MAX_CHECKLIST_ITEM_LENGTH) {
+    return `Ein Eintrag darf höchstens ${MAX_CHECKLIST_ITEM_LENGTH} Zeichen lang sein.`;
+  }
+  return undefined;
+}
+
+function checklistError(items: readonly ChecklistItem[]): string | undefined {
+  if (items.length > MAX_CHECKLIST_ITEMS) {
+    return `Eine Checkliste darf höchstens ${MAX_CHECKLIST_ITEMS} Einträge haben.`;
+  }
+  return items.some((item) => checklistItemError(item.text) !== undefined)
+    ? `Jeder Eintrag braucht einen Text mit höchstens ${MAX_CHECKLIST_ITEM_LENGTH} Zeichen.`
+    : undefined;
 }
 
 function intervalError(interval: string): string | undefined {
@@ -140,6 +174,7 @@ export function checkTaskForm(kind: TaskKind, input: TaskFormInput): TaskFormRes
         ? `Die Notiz darf höchstens ${MAX_NOTE_LENGTH} Zeichen lang sein.`
         : undefined,
     ],
+    ["checklist", input.checklist === undefined ? undefined : checklistError(input.checklist)],
   ];
   if (kind === "recurring") {
     found.push(
@@ -165,6 +200,9 @@ export function checkTaskForm(kind: TaskKind, input: TaskFormInput): TaskFormRes
     ...(kind === "recurring"
       ? { recurrence: { unit: input.unit as RecurrenceUnit, interval: Number(interval) } }
       : {}),
+    ...(input.checklist === undefined
+      ? {}
+      : { checklist: input.checklist.map((item) => ({ ...item, text: item.text.trim() })) }),
   };
   return { ok: true, values };
 }
@@ -184,19 +222,20 @@ export function taskFromForm(kind: TaskKind, id: string, values: TaskFormValues)
     dueDate: values.dueDate,
     ...(values.note === undefined ? {} : { note: values.note }),
   };
+  const checklist = values.checklist ?? [];
   if (kind === "oneOff") {
-    return createOneOffTask(common);
+    return { ...createOneOffTask(common), checklist };
   }
   if (values.recurrence === undefined) {
     throw new RangeError("Eine wiederkehrende Aufgabe braucht einen Rhythmus");
   }
-  return createRecurringTask({ ...common, recurrence: values.recurrence });
+  return { ...createRecurringTask({ ...common, recurrence: values.recurrence }), checklist };
 }
 
 /**
- * The task with the checked values applied; its kind, checklist and (for a one-off task) done
- * state stay. A new fixed assignee ends a one-time takeover (F5); if the assignee is the same, the
- * takeover stays.
+ * The task with the checked values applied; its kind and (for a one-off task) done state stay, and
+ * so does its checklist unless the values carry a new one (F4). A new fixed assignee ends a
+ * one-time takeover (F5); if the assignee is the same, the takeover stays.
  */
 export function updateTask(task: Task, values: TaskFormValues): Task {
   const changed = task.assignee === values.assignee ? task : reassign(task, values.assignee);
@@ -207,6 +246,7 @@ export function updateTask(task: Task, values: TaskFormValues): Task {
     symbol: values.symbol,
     dueDate: values.dueDate,
     ...(values.note === undefined ? {} : { note: values.note }),
+    ...(values.checklist === undefined ? {} : { checklist: values.checklist }),
   };
   if (task.kind === "oneOff") {
     return base as OneOffTask;

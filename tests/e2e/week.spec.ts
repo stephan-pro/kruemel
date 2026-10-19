@@ -2,7 +2,17 @@ import { expect, type Locator, type Page, test } from "@playwright/test";
 import { demoData } from "../../src/demo/demoData";
 import { calendarDay } from "../../src/domain/date";
 import { expectNoAccessibilityViolations } from "./axe";
-import { dataKey, deviceKey, expectPageShown, startConfigured, store, storedData } from "./helpers";
+import {
+  dataKey,
+  deviceKey,
+  expectPageShown,
+  FROZEN_TODAY,
+  freezeClock,
+  openWeek,
+  startConfigured,
+  store,
+  storedData,
+} from "./helpers";
 
 // Package 9 in the design of package R1: the week view (F6) as a board of tiles, with ticking off
 // and undo (F2, F3, F4, F5).
@@ -16,18 +26,7 @@ import { dataKey, deviceKey, expectPageShown, startConfigured, store, storedData
 //                            Bettwäsche wechseln und Müll rausbringen (Fr 16.),
 //                            Altglas wegbringen und Küche wischen (Sa 17.)
 
-const TODAY = calendarDay("2026-10-21");
-const demo = () => demoData(TODAY);
-
-async function freezeClock(page: Page) {
-  await page.clock.setFixedTime(new Date(2026, 9, 21, 12, 0, 0));
-}
-
-async function openWeek(page: Page, data = demo()) {
-  await freezeClock(page);
-  await startConfigured(page, data);
-  await expect(page.getByRole("heading", { level: 1, name: "Diese Woche" })).toBeVisible();
-}
+const demo = () => demoData(FROZEN_TODAY);
 
 /** A tile, found by its heading ("Heute · Mi, 21.10.", "Do, 22.10.", "Überfällig", "Stand"). */
 const tile = (page: Page, name: string) => page.getByRole("region", { name, exact: true });
@@ -75,7 +74,7 @@ test.describe("F6 Wochenübersicht", () => {
 
     await expect(page).toHaveTitle("Wochenübersicht – Putzplan");
     await expect(weekLabel(page)).toHaveText("KW 43 · 19.–25. Oktober");
-    const days = page.getByRole("region", { name: "Woche im Überblick" }).getByRole("button");
+    const days = page.getByRole("region", { name: "Woche im Überblick" }).locator(".day-button");
     const expected = [
       "Mo 19. keine Aufgaben",
       "Di 20. keine Aufgaben",

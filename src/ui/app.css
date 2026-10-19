@@ -772,6 +772,176 @@ main:focus {
   font-size: 20px;
   font-weight: 800;
   line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.dialog__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dialog__body,
+.dialog__section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dialog__subtitle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 8px;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.dialog__subtitle-aside {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.details--dialog {
+  gap: 6px;
+  font-size: 15px;
+}
+
+/* ---------- Checklist boxes (F4) ---------- */
+
+.check-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.check-group--list {
+  flex-direction: column;
+  flex-wrap: nowrap;
+}
+
+.check {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 14px 0 10px;
+  border-radius: var(--radius-chip);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.check-group--list .check {
+  min-height: 48px;
+  border-radius: var(--radius-control);
+  font-size: 16px;
+}
+
+/* The real checkbox covers the whole chip, so a tap anywhere ticks it and its focus frame goes
+   around the chip. It draws nothing itself; the box is the next element. */
+.check__input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border: 0;
+  border-radius: inherit;
+  background: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+.check__box {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--control-border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--on-accent-tile);
+}
+
+.check__box svg {
+  opacity: 0;
+}
+
+/* The border stays, so the box keeps 3:1 against the chip in both themes. */
+.check__input:checked ~ .check__box {
+  background: var(--accent-tile);
+}
+
+.check__input:checked ~ .check__box svg {
+  opacity: 1;
+}
+
+@media (forced-colors: active) {
+  .check__input:checked ~ .check__box {
+    background: Highlight;
+    color: HighlightText;
+  }
+}
+
+.check__text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* The checklist in the task form: the items, each with its delete button, and a field to add. */
+.checklist-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.checklist-editor__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 2px 2px 2px 14px;
+  border-radius: var(--radius-control);
+  background: var(--surface-2);
+}
+
+.checklist-editor__item .icon-btn {
+  background: none;
+}
+
+.checklist-editor__text {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.checklist-editor__add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.checklist-editor__add .input {
+  flex: 1 1 12rem;
+  width: auto;
+}
+
+.checklist-editor__add .btn {
+  min-height: 48px;
 }
 
 /* ---------- Task symbols ---------- */
@@ -827,8 +997,31 @@ main:focus {
    so it takes clicks, focus and the arrow keys like any radio. */
 .symbol-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, 52px);
-  gap: 8px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+  max-width: 26rem;
+}
+
+/* The number of columns follows the width of the field and always divides the 21 symbols without
+   leaving a single one alone in the last row: 7 × 3, 6 × 3 + 3 (and 3 × 7 on very narrow
+   screens). Tiles stay at least 44 px wide (7 columns from 360 px, 6 from 295 px) and at most
+   about 53 px. */
+.symbol-field {
+  container-type: inline-size;
+}
+
+@container (min-width: 22.5rem) {
+  .symbol-grid {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 8px;
+  }
+}
+
+@container (max-width: 18.4rem) {
+  .symbol-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
 }
 
 .symbol-choice {
@@ -849,8 +1042,8 @@ main:focus {
 .symbol-choice__tile {
   display: grid;
   place-items: center;
-  width: 52px;
-  height: 52px;
+  width: 100%;
+  aspect-ratio: 1;
   border: 3px solid transparent;
   border-radius: var(--radius-control);
 }
@@ -1092,10 +1285,34 @@ main:focus {
 
 .entry {
   display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--text);
+}
+
+.entry__row {
+  display: flex;
   align-items: center;
   gap: 12px;
   min-height: 56px;
-  color: var(--text);
+}
+
+/* Picture and text are one button that opens the details of the task. */
+.entry__open {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 12px;
+  align-self: stretch;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
 .entry__text {
@@ -1104,6 +1321,45 @@ main:focus {
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+}
+
+/* Under the text, in line with it (symbol 44 px + gap 12 px). */
+.entry__extras,
+.entry__items {
+  margin-left: 56px;
+}
+
+.entry__extras {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Phones: the checkboxes are folded away behind "Checkliste"; wide screens always show them. */
+.entry__items {
+  display: none;
+}
+
+.entry__items--open {
+  display: block;
+}
+
+.entry__toggle-icon {
+  transition: transform 150ms ease-out;
+}
+
+.entry__toggle[aria-expanded="true"] .entry__toggle-icon {
+  transform: rotate(180deg);
+}
+
+@media (min-width: 900px) {
+  .entry__toggle {
+    display: none;
+  }
+
+  .entry__items {
+    display: block;
+  }
 }
 
 .entry__title {
@@ -1218,6 +1474,28 @@ main:focus {
   gap: 6px;
 }
 
+/* Title, symbol and meta line are one button that opens the details of the task. */
+.overdue__open {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.overdue__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
 /* The symbol stands at the top right, next to the title (as in the draft). */
 .overdue__head {
   display: flex;
@@ -1239,7 +1517,6 @@ main:focus {
 }
 
 .btn--warn-action {
-  margin-top: 4px;
   background: var(--warn-tile-action);
   color: var(--on-warn-tile-action);
 }
@@ -1355,15 +1632,23 @@ main:focus {
     list-style: none;
   }
 
-  .chip {
+  /* The whole chip is a button that opens the details of the task. */
+  .chip__open {
     display: flex;
     flex-direction: column;
+    width: 100%;
+    min-height: 44px;
     padding: 8px 10px;
+    border: 0;
     border-radius: var(--radius-chip);
     background: var(--surface-2);
+    color: inherit;
+    font: inherit;
     font-size: 13px;
     font-weight: 600;
+    text-align: left;
     overflow-wrap: anywhere;
+    cursor: pointer;
   }
 
   .chip__meta {

@@ -1,6 +1,6 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 import { demoData } from "../../src/demo/demoData";
-import { dayFromDate } from "../../src/domain/date";
+import { calendarDay, dayFromDate } from "../../src/domain/date";
 import type { AppData } from "../../src/storage/appData";
 
 // The real app (production build). Its data lives in the browser storage under these keys.
@@ -30,6 +30,53 @@ export async function startConfigured(page: Page, data: AppData = demoData(today
     [deviceKey]: JSON.stringify({ currentPerson: "personA" }),
   });
 }
+
+/** The day the week tests stand on: Wednesday 21.10.2026 (see `week.spec.ts` for what falls where). */
+export const FROZEN_TODAY = calendarDay("2026-10-21");
+
+/** Stops the browser clock at noon of `FROZEN_TODAY`, so the demo data falls on fixed weekdays. */
+export async function freezeClock(page: Page) {
+  await page.clock.setFixedTime(new Date(2026, 9, 21, 12, 0, 0));
+}
+
+/** The week view of the demo data (or `data`) on the frozen day, for the given person's device. */
+export async function openWeek(
+  page: Page,
+  data: AppData = demoData(FROZEN_TODAY),
+  person: "personA" | "personB" = "personA",
+) {
+  await freezeClock(page);
+  await store(page, {
+    [dataKey]: JSON.stringify(data),
+    [deviceKey]: JSON.stringify({ currentPerson: person }),
+  });
+  await expect(page.getByRole("heading", { level: 1, name: "Diese Woche" })).toBeVisible();
+}
+
+/** A tile of the week view, found by its heading ("Heute · Mi, 21.10.", "Do, 22.10.", "Überfällig"). */
+export const tile = (page: Page, name: string) => page.getByRole("region", { name, exact: true });
+export const todayTile = (page: Page) => tile(page, "Heute · Mi, 21.10.");
+export const overdueTile = (page: Page) => tile(page, "Überfällig");
+/** The message after ticking off or taking over ("Hinweis"). */
+export const notice = (page: Page) => page.getByRole("region", { name: "Hinweis" });
+
+/** The button of a task inside a tile; its name starts with the title ("Einkaufen Beide · …"). */
+export const taskButton = (scope: Locator, title: string) =>
+  scope.getByRole("button", { name: new RegExp(`^${title}(\\s|$)`) });
+
+/** Shows a day of "Woche im Überblick" in the day tile, e.g. `chooseDay(page, "Do 22.", "Do, 22.10.")`. */
+export async function chooseDay(page: Page, day: string, heading: string) {
+  await page.getByRole("button", { name: new RegExp(`^${day.replace(".", "\\.")} `) }).click();
+  await expect(page.getByRole("heading", { level: 2, name: heading })).toBeVisible();
+}
+
+/** The detail view of a task, found by the title it shows. */
+export const detailDialog = (page: Page, title: string) =>
+  page.getByRole("dialog", { name: title, exact: true });
+
+/** The text next to a label in the detail view ("Zuständig" → "Beide"). */
+export const detailValue = (dialog: Locator, label: string) =>
+  dialog.locator(`.details__item:has(dt:text-is("${label}")) > dd`);
 
 /**
  * Waits until a page has fully appeared: its heading has the focus. The app moves the focus there

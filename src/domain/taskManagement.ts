@@ -1,11 +1,14 @@
 // Managing tasks (F1, F3): the list of open tasks and deleting a task together with its history.
 
+import { type TakeOverMode, takeOver } from "./assignment";
+import { setChecklistItemChecked } from "./checklist";
 import {
   type CompleteInput,
   type Completion,
   completeTask,
   isOpen,
   type OneOffTask,
+  type Person,
   type RecurringTask,
   type Task,
   undoCompletion,
@@ -93,6 +96,38 @@ export function undoInData<T extends TasksAndCompletions>(
     },
     task: state.task,
   };
+}
+
+function replaceTask<T extends TasksAndCompletions>(data: T, task: Task): T {
+  return {
+    ...data,
+    tasks: data.tasks.map((candidate) => (candidate.id === task.id ? task : candidate)),
+  };
+}
+
+/**
+ * "Übernehmen" in the data (F5): the person takes the task over, once or permanently (a one-off
+ * task is simply handed over). The completions stay as they are.
+ */
+export function takeOverInData<T extends TasksAndCompletions>(
+  data: T,
+  taskId: string,
+  person: Person,
+  mode: TakeOverMode,
+): { readonly data: T; readonly task: Task } {
+  const task = takeOver(findTask(data.tasks, taskId), person, mode);
+  return { data: replaceTask(data, task), task };
+}
+
+/** Ticks or unticks one checklist item of a task in the data (F4); everything else stays. */
+export function setChecklistItemInData<T extends TasksAndCompletions>(
+  data: T,
+  taskId: string,
+  itemId: string,
+  checked: boolean,
+): { readonly data: T; readonly task: Task } {
+  const task = setChecklistItemChecked(findTask(data.tasks, taskId), itemId, checked);
+  return { data: replaceTask(data, task), task };
 }
 
 /**

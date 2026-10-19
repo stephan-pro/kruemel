@@ -1,9 +1,17 @@
 // Texts for showing domain values in German. Pure functions, independent of the browser's locale
 // data so that they read the same everywhere (and in tests).
 
+import type { TakeOverMode } from "../domain/assignment";
 import type { ChecklistItem } from "../domain/checklist";
 import { addDays, type CalendarDay, isoWeek, weekdayOf } from "../domain/date";
-import type { Assignee, Completion, Person, Recurrence, RecurrenceUnit } from "../domain/task";
+import type {
+  Assignee,
+  Completion,
+  Person,
+  Recurrence,
+  RecurrenceUnit,
+  Task,
+} from "../domain/task";
 import type { PersonNames } from "../storage/appData";
 
 const WEEKDAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"] as const;
@@ -142,6 +150,26 @@ export function completionNotice(title: string, completion: Completion): string 
 /** What the page says after a completion was taken back. */
 export function undoNotice(title: string, dueDate: CalendarDay): string {
   return `Rückgängig gemacht: „${title}“ ist wieder offen, fällig am ${formatDay(dueDate)}.`;
+}
+
+/**
+ * What the page says after "Übernehmen" (F5). A one-off task is simply handed over; a recurring
+ * one is taken over for this time only or for good.
+ */
+export function takeOverNotice(
+  title: string,
+  kind: Task["kind"],
+  person: Person,
+  names: PersonNames,
+  mode: TakeOverMode,
+): string {
+  const name = names[person];
+  if (kind === "oneOff") {
+    return `„${title}“ ist jetzt bei ${name}.`;
+  }
+  return mode === "once"
+    ? `„${title}“ ist jetzt bei ${name}, nur dieses Mal.`
+    : `„${title}“ gehört jetzt dauerhaft ${name}.`;
 }
 
 /** The name of a person, or "beide". */

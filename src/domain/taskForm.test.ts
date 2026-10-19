@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 import { addChecklistItem } from "./checklist";
 import { d, oneOffTask, recurringTask } from "./task.fixtures";
 import {
+  checklistItemError,
   checkTaskForm,
   firstTaskFormError,
+  MAX_CHECKLIST_ITEM_LENGTH,
+  MAX_CHECKLIST_ITEMS,
   MAX_NOTE_LENGTH,
   MAX_RECURRENCE_INTERVAL,
   MAX_TITLE_LENGTH,
@@ -200,6 +203,71 @@ describe("F8 Symbol im Formular", () => {
   });
 });
 
+describe("F4 Checkliste im Formular", () => {
+  const items = [
+    { id: "i-1", text: " Waschbecken ", checked: true },
+    { id: "i-2", text: "Dusche", checked: false },
+  ];
+
+  it("F4 Die Einträge gehören mit ihren Häkchen zu den Werten; Leerzeichen am Rand fallen weg", () => {
+    for (const kind of ["recurring", "oneOff"] as const) {
+      const result = checkTaskForm(kind, { ...valid, checklist: items });
+      expect(result.ok && result.values.checklist).toEqual([
+        { id: "i-1", text: "Waschbecken", checked: true },
+        { id: "i-2", text: "Dusche", checked: false },
+      ]);
+    }
+  });
+
+  it("F4 Ohne Checkliste im Formular fehlt sie auch in den Werten (die Aufgabe behält ihre)", () => {
+    const result = checkTaskForm("recurring", valid);
+
+    expect(result.ok && "checklist" in result.values).toBe(false);
+  });
+
+  it("F4 Eine leere Checkliste ist gültig", () => {
+    const result = checkTaskForm("recurring", { ...valid, checklist: [] });
+
+    expect(result.ok && result.values.checklist).toEqual([]);
+  });
+
+  it("F4 Ein Eintrag braucht einen Text, höchstens so lang wie erlaubt", () => {
+    expect(checklistItemError("Milch")).toBeUndefined();
+    expect(checklistItemError("   ")).toBe("Bitte einen Text für den Eintrag eingeben.");
+    expect(checklistItemError("x".repeat(MAX_CHECKLIST_ITEM_LENGTH))).toBeUndefined();
+    expect(checklistItemError(` ${"x".repeat(MAX_CHECKLIST_ITEM_LENGTH)} `)).toBeUndefined();
+    expect(checklistItemError("x".repeat(MAX_CHECKLIST_ITEM_LENGTH + 1))).toBe(
+      `Ein Eintrag darf höchstens ${MAX_CHECKLIST_ITEM_LENGTH} Zeichen lang sein.`,
+    );
+  });
+
+  it("F4 Ein leerer oder zu langer Eintrag in der Checkliste wird beim Feld „checklist“ gemeldet", () => {
+    for (const text of ["  ", "x".repeat(MAX_CHECKLIST_ITEM_LENGTH + 1)]) {
+      expect(errorsOf("recurring", { checklist: [{ id: "i-1", text, checked: false }] })).toEqual({
+        checklist: `Jeder Eintrag braucht einen Text mit höchstens ${MAX_CHECKLIST_ITEM_LENGTH} Zeichen.`,
+      });
+    }
+  });
+
+  it("F4 Zu viele Einträge werden beim Feld „checklist“ gemeldet", () => {
+    const many = Array.from({ length: MAX_CHECKLIST_ITEMS + 1 }, (_, index) => ({
+      id: `i-${index}`,
+      text: "Eintrag",
+      checked: false,
+    }));
+
+    expect(errorsOf("oneOff", { checklist: many })).toEqual({
+      checklist: `Eine Checkliste darf höchstens ${MAX_CHECKLIST_ITEMS} Einträge haben.`,
+    });
+    expect(errorsOf("oneOff", { checklist: many.slice(1) })).toBeUndefined();
+  });
+
+  it("F4 Das Feld „checklist“ kommt als letztes an die Reihe, wenn der Fokus gesetzt wird", () => {
+    expect(firstTaskFormError({ checklist: "x", note: "x" })).toBe("note");
+    expect(firstTaskFormError({ checklist: "x" })).toBe("checklist");
+  });
+});
+
 describe("Formular: Fokus auf das erste fehlerhafte Feld", () => {
   it("Der Fokus gehört dem Feld, das im Formular zuerst kommt", () => {
     expect(firstTaskFormError({ note: "x", assignee: "x", interval: "x" })).toBe("interval");
@@ -252,6 +320,32 @@ describe("F1 Aufgaben anlegen", () => {
       done: false,
       checklist: [],
     });
+  });
+
+  it("F4 Eine neue Aufgabe übernimmt die Einträge der Checkliste aus dem Formular", () => {
+    const checklist = [
+      { id: "i-1", text: "Milch", checked: false },
+      { id: "i-2", text: "Brot", checked: false },
+    ];
+
+    const recurring = taskFromForm("recurring", "t-1", {
+      title: "Bad putzen",
+      symbol: "standard",
+      dueDate: d("2026-10-19"),
+      assignee: "personA",
+      recurrence: { unit: "week", interval: 1 },
+      checklist,
+    });
+    const oneOff = taskFromForm("oneOff", "t-2", {
+      title: "Einkaufen",
+      symbol: "shopping",
+      dueDate: d("2026-10-22"),
+      assignee: "personB",
+      checklist,
+    });
+
+    expect(recurring.checklist).toEqual(checklist);
+    expect(oneOff.checklist).toEqual(checklist);
   });
 
   it("F1 Eine wiederkehrende Aufgabe ohne Rhythmus lässt sich nicht anlegen", () => {
@@ -357,6 +451,32 @@ describe("F1 Aufgaben bearbeiten", () => {
     });
 
     expect(updated).toMatchObject({ kind: "oneOff", done: true });
+  });
+
+  it("F4 Eine neue Checkliste ersetzt die alte, samt Häkchen", () => {
+    const task = addChecklistItem(recurringTask(), { id: "i-1", text: "Dusche" });
+    const checklist = [
+      { id: "i-2", text: "Waschbecken", checked: true },
+      { id: "i-1", text: "Dusche", checked: false },
+    ];
+
+    const updated = updateTask(task, { ...edited, checklist });
+
+    expect(updated.checklist).toEqual(checklist);
+  });
+
+  it("F4 Eine leere Checkliste im Formular leert die Checkliste der Aufgabe", () => {
+    const task = addChecklistItem(oneOffTask(), { id: "i-1", text: "Milch" });
+
+    const updated = updateTask(task, {
+      title: "Einkaufen",
+      symbol: "shopping",
+      dueDate: d("2026-10-22"),
+      assignee: "personB",
+      checklist: [],
+    });
+
+    expect(updated.checklist).toEqual([]);
   });
 
   it("F8 Beim Bearbeiten lässt sich das Symbol ändern, bei beiden Arten", () => {

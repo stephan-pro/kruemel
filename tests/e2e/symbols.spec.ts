@@ -155,6 +155,70 @@ test.describe("F8 Symbol im Aufgabenformular", () => {
   });
 });
 
+test.describe("F8 Anordnung der Symbolauswahl", () => {
+  /** How many tiles stand in each row of the symbol field, top to bottom, and the smallest tile. */
+  async function rowsOfTiles(page: Page) {
+    const tiles = await page.locator(".symbol-choice").evaluateAll((all) =>
+      all.map((element) => {
+        const box = element.getBoundingClientRect();
+        return { top: Math.round(box.top), width: box.width, height: box.height };
+      }),
+    );
+    const rows = new Map<number, number>();
+    for (const { top } of tiles) {
+      rows.set(top, (rows.get(top) ?? 0) + 1);
+    }
+    return {
+      perRow: [...rows.entries()].sort(([a], [b]) => a - b).map(([, count]) => count),
+      smallest: Math.min(...tiles.flatMap(({ width, height }) => [width, height])),
+    };
+  }
+
+  test("F8 In jeder Breite steht keine einzelne Kachel allein in der letzten Reihe, und alle Kacheln sind groß genug", async ({
+    page,
+  }) => {
+    await start(page);
+    await openNewTask(page);
+
+    // Von sehr schmalen Handys über 360/375/390/412 bis zum Breitbild (mit Seitenleiste ab 900).
+    for (const width of [320, 340, 360, 375, 390, 412, 480, 640, 800, 899, 900, 1024, 1280, 1600]) {
+      await page.setViewportSize({ width, height: 900 });
+      const { perRow, smallest } = await rowsOfTiles(page);
+
+      expect(
+        perRow.reduce((sum, count) => sum + count, 0),
+        `Breite ${width}`,
+      ).toBe(TASK_SYMBOLS.length);
+      expect(
+        perRow[perRow.length - 1],
+        `Letzte Reihe bei Breite ${width}: ${perRow}`,
+      ).toBeGreaterThan(1);
+      expect(smallest, `Kleinste Kachel bei Breite ${width}`).toBeGreaterThanOrEqual(44);
+      // Alle Reihen bis auf die letzte sind voll.
+      expect(
+        new Set(perRow.slice(0, -1)).size,
+        `Reihen bei Breite ${width}: ${perRow}`,
+      ).toBeLessThanOrEqual(1);
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      );
+      expect(overflow, `Seite ragt bei Breite ${width} über den Rand`).toBeLessThanOrEqual(0);
+    }
+  });
+
+  test("F8 Mit 21 Symbolen füllen 7 × 3 oder 6 × 3 + 3 die Reihen, nicht 5 × 4 + 1", async ({
+    page,
+  }) => {
+    await start(page);
+    await openNewTask(page);
+
+    await page.setViewportSize({ width: 1280, height: 900 });
+    expect((await rowsOfTiles(page)).perRow).toEqual([7, 7, 7]);
+    await page.setViewportSize({ width: 375, height: 900 });
+    expect((await rowsOfTiles(page)).perRow).toEqual([6, 6, 6, 3]);
+  });
+});
+
 test.describe("F8 Anzeige der Symbole", () => {
   test("F8 Die Woche zeigt das Symbol jeder Aufgabe in Tageskachel, Überfällig-Kachel und Tagesspalten", async ({
     page,

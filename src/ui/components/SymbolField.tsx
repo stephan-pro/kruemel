@@ -23,27 +23,29 @@ export function SymbolField({ name, value, onChange, error }: SymbolFieldProps) 
     <fieldset class="choices" aria-describedby={error ? groupErrorId : undefined}>
       <legend class="field__label">Symbol</legend>
       {error && <ErrorMessage id={groupErrorId} message={error} />}
-      <div class="symbol-grid">
-        {TASK_SYMBOLS.map((symbol) => (
-          <div class="symbol-choice" key={symbol.id}>
-            <input
-              class="symbol-choice__input"
-              type="radio"
-              name={name}
-              id={`${name}-${symbol.id}`}
-              value={symbol.id}
-              checked={value === symbol.id}
-              onChange={() => onChange(symbol.id)}
-            />
-            <label
-              class={`symbol-choice__tile task-symbol--${symbol.tone}`}
-              for={`${name}-${symbol.id}`}
-            >
-              <SymbolIcon symbol={symbol.id} size={24} />
-              <span class="visually-hidden">{symbol.label}</span>
-            </label>
-          </div>
-        ))}
+      <div class="symbol-field">
+        <div class="symbol-grid">
+          {TASK_SYMBOLS.map((symbol) => (
+            <div class="symbol-choice" key={symbol.id}>
+              <input
+                class="symbol-choice__input"
+                type="radio"
+                name={name}
+                id={`${name}-${symbol.id}`}
+                value={symbol.id}
+                checked={value === symbol.id}
+                onChange={() => onChange(symbol.id)}
+              />
+              <label
+                class={`symbol-choice__tile task-symbol--${symbol.tone}`}
+                for={`${name}-${symbol.id}`}
+              >
+                <SymbolIcon symbol={symbol.id} size={24} />
+                <span class="visually-hidden">{symbol.label}</span>
+              </label>
+            </div>
+          ))}
+        </div>
       </div>
       {chosen && (
         // Repeats what the checked radio already says, for those who see the tiles.
