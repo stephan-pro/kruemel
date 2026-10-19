@@ -4,6 +4,7 @@ import { defineConfig, devices } from "@playwright/test";
 declare const process: { env: Record<string, string | undefined> };
 
 const port = 4173;
+const demoPort = 4174;
 
 export default defineConfig({
   testDir: "tests/e2e",
@@ -17,11 +18,19 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   // Runs against the production build; `npm run check` builds before this step.
-  webServer: {
-    command: `npx vite preview --port ${port} --strictPort`,
-    url: `http://localhost:${port}/putzplan/`,
-    reuseExistingServer: !process.env.CI,
-  },
+  webServer: [
+    {
+      command: `npx vite preview --port ${port} --strictPort`,
+      url: `http://localhost:${port}/putzplan/`,
+      reuseExistingServer: !process.env.CI,
+    },
+    {
+      // The same server as `npm run demo` (without opening a browser window).
+      command: `npx vite --mode demo --port ${demoPort} --strictPort`,
+      url: `http://localhost:${demoPort}/putzplan/`,
+      reuseExistingServer: !process.env.CI,
+    },
+  ],
   projects: [
     { name: "chromium-desktop", use: { ...devices["Desktop Chrome"] } },
     { name: "chromium-mobile", use: { ...devices["Pixel 7"] } },

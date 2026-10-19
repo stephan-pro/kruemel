@@ -30,6 +30,18 @@ Der Befehl prüft Formatierung, Code-Regeln, Typen, Tests und Build und endet mi
 - die Testabdeckung der Fachlogik (`src/domain/`) unter 90 % liegt oder
 - die Playwright-Browser fehlen (dann mit dem Hinweis, `npm run setup` auszuführen).
 
+## Ausprobieren mit Beispieldaten
+
+```bash
+npm run demo
+```
+
+Startet die App mit erfundenen Beispieldaten (zwei Personen, wiederkehrende und einmalige Aufgaben, Checklisten, Erledigtes), die sich nach dem heutigen Tag richten, und öffnet sie im Browser (`http://localhost:5173/putzplan/`). Beenden mit Strg+C.
+
+- Die Daten liegen in einem eigenen Speicherbereich (`putzplan-demo`); echte Daten im selben Browser bleiben unberührt.
+- Eigene Änderungen bleiben beim Neuladen erhalten. Frische Beispieldaten gibt es über den Link „Beispieldaten neu laden“ oder mit `?demo=neu` an der Adresse.
+- Solange die Oberfläche noch im Aufbau ist (Pakete 7–11), zeigt die Seite nur einen Hinweis mit der Anzahl der geladenen Beispieldaten.
+
 ## Lizenz
 
 [EUPL-1.2](LICENSE)

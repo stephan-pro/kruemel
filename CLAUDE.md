@@ -7,6 +7,7 @@ Anforderungen: `docs/ANFORDERUNGEN.md` · Plan und Arbeitspakete: `docs/PLAN.md`
 
 - `npm run check` – alles prüfen (Biome → tsc → Vitest mit Abdeckung → Build → Playwright). Muss grün sein.
 - `npm run dev` – Entwicklungsserver.
+- `npm run demo` – App mit Beispieldaten (eigener Speicherbereich `putzplan-demo`) im Browser.
 - `npm test` – Vitest im Beobachtungsmodus.
 - `npm run e2e` – nur Playwright (braucht vorher `npm run build`).
 - `npm run setup` – erstes Einrichten (Pakete + Playwright-Browser).
@@ -15,8 +16,10 @@ Anforderungen: `docs/ANFORDERUNGEN.md` · Plan und Arbeitspakete: `docs/PLAN.md`
 
 - `src/domain/` – Fachlogik, reine Funktionen, Tests `*.test.ts` daneben, Abdeckung ≥ 90 %.
 - `src/storage/` – `AppStorage`-Schnittstelle, localStorage-Umsetzung, Prüfung (`parseAppData`), Export/Import. Tests daneben, Abdeckung ≥ 90 % wie `src/domain/`.
+- `src/demo/` – Beispieldaten relativ zu „heute“ (`demoData`), Befüllen des Demo-Speichers; nur im Modus `demo` geladen. Abdeckung ≥ 90 % wie `src/domain/`.
 - `src/ui/` – Preact-Komponenten (`pages/`, `components/`).
 - `tests/e2e/` – Playwright-Tests, jede Seite mit axe.
+- `tests/e2e/demo.spec.ts` – prüft den Demo-Modus; Playwright startet dafür einen zweiten Server (`vite --mode demo`, Port 4174). Spätere E2E-Tests nehmen `demoData(heute)` als Ausgangslage.
 - `scripts/check.mjs` – Ablauf von `npm run check`.
 - `.githooks/pre-commit` – Biome auf gestagte Dateien.
 

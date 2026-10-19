@@ -8,6 +8,7 @@
   "scripts": {
     "setup": "node scripts/setup.mjs",
     "dev": "vite",
+    "demo": "vite --mode demo --open",
     "build": "vite build",
     "preview": "vite preview",
     "check": "node scripts/check.mjs",
