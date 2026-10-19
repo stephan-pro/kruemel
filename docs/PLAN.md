@@ -80,7 +80,7 @@ Jedes Paket endet mit grünem `npm run check` und einem Commit.
 | 4 | Restliche Fachlogik F3–F5 | Einmalige Aufgaben, Übernehmen (dieses Mal/dauerhaft; bei einmaligen direkt umweisen), „erledigt von“, Filter „nur meine“ inkl. `both`, Checklisten (Häkchen-Reset bei wiederkehrenden Aufgaben), Erledigt-Liste. | Fachlogik komplett, ≥ 90 %. |
 | 5 | Speicher und F7 | `Storage`-Schnittstelle, localStorage-Umsetzung, Export, Import mit Prüfung und `schemaVersion`. | Tests mit Fake-Speicher grün. |
 | 6 | Testdaten Q8 ✅ | `npm run demo` (`vite --mode demo`): App mit Beispieldaten in eigenem Speicherbereich `putzplan-demo`; `demoData(heute)` liefert dieselben Daten auch für die E2E-Tests. Vorhandene Demo-Daten bleiben beim Neuladen; `?demo=neu` setzt zurück. Bis Paket 7 zeigt die Seite nur einen Demo-Hinweis. | PO kann manuell ausprobieren. |
-| 7 | App-Rahmen und Veröffentlichung | KERN UX, Navigation, Ersteinrichtung (zwei Namen), „Ich bin“, Seitentitel, Fokusführung; Deploy-Workflow für GitHub Pages. Meldet `load()` unlesbare Daten (`StorageError`), zeigt die App eine verständliche Meldung mit zwei Wegen: 1. Rohdaten als Datei herunterladen (für eine spätere Reparatur), 2. danach bewusst neu beginnen, mit Rückfrage. Dafür braucht `AppStorage` eine Methode für die Rohdaten und eine zum Verwerfen. | App unter GitHub-Pages-Adresse erreichbar; axe grün. |
+| 7 ✅ | App-Rahmen und Veröffentlichung | KERN UX, Navigation, Ersteinrichtung (zwei Namen), „Ich bin“, Seitentitel, Fokusführung; Deploy-Workflow für GitHub Pages. Meldet `load()` unlesbare Daten (`StorageError`), zeigt die App eine verständliche Meldung mit zwei Wegen: 1. Rohdaten als Datei herunterladen (für eine spätere Reparatur), 2. danach bewusst neu beginnen, mit Rückfrage. Dafür braucht `AppStorage` eine Methode für die Rohdaten und eine zum Verwerfen. | App unter GitHub-Pages-Adresse erreichbar (https://stephan-pro.github.io/putzplan/); axe grün. |
 | 8 | Aufgaben verwalten F1/F3 | Formulare anlegen/bearbeiten/löschen (Löschen mit Rückfrage), erster Termin vorbelegt mit heute. | E2E-Tests grün. |
 | 9 | Wochenübersicht F6 | Mo–So, heute hervorgehoben, Überfälliges oben, Blättern, vergangene Wochen mit Erledigtem ausgegraut und „erledigt von“, Filter, Abhaken mit Hinweis „Rückgängig“. | E2E-Tests grün. |
 | 10 | Übernehmen und Checklisten-UI F4/F5 | Dialog „nur dieses Mal / dauerhaft“, Checklisten-Einträge hinzufügen/abhaken/löschen. | E2E-Tests grün. |
@@ -88,7 +88,18 @@ Jedes Paket endet mit grünem `npm run check` und einem Commit.
 | 12 | PWA und Handy | Manifest, Icons, Service Worker (offline), responsives Feintuning; Installation auf Android und iPhone testen. | Installierbar, offline nutzbar. |
 | 13 | Abschluss | Manuelle Prüfung Tastatur + NVDA, README für den PO, Prüfliste für Etappe 2. | Etappe 1 abgenommen. |
 
-## 5. Hinweise
+## 5. Umsetzung Paket 7 (Entscheidungen)
+
+- **Bildschirme:** Die App lädt Daten und Gerät und zeigt dann genau einen von fünf Zuständen: Laden, Speicherproblem, Ersteinrichtung (keine Namen), „Wer benutzt dieses Gerät?“ (Namen da, „Ich bin“ fehlt, z. B. neues Gerät), eigentliche App mit Navigation. Die Ersteinrichtung fragt Namen **und** „Ich bin“ in einem Schritt; dasselbe Formular steht unter „Einstellungen“.
+- **Namen (`checkPersonNames`, Fachlogik):** getrimmt, nicht leer, höchstens 30 Zeichen, beide verschieden (ohne Rücksicht auf Groß-/Kleinschreibung).
+- **Fokusführung:** Jede Seite hat genau eine `h1` (`PageTitle`); beim Seitenwechsel setzt sie den Tab-Titel („Seite – Putzplan“) und nimmt den Fokus. Beim ersten Laden nicht, damit „Zum Inhalt springen“ der erste Tabulator-Stopp bleibt. „Zum Inhalt springen“ ist ein Button, kein `#inhalt`-Link, weil das den Hash-Router auslösen würde.
+- **Unlesbare Daten:** `AppStorage.loadRaw()` liefert den gespeicherten Text unverändert, `discard()` löscht ihn. Die App zeigt die Meldung mit Fundstellen; Weg 1 lädt `putzplan-rohdaten-JJJJ-MM-TT.json` herunter; erst danach erscheint Weg 2 „Neu beginnen …“, der eine Rückfrage (`<dialog>`, Fokus zuerst auf „Abbrechen“) stellt. Ist der Browser-Speicher selbst gesperrt (auch schon der Zugriff auf `localStorage` wirft), gibt es keine Rohdaten und kein Löschen, nur „Erneut versuchen“. „Ich bin“ des Geräts bleibt beim Verwerfen erhalten.
+- **Platzhalter:** Woche, Aufgaben und Erledigt zeigen „Diese Seite ist noch im Aufbau.“ bis zu den Paketen 8–11.
+- **Veröffentlichung:** `.github/workflows/pages.yml` läuft nach erfolgreichem Workflow `check` auf `main` und veröffentlicht den Build (`dist`) über GitHub Pages; manuell startbar. Pages-Quelle „GitHub Actions“ muss einmalig im Repository aktiviert sein.
+- **Neue Abhängigkeit:** `@kern-ux/native` (war im Stack vorgesehen, siehe Tabelle oben). Nur CSS und Fira Sans werden eingebunden, nicht die Kopfzeile (Bundesflagge) und kein KERN-JavaScript.
+- **Browser-Besonderheiten in Tests:** Safari springt mit Tab nicht auf Links und fokussiert Buttons beim Klick nicht; die betreffenden Tastaturtests laufen daher nur in Chromium bzw. nutzen `focus()`.
+
+## 6. Hinweise
 
 - Safari auf dem iPhone löscht Website-Daten nach 7 Tagen ohne Nutzung, wenn die App nicht installiert ist. Export (F7) regelmäßig nutzen.
 - Die Daten liegen pro Browser und Gerät getrennt; gemeinsame Daten erst ab Etappe 2.

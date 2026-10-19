@@ -1,17 +1,15 @@
-import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { expectNoAccessibilityViolations } from "./axe";
 
-test("Startseite zeigt die Überschrift „Putzplan“", async ({ page }) => {
+test("Erster Start zeigt die Ersteinrichtung unter dem Titel „Putzplan“", async ({ page }) => {
   await page.goto("./");
-  await expect(page).toHaveTitle("Putzplan");
-  await expect(page.getByRole("heading", { level: 1, name: "Putzplan" })).toBeVisible();
+  await expect(page).toHaveTitle("Ersteinrichtung – Putzplan");
+  await expect(page.getByRole("heading", { level: 1, name: "Ersteinrichtung" })).toBeVisible();
+  await expect(page.getByText("Putzplan", { exact: true })).toBeVisible();
 });
 
-test("Startseite hat keine Barrierefreiheitsverstöße (axe)", async ({ page }) => {
+test("Erster Start hat keine Barrierefreiheitsverstöße (axe)", async ({ page }) => {
   await page.goto("./");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  const results = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
-    .analyze();
-  expect(results.violations).toEqual([]);
+  await expectNoAccessibilityViolations(page);
 });

@@ -4,7 +4,9 @@
 
 Eine kleine App, mit der zwei Personen ihre Aufgaben im Haushalt planen: wiederkehrende Aufgaben wie „Bad putzen“ und kurzfristige wie „Einkaufen“.
 
-Status: im Aufbau (Etappe 1 – Daten bleiben im Browser).
+Status: im Aufbau (Etappe 1 – Daten bleiben im Browser). Der App-Rahmen mit Ersteinrichtung, Navigation und Einstellungen steht; die Seiten Woche, Aufgaben und Erledigt folgen.
+
+**Online:** https://stephan-pro.github.io/putzplan/ (wird nach jedem grünen `check` auf `main` automatisch aktualisiert)
 
 ## Einrichten
 
@@ -40,7 +42,7 @@ Startet die App mit erfundenen Beispieldaten (zwei Personen, wiederkehrende und 
 
 - Die Daten liegen in einem eigenen Speicherbereich (`putzplan-demo`); echte Daten im selben Browser bleiben unberührt.
 - Eigene Änderungen bleiben beim Neuladen erhalten. Frische Beispieldaten gibt es über den Link „Beispieldaten neu laden“ oder mit `?demo=neu` an der Adresse.
-- Solange die Oberfläche noch im Aufbau ist (Pakete 7–11), zeigt die Seite nur einen Hinweis mit der Anzahl der geladenen Beispieldaten.
+- Oben steht ein Hinweis mit der Anzahl der geladenen Beispieldaten. Die Seiten Woche, Aufgaben und Erledigt sind noch Platzhalter (Pakete 8–11).
 
 ## Lizenz
 

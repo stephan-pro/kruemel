@@ -17,6 +17,7 @@
     "prepare": "git config core.hooksPath .githooks"
   },
   "dependencies": {
+    "@kern-ux/native": "^2.8.2",
     "preact": "^11.0.1"
   },
   "devDependencies": {

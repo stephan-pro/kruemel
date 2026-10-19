@@ -121,6 +121,8 @@ Präzisierungen zu Abschnitt 4 und 5. Bei Widerspruch gilt dieser Abschnitt. Tec
 - **F7 Import:** ersetzt alle Daten nach Rückfrage; vorher wird automatisch eine Sicherung heruntergeladen.
 - **F7 Format:** Die Sicherung ist eine JSON-Datei `putzplan-JJJJ-MM-TT.json` mit `schemaVersion`, Einstellungen (Namen), Aufgaben und Erledigungen. „Ich bin“ gehört zum Gerät und steht nicht darin. Eine Datei aus einer neueren App-Version oder mit Fehlern wird mit Fundstelle abgelehnt; die vorhandenen Daten bleiben dann unberührt.
 - **Speicher:** Sind die gespeicherten Daten unlesbar, meldet die App das und überschreibt sie nicht durch leere Daten. Ist der Browser-Speicher voll oder gesperrt, meldet Speichern einen Fehler.
+- **F5 Namen (Paket 7):** Beide Namen sind Pflicht, höchstens 30 Zeichen, und müssen sich unterscheiden. Die Ersteinrichtung fragt Namen und „Ich bin“ zugleich; Namen und „Ich bin“ lassen sich unter „Einstellungen“ ändern. Kennt ein Gerät die Namen, aber nicht „Ich bin“, fragt die App danach.
+- **Speicher unlesbar (Paket 7):** Die App zeigt statt der Seiten eine Meldung mit Fundstellen und bietet zwei Wege an: Rohdaten als Datei herunterladen, danach (mit Rückfrage) neu beginnen. Ohne Herunterladen gibt es kein „Neu beginnen“.
 - **Betrieb Etappe 1:** Die App liegt kostenlos auf GitHub Pages; die Daten bleiben trotzdem nur im jeweiligen Browser.
 - **Repository:** öffentlich auf GitHub.
 - **Code:** englische Namen im Code, Oberfläche deutsch; Wortliste in `CLAUDE.md`. Oberfläche mit Preact.

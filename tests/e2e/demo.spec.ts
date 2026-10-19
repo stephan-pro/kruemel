@@ -73,7 +73,7 @@ test.describe("Demo-Modus (Q8)", () => {
 
 test("die echte App enthält weder Demo-Hinweis noch Demo-Daten", async ({ page }) => {
   await page.goto("./");
-  await expect(page.getByRole("heading", { level: 1, name: "Putzplan" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Ersteinrichtung" })).toBeVisible();
   await expect(page.getByText("Demo-Modus")).toHaveCount(0);
   expect(await page.evaluate((key) => localStorage.getItem(key), dataKey)).toBeNull();
 });

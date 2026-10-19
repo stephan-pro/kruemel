@@ -17,8 +17,9 @@ Anforderungen: `docs/ANFORDERUNGEN.md` · Plan und Arbeitspakete: `docs/PLAN.md`
 - `src/domain/` – Fachlogik, reine Funktionen, Tests `*.test.ts` daneben, Abdeckung ≥ 90 %.
 - `src/storage/` – `AppStorage`-Schnittstelle, localStorage-Umsetzung, Prüfung (`parseAppData`), Export/Import. Tests daneben, Abdeckung ≥ 90 % wie `src/domain/`.
 - `src/demo/` – Beispieldaten relativ zu „heute“ (`demoData`), Befüllen des Demo-Speichers; nur im Modus `demo` geladen. Abdeckung ≥ 90 % wie `src/domain/`.
-- `src/ui/` – Preact-Komponenten (`pages/`, `components/`).
-- `tests/e2e/` – Playwright-Tests, jede Seite mit axe.
+- `src/ui/` – Preact-Komponenten (`pages/`, `components/`), `App.tsx` (Laden, Zustände, Rahmen), `route.ts` (Hash-Router, Seiten und Titel), `app.css` (nur Rahmen; sonst KERN-Klassen). Jede Seite hat eine `PageTitle`-`h1` (setzt Tab-Titel, nimmt den Fokus).
+- `.github/workflows/` – `check.yml` (npm run check bei Push/PR), `pages.yml` (veröffentlicht `main` auf GitHub Pages nach grünem check): https://stephan-pro.github.io/putzplan/
+- `tests/e2e/` – Playwright-Tests, jede Seite mit axe (`axe.ts`: `expectNoAccessibilityViolations`). `app.spec.ts`: Einrichtung, Navigation, Einstellungen, unlesbare Daten. Der erste Start zeigt die Ersteinrichtung; für eine fertig eingerichtete App Daten vorher in den Speicher schreiben (siehe `startConfigured`).
 - `tests/e2e/demo.spec.ts` – prüft den Demo-Modus; Playwright startet dafür einen zweiten Server (`vite --mode demo`, Port 4174). Spätere E2E-Tests nehmen `demoData(heute)` als Ausgangslage.
 - `scripts/check.mjs` – Ablauf von `npm run check`.
 - `.githooks/pre-commit` – Biome auf gestagte Dateien.

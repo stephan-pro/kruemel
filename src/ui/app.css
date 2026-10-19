@@ -1,0 +1,125 @@
+/* Layout of the app shell. Colours, fonts and spacing come from the KERN variables, so light and
+   dark mode follow the device without extra rules. */
+
+body {
+  margin: 0;
+  background: var(--kern-color-layout-background-default, #fff);
+  color: var(--kern-color-layout-text-default, #131525);
+}
+
+.app {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 0 var(--kern-metric-space-default, 16px) var(--kern-metric-space-x-large, 32px);
+}
+
+.skip-link {
+  position: absolute;
+  left: var(--kern-metric-space-default, 16px);
+  top: 0;
+  padding: var(--kern-metric-space-small, 8px) var(--kern-metric-space-default, 16px);
+  background: var(--kern-color-layout-background-default, #fff);
+  color: var(--kern-color-action-default, #0b4f9e);
+  transform: translateY(-120%);
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+  z-index: 10;
+}
+
+.demo-hint {
+  margin-top: var(--kern-metric-space-default, 16px);
+}
+
+.app-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--kern-metric-space-small, 8px) var(--kern-metric-space-default, 16px);
+  padding: var(--kern-metric-space-default, 16px) 0;
+  border-bottom: var(--kern-metric-border-width-default, 2px) solid
+    var(--kern-color-layout-border, #6e7597);
+}
+
+.app-name {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.app-person {
+  margin: 0;
+}
+
+.main-nav {
+  flex-basis: 100%;
+}
+
+.main-nav__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kern-metric-space-small, 8px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.main-nav__link {
+  display: inline-flex;
+  align-items: center;
+  /* At least 44 px high for fingers (WCAG 2.5.8 asks for 24 px, phones are happier with more). */
+  min-height: 44px;
+  padding: 0 var(--kern-metric-space-default, 16px);
+  border-bottom: var(--kern-metric-border-width-bold, 4px) solid transparent;
+  color: var(--kern-color-action-default, #0b4f9e);
+  font-size: 1.125rem;
+  text-decoration: none;
+}
+
+.main-nav__link:hover {
+  text-decoration: underline;
+}
+
+.main-nav__link[aria-current="page"] {
+  border-bottom-color: currentColor;
+  font-weight: 700;
+}
+
+main {
+  padding-top: var(--kern-metric-space-x-large, 32px);
+}
+
+main:focus {
+  outline: none;
+}
+
+.page-title {
+  margin: 0 0 var(--kern-metric-space-default, 16px);
+}
+
+/* The heading only gets the focus by script; it is not a control, so no ring. */
+[tabindex="-1"]:focus {
+  outline: none;
+}
+
+.intro {
+  margin: 0 0 var(--kern-metric-space-default, 16px);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kern-metric-space-default, 16px);
+}
+
+.kern-dialog::backdrop {
+  background: rgb(0 0 0 / 50%);
+}
+
+.kern-dialog__footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kern-metric-space-default, 16px);
+}

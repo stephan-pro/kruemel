@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { d } from "../domain/task.fixtures";
 import { emptyAppData, SCHEMA_VERSION } from "./appData";
-import { exportData, exportFileName, importData } from "./exportImport";
+import { exportData, exportFileName, importData, rawDataFileName } from "./exportImport";
 import { sampleData } from "./storage.fixtures";
 
 /** Runs the sample export through a change and imports the result. */
@@ -39,6 +39,10 @@ describe("F7 Export", () => {
 
   it("F7 Die Sicherungsdatei heißt nach dem Tag des Exports", () => {
     expect(exportFileName(d("2026-10-19"))).toBe("putzplan-2026-10-19.json");
+  });
+
+  it("Die Datei mit unlesbaren Rohdaten ist am Namen von einer Sicherung zu unterscheiden", () => {
+    expect(rawDataFileName(d("2026-10-19"))).toBe("putzplan-rohdaten-2026-10-19.json");
   });
 });
 

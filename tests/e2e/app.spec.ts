@@ -1,0 +1,426 @@
+import { expect, type Page, test } from "@playwright/test";
+import { DEMO_NAMES, demoData } from "../../src/demo/demoData";
+import { dayFromDate } from "../../src/domain/date";
+import { expectNoAccessibilityViolations } from "./axe";
+
+// The real app (production build), first start: nothing stored yet. Packages 7+ of docs/PLAN.md.
+const dataKey = "putzplan:data";
+const deviceKey = "putzplan:device";
+
+/** Puts values into the browser storage before the app reads it. */
+async function store(page: Page, items: Record<string, string>) {
+  await page.goto("./");
+  await page.evaluate((entries) => {
+    for (const [key, value] of Object.entries(entries)) {
+      localStorage.setItem(key, value);
+    }
+  }, items);
+  await page.goto("./");
+}
+
+/** A configured app: names set, this device belongs to the first person. */
+async function startConfigured(page: Page) {
+  const data = demoData(dayFromDate(new Date()));
+  await store(page, {
+    [dataKey]: JSON.stringify(data),
+    [deviceKey]: JSON.stringify({ currentPerson: "personA" }),
+  });
+}
+
+async function fillSetup(page: Page, nameA: string, nameB: string) {
+  await page.getByLabel("Name der ersten Person").fill(nameA);
+  await page.getByLabel("Name der zweiten Person").fill(nameB);
+}
+
+test.describe("Ersteinrichtung (F5 Namen)", () => {
+  test("verlangt beide Namen und führt zum ersten leeren Feld", async ({ page }) => {
+    await page.goto("./");
+    await page.getByRole("button", { name: "Los geht’s" }).click();
+
+    await expect(page.getByText("Bitte einen Namen eingeben.")).toHaveCount(2);
+    await expect(page.getByText("Bitte auswählen, wer dieses Gerät benutzt.")).toBeVisible();
+    await expect(page.getByLabel("Name der ersten Person")).toBeFocused();
+    await expect(page.getByLabel("Name der ersten Person")).toHaveAccessibleDescription(
+      "Bitte einen Namen eingeben.",
+    );
+    await expectNoAccessibilityViolations(page);
+  });
+
+  test("lehnt zwei gleiche Namen ab", async ({ page }) => {
+    await page.goto("./");
+    await fillSetup(page, "Alex", "alex");
+    await page.getByRole("radio", { name: "Alex", exact: true }).check();
+    await page.getByRole("button", { name: "Los geht’s" }).click();
+
+    await expect(page.getByText("Die beiden Namen müssen sich unterscheiden.")).toBeVisible();
+    await expect(page.getByLabel("Name der zweiten Person")).toBeFocused();
+  });
+
+  test("verlangt die Wahl „Ich bin“", async ({ page }) => {
+    await page.goto("./");
+    await fillSetup(page, "Alex", "Robin");
+    await page.getByRole("button", { name: "Los geht’s" }).click();
+
+    await expect(page.getByText("Bitte auswählen, wer dieses Gerät benutzt.")).toBeVisible();
+    await expect(page.getByRole("radio", { name: "Alex" })).toBeFocused();
+  });
+
+  test("zeigt die eingetragenen Namen bei „Ich bin“", async ({ page }) => {
+    await page.goto("./");
+    await fillSetup(page, "Alex", "Robin");
+
+    await expect(page.getByRole("radio", { name: "Alex" })).toBeVisible();
+    await expect(page.getByRole("radio", { name: "Robin" })).toBeVisible();
+  });
+
+  test("speichert Namen und „Ich bin“ und öffnet die Wochenübersicht", async ({ page }) => {
+    await page.goto("./");
+    await fillSetup(page, "  Alex ", "Robin");
+    await page.getByRole("radio", { name: "Robin" }).check();
+    await page.getByRole("button", { name: "Los geht’s" }).click();
+
+    await expect(page).toHaveTitle("Wochenübersicht – Putzplan");
+    await expect(page.getByRole("heading", { level: 1, name: "Wochenübersicht" })).toBeFocused();
+    await expect(page.getByText("Ich bin:")).toContainText("Robin");
+
+    const data = JSON.parse((await page.evaluate((k) => localStorage.getItem(k), dataKey)) ?? "");
+    expect(data.schemaVersion).toBe(1);
+    expect(data.settings.personNames).toEqual({ personA: "Alex", personB: "Robin" });
+    // „Ich bin“ gehört zum Gerät, nicht zu den Daten der Sicherung.
+    expect(data.currentPerson).toBeUndefined();
+    const device = await page.evaluate((k) => localStorage.getItem(k), deviceKey);
+    expect(JSON.parse(device ?? "")).toEqual({ currentPerson: "personB" });
+  });
+
+  test("fragt beim nächsten Start nicht erneut", async ({ page }) => {
+    await page.goto("./");
+    await fillSetup(page, "Alex", "Robin");
+    await page.getByRole("radio", { name: "Alex" }).check();
+    await page.getByRole("button", { name: "Los geht’s" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Wochenübersicht" })).toBeVisible();
+
+    await page.reload();
+
+    await expect(page.getByRole("heading", { level: 1, name: "Wochenübersicht" })).toBeVisible();
+    await expect(page.getByText("Ich bin:")).toContainText("Alex");
+  });
+
+  test("meldet einen vollen oder gesperrten Speicher und nimmt nichts als gespeichert an", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      Storage.prototype.setItem = () => {
+        throw new DOMException("voll", "QuotaExceededError");
+      };
+    });
+    await page.goto("./");
+    await fillSetup(page, "Alex", "Robin");
+    await page.getByRole("radio", { name: "Alex" }).check();
+    await page.getByRole("button", { name: "Los geht’s" }).click();
+
+    await expect(page.getByRole("alert")).toContainText("Speichern nicht möglich");
+    await expect(page.getByRole("heading", { level: 1, name: "Ersteinrichtung" })).toBeVisible();
+  });
+});
+
+test.describe("„Ich bin“ auf einem Gerät ohne Auswahl (F5)", () => {
+  test("fragt nach, wenn die Namen schon bekannt sind", async ({ page }) => {
+    const data = demoData(dayFromDate(new Date()));
+    await store(page, { [dataKey]: JSON.stringify(data) });
+
+    await expect(page).toHaveTitle("Wer benutzt dieses Gerät? – Putzplan");
+    await expect(page.getByRole("radio", { name: DEMO_NAMES.personA })).toBeVisible();
+    await expectNoAccessibilityViolations(page);
+
+    await page.getByRole("button", { name: "Weiter" }).click();
+    await expect(page.getByText("Bitte auswählen, wer dieses Gerät benutzt.")).toBeVisible();
+
+    await page.getByRole("radio", { name: DEMO_NAMES.personB }).check();
+    await page.getByRole("button", { name: "Weiter" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Wochenübersicht" })).toBeVisible();
+    await expect(page.getByText("Ich bin:")).toContainText(DEMO_NAMES.personB);
+  });
+});
+
+test.describe("Rahmen und Navigation", () => {
+  const pages = [
+    { link: "Woche", title: "Wochenübersicht" },
+    { link: "Aufgaben", title: "Aufgaben" },
+    { link: "Erledigt", title: "Erledigt" },
+    { link: "Einstellungen", title: "Einstellungen" },
+  ];
+
+  test("beginnt ohne Adresszusatz mit der Wochenübersicht", async ({ page }) => {
+    await startConfigured(page);
+
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Wochenübersicht");
+    await expect(page.getByRole("link", { name: "Woche" })).toHaveAttribute("aria-current", "page");
+  });
+
+  for (const { link, title } of pages) {
+    test(`Seite „${title}“: Tab-Titel, Überschrift mit Fokus, aktuelle Seite und axe`, async ({
+      page,
+    }) => {
+      await startConfigured(page);
+      // Not the start page first, so the change is visible for every page.
+      await page.getByRole("link", { name: link === "Woche" ? "Erledigt" : "Woche" }).click();
+
+      await page.getByRole("link", { name: link, exact: true }).click();
+
+      await expect(page).toHaveTitle(`${title} – Putzplan`);
+      await expect(page.getByRole("heading", { level: 1, name: title })).toBeFocused();
+      await expect(page.getByRole("link", { name: link, exact: true })).toHaveAttribute(
+        "aria-current",
+        "page",
+      );
+      await expect(page.locator('[aria-current="page"]')).toHaveCount(1);
+      await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+      await expectNoAccessibilityViolations(page);
+    });
+  }
+
+  test("Tastatur: Der erste Tabulator-Stopp ist „Zum Inhalt springen“", async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(isMobile, "Tastaturbedienung wird am Desktop geprüft");
+    await startConfigured(page);
+
+    await page.keyboard.press("Tab");
+    await expect(page.getByRole("button", { name: "Zum Inhalt springen" })).toBeFocused();
+    await page.keyboard.press("Enter");
+
+    await expect(page.locator("main")).toBeFocused();
+    await expect(page).toHaveURL(/\/putzplan\/$/);
+  });
+
+  test("Tastatur: Die Navigation ist mit Tab und Enter bedienbar", async ({
+    page,
+    isMobile,
+    browserName,
+  }) => {
+    test.skip(isMobile, "Tastaturbedienung wird am Desktop geprüft");
+    // Safari springt mit Tab nur auf Formularfelder und Buttons; Links erreicht man dort mit Option+Tab.
+    test.skip(browserName === "webkit", "Safari überspringt Links beim Tabulator");
+    await startConfigured(page);
+
+    await page.keyboard.press("Tab"); // „Zum Inhalt springen“
+    for (const name of ["Woche", "Aufgaben", "Erledigt"]) {
+      await page.keyboard.press("Tab");
+      await expect(page.getByRole("link", { name, exact: true })).toBeFocused();
+    }
+    await page.keyboard.press("Enter");
+
+    await expect(page.getByRole("heading", { level: 1, name: "Erledigt" })).toBeFocused();
+  });
+
+  test("Browser-Zurück führt zur vorigen Seite", async ({ page }) => {
+    await startConfigured(page);
+    await page.getByRole("link", { name: "Aufgaben" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Aufgaben" })).toBeVisible();
+
+    await page.goBack();
+
+    await expect(page.getByRole("heading", { level: 1, name: "Wochenübersicht" })).toBeFocused();
+  });
+
+  test("öffnet eine Seite direkt über ihre Adresse", async ({ page }) => {
+    await startConfigured(page);
+
+    // A new tab, as when following a link or a bookmark (same browser storage, fresh page load).
+    const opened = await page.context().newPage();
+    await opened.goto("./#/erledigt");
+
+    await expect(opened.getByRole("heading", { level: 1, name: "Erledigt" })).toBeVisible();
+    await expect(opened).toHaveTitle("Erledigt – Putzplan");
+  });
+
+  test("passt auf die Breite des Geräts, ohne seitlich zu scrollen", async ({ page }) => {
+    await startConfigured(page);
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+
+    expect(overflow).toBeLessThanOrEqual(0);
+  });
+});
+
+test.describe("Einstellungen (F5 Namen)", () => {
+  test("ändert Namen und „Ich bin“ und meldet das Speichern", async ({ page }) => {
+    await startConfigured(page);
+    await page.getByRole("link", { name: "Einstellungen" }).click();
+    await expect(page.getByLabel("Name der ersten Person")).toHaveValue(DEMO_NAMES.personA);
+    await expect(page.getByRole("radio", { name: DEMO_NAMES.personA })).toBeChecked();
+
+    await page.getByLabel("Name der zweiten Person").fill("Sam");
+    await page.getByRole("radio", { name: "Sam" }).check();
+    await page.getByRole("button", { name: "Speichern" }).click();
+
+    await expect(page.getByRole("status").filter({ hasText: "Gespeichert." })).toBeVisible();
+    await expect(page.getByText("Ich bin:")).toContainText("Sam");
+    await expectNoAccessibilityViolations(page);
+
+    await page.reload();
+    await expect(page.getByText("Ich bin:")).toContainText("Sam");
+    // Die Aufgaben der Beispieldaten bleiben erhalten.
+    const data = JSON.parse((await page.evaluate((k) => localStorage.getItem(k), dataKey)) ?? "");
+    expect(data.settings.personNames).toEqual({ personA: DEMO_NAMES.personA, personB: "Sam" });
+    expect(data.tasks.length).toBe(demoData(dayFromDate(new Date())).tasks.length);
+  });
+
+  test("lehnt ungültige Namen auch hier ab", async ({ page }) => {
+    await startConfigured(page);
+    await page.getByRole("link", { name: "Einstellungen" }).click();
+
+    await page.getByLabel("Name der ersten Person").fill("");
+    await page.getByRole("button", { name: "Speichern" }).click();
+
+    await expect(page.getByText("Bitte einen Namen eingeben.")).toBeVisible();
+    await expect(page.getByLabel("Name der ersten Person")).toBeFocused();
+  });
+});
+
+test.describe("Unlesbare Daten (Speicher)", () => {
+  const broken = '{"schemaVersion": 1, "tasks": [';
+
+  async function startBroken(page: Page) {
+    await store(page, { [dataKey]: broken });
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Gespeicherte Daten nicht lesbar" }),
+    ).toBeVisible();
+  }
+
+  test("meldet das verständlich, ohne die Daten anzutasten, und ist barrierefrei", async ({
+    page,
+  }) => {
+    await startBroken(page);
+
+    await expect(page).toHaveTitle("Gespeicherte Daten nicht lesbar – Putzplan");
+    await expect(page.getByRole("alert")).toContainText("beschädigt");
+    await expect(page.getByRole("link", { name: "Woche" })).toHaveCount(0);
+    expect(await page.evaluate((k) => localStorage.getItem(k), dataKey)).toBe(broken);
+    await expectNoAccessibilityViolations(page);
+  });
+
+  test("nennt bei fehlerhaftem Aufbau die Fundstelle", async ({ page }) => {
+    await store(page, {
+      [dataKey]: JSON.stringify({ schemaVersion: 1, settings: {}, tasks: 5, completions: [] }),
+    });
+
+    await expect(page.getByText("tasks: erwartet eine Liste")).toBeVisible();
+  });
+
+  test("Weg 1: lädt die Rohdaten unverändert als Datei herunter", async ({ page }) => {
+    await startBroken(page);
+
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("button", { name: "Rohdaten herunterladen" }).click(),
+    ]);
+
+    expect(download.suggestedFilename()).toMatch(/^putzplan-rohdaten-\d{4}-\d{2}-\d{2}\.json$/);
+    // The file is a blob of the page; reading it there avoids needing Node types for one line.
+    const content = await page.evaluate((url) => fetch(url).then((r) => r.text()), download.url());
+    expect(content).toBe(broken);
+    await expect(page.getByRole("status")).toContainText("heruntergeladen");
+  });
+
+  test("Weg 2 gibt es erst nach dem Herunterladen", async ({ page }) => {
+    await startBroken(page);
+    await expect(page.getByRole("button", { name: /Neu beginnen/ })).toHaveCount(0);
+
+    await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("button", { name: "Rohdaten herunterladen" }).click(),
+    ]);
+
+    await expect(page.getByRole("button", { name: /Neu beginnen/ })).toBeVisible();
+  });
+
+  test("Neu beginnen fragt nach; „Abbrechen“ lässt alles unberührt", async ({ page }) => {
+    await startBroken(page);
+    await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("button", { name: "Rohdaten herunterladen" }).click(),
+    ]);
+    const trigger = page.getByRole("button", { name: /Neu beginnen/ });
+    // With the keyboard: Safari does not focus a button by clicking it, so there would be no
+    // focus to give back.
+    await trigger.focus();
+    await page.keyboard.press("Enter");
+
+    const dialog = page.getByRole("dialog", { name: "Wirklich neu beginnen?" });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole("button", { name: "Abbrechen" })).toBeFocused();
+    await expectNoAccessibilityViolations(page);
+    await dialog.getByRole("button", { name: "Abbrechen" }).click();
+
+    await expect(dialog).toBeHidden();
+    await expect(trigger).toBeFocused();
+    expect(await page.evaluate((k) => localStorage.getItem(k), dataKey)).toBe(broken);
+  });
+
+  test("Escape schließt die Rückfrage, ohne etwas zu löschen", async ({ page }) => {
+    await startBroken(page);
+    await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("button", { name: "Rohdaten herunterladen" }).click(),
+    ]);
+    await page.getByRole("button", { name: /Neu beginnen/ }).click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+
+    await page.keyboard.press("Escape");
+
+    await expect(page.getByRole("dialog")).toBeHidden();
+    expect(await page.evaluate((k) => localStorage.getItem(k), dataKey)).toBe(broken);
+  });
+
+  test("Nach der Bestätigung beginnt die App neu mit der Ersteinrichtung", async ({ page }) => {
+    await startBroken(page);
+    await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("button", { name: "Rohdaten herunterladen" }).click(),
+    ]);
+    await page.getByRole("button", { name: /Neu beginnen/ }).click();
+    await page.getByRole("button", { name: "Ja, Daten löschen" }).click();
+
+    await expect(page.getByRole("heading", { level: 1, name: "Ersteinrichtung" })).toBeFocused();
+    expect(await page.evaluate((k) => localStorage.getItem(k), dataKey)).toBeNull();
+
+    await fillSetup(page, "Alex", "Robin");
+    await page.getByRole("radio", { name: "Alex" }).check();
+    await page.getByRole("button", { name: "Los geht’s" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Wochenübersicht" })).toBeVisible();
+  });
+
+  test("„Erneut versuchen“ lädt wieder, nachdem der Fehler behoben ist", async ({ page }) => {
+    await startBroken(page);
+    await page.evaluate((k) => localStorage.removeItem(k), dataKey);
+
+    await page.getByRole("button", { name: "Erneut versuchen" }).click();
+
+    await expect(page.getByRole("heading", { level: 1, name: "Ersteinrichtung" })).toBeVisible();
+  });
+
+  test("Gesperrter Browser-Speicher wird erklärt; Löschen wird nicht angeboten", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(window, "localStorage", {
+        get() {
+          throw new DOMException("gesperrt", "SecurityError");
+        },
+      });
+    });
+    await page.goto("./");
+
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Speicher nicht verfügbar" }),
+    ).toBeVisible();
+    await expect(page.getByRole("alert")).toContainText("nicht verfügbar");
+    await expect(page.getByRole("button", { name: /Neu beginnen|Rohdaten/ })).toHaveCount(0);
+    await expectNoAccessibilityViolations(page);
+  });
+});
