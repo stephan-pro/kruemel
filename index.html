@@ -2,8 +2,22 @@
 <html lang="de">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- viewport-fit=cover: lets the page use the whole screen of a phone with a notch; the page
+         keeps clear of it with env(safe-area-inset-*) (see app.css). -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
+    <!-- Colour of the browser bar / status bar: the page background (--bg) of each colour scheme.
+         The script below and applyColorScheme() set both when a scheme is chosen on the device. -->
+    <meta name="theme-color" data-scheme="light" media="(prefers-color-scheme: light)" content="#eef1f5" />
+    <meta name="theme-color" data-scheme="dark" media="(prefers-color-scheme: dark)" content="#0f1115" />
+    <link rel="manifest" href="%BASE_URL%manifest.webmanifest" />
+    <link rel="icon" href="%BASE_URL%icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="%BASE_URL%apple-touch-icon.png" />
+    <!-- iPhone: opens from the home screen like an app (also set by the manifest in newer iOS). -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Putzplan" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>Putzplan</title>
     <script>
       // N8: applies the colour scheme chosen on this device before anything is drawn, so the
@@ -16,6 +30,11 @@
         const scheme = JSON.parse(localStorage.getItem(key) || "{}").colorScheme;
         if (scheme === "light" || scheme === "dark") {
           document.documentElement.setAttribute("data-theme", scheme);
+          // The same colours as THEME_COLORS in src/ui/colorScheme.ts.
+          const colour = scheme === "dark" ? "#0f1115" : "#eef1f5";
+          for (const meta of document.querySelectorAll('meta[name="theme-color"]')) {
+            meta.setAttribute("content", colour);
+          }
         }
       } catch {
         // No storage, no choice: follow the device.

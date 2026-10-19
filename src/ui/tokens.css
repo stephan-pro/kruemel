@@ -46,6 +46,11 @@
   --page-gutter: 16px;
   --tile-gap: 12px;
   --tile-padding: 16px;
+
+  /* The side margins, but never less than the notch of a phone held sideways (the page uses the
+     whole screen: viewport-fit=cover in index.html). */
+  --gutter-left: max(var(--page-gutter), env(safe-area-inset-left, 0px));
+  --gutter-right: max(var(--page-gutter), env(safe-area-inset-right, 0px));
 }
 
 @media (min-width: 900px) {

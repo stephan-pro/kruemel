@@ -74,6 +74,7 @@ Fokus: in beiden Themes deutlich sichtbar, 3 px Umriss in `--accent` mit 2 px Ab
 - **Filter:** Segment-Schalter „Alle / Nur meine“ mit `aria-pressed`.
 - **Heute-Kachel:** je Aufgabe eine Zeile: Symbolkachel 44 px · Titel + Metazeile („Person · Rhythmus“, bei Checklisten „Person · 3 von 5“ plus Fortschrittsbalken) · Abhak-Knopf 44 px rechts. Symbol und Text sind ein Knopf, der die Detailansicht öffnet (Paket 10). Darunter, eingerückt: „Übernehmen“ als Knopf (wo es zutrifft) und die Checklisten-Einträge als abhakbare Chips (Kästchen + Text, 44 px hoch); am PC immer sichtbar, am Handy hinter dem Knopf „Checkliste“ aufklappbar.
 - **Überfällig-Kachel:** dringendste überfällige Aufgabe (Titel, Symbol und Meta-Zeile sind ein Knopf für die Detailansicht), darunter „Abhaken“ und „Übernehmen“ (wo es zutrifft; beide in der Knopffarbe der Kachel).
+- **Anordnung der Wochenübersicht (Paket 12):** Handy und unter 1000 px Breite eine Spalte: Überfällig (wenn vorhanden), Tageskachel, Stand, Woche im Überblick; die Kachel „Überfällig“ liegt beim Öffnen vollständig im Bild (360 × 640 px aufwärts). Ab 1000 px ein Raster: Tageskachel links über zwei Zeilen, rechts Überfällig und darunter Stand, unten die Woche. Die Reihenfolge im Seitenaufbau (Tastatur, Screenreader) ist immer Überfällig, Tag, Stand, Woche. (Der Entwurf zeigt am Handy Überfällig und Stand nebeneinander unter der Tageskachel; das ist ersetzt.)
 - **Detailansicht (Paket 10):** Fenster über der Seite (`<dialog>`, Kachel-Stil, 22 px Radius): Symbolkachel + Titel, Angaben als Liste (Zuständig, Rhythmus, Termin, Notiz), Checkliste mit großen Zeilen (48 px) zum Abhaken, unten „Bearbeiten“, „Übernehmen“ (Sekundärknöpfe) und „Schließen“ (Hauptknopf). Escape schließt; der Fokus kehrt auf die Aufgabe zurück. Mehrere überfällige: Hinweis „+ N weitere“ mit Link zur Liste. Keine überfälligen: Kachel entfällt.
 - **Stand-Kachel:** „erledigt / fällig“ für die angezeigte Woche (fällig = alle Durchgänge mit Termin in dieser Woche, erledigte eingeschlossen) mit Fortschrittsbalken.
 - **Rest der Woche:** mobil 7 Tagesfelder mit Anzahl (Link zum Tag); am PC 7 Spalten mit allen Aufgaben als Chips, in einem waagerecht scrollbaren Bereich, falls der Platz nicht reicht.
@@ -87,7 +88,13 @@ Fokus: in beiden Themes deutlich sichtbar, 3 px Umriss in `--accent` mit 2 px Ab
 - Navigations- und Bediensymbole aus derselben Bibliothek.
 - Symbol pro Aufgabe (F8, umgesetzt in Paket R2): Auswahl aus einer festen Liste von 21 Haushaltssymbolen mit festem Farbton (`src/domain/taskSymbols.ts`), Standardsymbol (Haus, Blau) für Aufgaben ohne Auswahl. Im Formular als Radio-Gruppe aus quadratischen Symbolkacheln (44–53 px, gewählt mit 3-px-Rahmen in `--accent`) in einem Raster mit 7, 6 oder 3 Spalten je nach Breite, sodass nie eine einzelne Kachel allein in der letzten Reihe steht (Paket 10); auf der Kachel „Überfällig“ nur das Bild in der Textfarbe, auf den Chips am PC nur das Bild im Ton.
 
-## 8. Bewegung
+## 8. App-Symbol und Leistenfarbe (Paket 12)
+
+- Symbol: blaue Kachel (`--accent-tile` hell, #1F47D6) mit weißem Haus (Lucide „house“, Linienstärke 1,7), Quelle `public/icon.svg`; die PNGs (192, 512, maskierbar 512, iPhone 180) zeichnet `npm run icons`. Rund gerundet (Radius 22 %) nur bei den Symbolen, die so angezeigt werden; maskierbar und iPhone-Symbol sind randlos (das Betriebssystem schneidet zu), das Haus liegt in der inneren 80 % (Sicherheitszone). Keine Hoheitszeichen.
+- Farbe der Browser- und Statusleiste (`<meta name="theme-color">`) und `background_color`/`theme_color` des Manifests: der Seitenhintergrund `--bg` (hell #EEF1F5, dunkel #0F1115). Das Manifest kennt nur einen Wert (hell).
+- Seitenränder halten Abstand zur Aussparung und zum Home-Balken (`env(safe-area-inset-*)`, `viewport-fit=cover`).
+
+## 9. Bewegung
 
 - Kurze, dezente Übergänge (unter 200 ms), zum Beispiel beim Abhaken.
 - Bei `prefers-reduced-motion: reduce` keine Animationen.

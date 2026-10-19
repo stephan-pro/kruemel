@@ -314,11 +314,14 @@ test.describe("F7 Import mit Rückfrage und automatischer Sicherung", () => {
   }) => {
     test.skip(isMobile, "Tastaturbedienung wird am Desktop geprüft");
     await openSettings(page);
+    // Listening for the file chooser is switched on in the browser a moment after this call; a key
+    // pressed right away could open the real dialog first and the event would never come. So the
+    // listener is set up first, and the focus (which takes a few round trips) comes after it.
+    const chooserOpened = page.waitForEvent("filechooser");
     await importButton(page).focus();
-    const [chooser] = await Promise.all([
-      page.waitForEvent("filechooser"),
-      page.keyboard.press("Enter"),
-    ]);
+    await expect(importButton(page)).toBeFocused();
+    await page.keyboard.press("Enter");
+    const chooser = await chooserOpened;
     await chooser.setFiles(textFile("klein.json", JSON.stringify(smallBackup())));
     await expect(cancelButton(page)).toBeFocused();
 

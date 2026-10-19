@@ -97,7 +97,7 @@ textarea {
   align-items: center;
   justify-content: space-between;
   gap: 8px 16px;
-  padding: 14px var(--page-gutter) 0;
+  padding: calc(14px + env(safe-area-inset-top, 0px)) var(--gutter-right) 0 var(--gutter-left);
 }
 
 .app-name {
@@ -138,7 +138,8 @@ textarea {
   bottom: 0;
   left: 0;
   z-index: 10;
-  padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  padding: 6px max(8px, env(safe-area-inset-right, 0px))
+    calc(6px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px));
   background: var(--surface);
   box-shadow: 0 -1px 0 var(--surface-2);
 }
@@ -167,7 +168,7 @@ textarea {
 }
 
 .demo-hint {
-  margin: 16px var(--page-gutter) 0;
+  margin: 16px var(--gutter-right) 0 var(--gutter-left);
   padding: 12px 16px;
   border-radius: var(--radius-control);
   background: var(--tone-blue-bg);
@@ -177,7 +178,7 @@ textarea {
 
 main {
   max-width: 1200px;
-  padding: 24px var(--page-gutter) 40px;
+  padding: 24px var(--gutter-right) 40px var(--gutter-left);
 }
 
 main:focus {
@@ -209,7 +210,7 @@ main:focus {
     justify-content: flex-start;
     gap: 6px;
     height: 100vh;
-    padding: 24px 16px;
+    padding: 24px 16px 24px max(16px, env(safe-area-inset-left, 0px));
     overflow-y: auto;
     background: var(--surface);
   }
@@ -1189,8 +1190,8 @@ main:focus {
 /* Phones: "Neue Aufgabe" floats above the navigation bar. */
 .new-task {
   position: fixed;
-  right: 16px;
-  bottom: calc(88px + env(safe-area-inset-bottom));
+  right: max(16px, env(safe-area-inset-right, 0px));
+  bottom: calc(88px + env(safe-area-inset-bottom, 0px));
   z-index: 5;
   width: 60px;
   height: 60px;
@@ -1241,26 +1242,15 @@ main:focus {
   }
 }
 
+/* One column, in the order of the page: "Überfällig" first (it must be in sight when the page
+   opens on a phone), then the day, the progress and the week. */
 .week-board {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--tile-gap);
-}
-
-.day-tile {
-  flex: 2 1 420px;
-}
-
-.side-tiles {
-  display: flex;
-  flex: 1 1 260px;
-  flex-direction: column;
-  gap: var(--tile-gap);
-  min-width: 0;
 }
 
 .week-strip {
-  flex: 1 1 100%;
   padding-inline: 12px;
 }
 
@@ -1270,20 +1260,42 @@ main:focus {
   }
 }
 
-/* Phones: "Überfällig" and "Stand" side by side; opened up, "Überfällig" takes the whole row. */
-@media (max-width: 699px) {
-  .side-tiles {
-    flex-direction: row;
-    flex-wrap: wrap;
+/* Wide screens: the day on the left, "Überfällig" and "Stand" stacked on the right. */
+@media (min-width: 1000px) {
+  .week-board {
+    grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+    grid-template-areas:
+      "day stand"
+      "strip strip";
   }
 
-  .side-tiles > .tile {
-    flex: 1 1 0;
-    min-height: 150px;
+  .week-board--overdue {
+    grid-template-areas:
+      "day overdue"
+      "day stand"
+      "strip strip";
   }
 
-  .side-tiles > .warn-tile--expanded {
-    flex-basis: 100%;
+  .week-board > .day-tile {
+    grid-area: day;
+  }
+
+  .week-board > .warn-tile {
+    grid-area: overdue;
+  }
+
+  .week-board > .accent-tile {
+    grid-area: stand;
+  }
+
+  .week-board > .week-strip {
+    grid-area: strip;
+  }
+
+  /* They keep the height of their content instead of stretching with the tall day tile. */
+  .week-board > .warn-tile,
+  .week-board > .accent-tile {
+    align-self: start;
   }
 }
 

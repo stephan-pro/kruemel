@@ -166,6 +166,7 @@ test.describe("Rahmen und Navigation", () => {
   }) => {
     test.skip(isMobile, "Tastaturbedienung wird am Desktop geprüft");
     await startConfigured(page);
+    await expect(page.getByRole("heading", { level: 1, name: "Diese Woche" })).toBeVisible();
 
     await page.keyboard.press("Tab");
     await expect(page.getByRole("button", { name: "Zum Inhalt springen" })).toBeFocused();
@@ -184,8 +185,11 @@ test.describe("Rahmen und Navigation", () => {
     // Safari springt mit Tab nur auf Formularfelder und Buttons; Links erreicht man dort mit Option+Tab.
     test.skip(browserName === "webkit", "Safari überspringt Links beim Tabulator");
     await startConfigured(page);
+    // The navigation appears once the data is loaded; Tab pressed earlier would skip over it.
+    await expect(page.getByRole("link", { name: "Woche", exact: true })).toBeVisible();
 
-    await page.keyboard.press("Tab"); // „Zum Inhalt springen“
+    await page.keyboard.press("Tab");
+    await expect(page.getByRole("button", { name: "Zum Inhalt springen" })).toBeFocused();
     for (const name of ["Woche", "Aufgaben", "Erledigt"]) {
       await page.keyboard.press("Tab");
       await expect(page.getByRole("link", { name, exact: true })).toBeFocused();

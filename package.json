@@ -7,6 +7,7 @@
   "type": "module",
   "scripts": {
     "setup": "node scripts/setup.mjs",
+    "icons": "node scripts/make-icons.mjs",
     "dev": "vite",
     "demo": "vite --mode demo --open",
     "build": "vite build",

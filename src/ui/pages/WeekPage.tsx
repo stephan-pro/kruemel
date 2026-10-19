@@ -371,7 +371,19 @@ export function WeekPage({
           </div>
         </div>
       ) : (
-        <div class="week-board">
+        <div class={`week-board${view.overdue.length > 0 ? " week-board--overdue" : ""}`}>
+          {/* First in the page, so it is in sight at once on a phone; wide screens put it on the
+              right next to the day (CSS grid). */}
+          {view.overdue.length > 0 && (
+            <OverdueTile
+              entries={view.overdue}
+              names={names}
+              expanded={allOverdue}
+              actions={rowActions}
+              onToggle={() => setAllOverdue(!allOverdue)}
+              onComplete={complete}
+            />
+          )}
           <DayTile
             day={shown}
             names={names}
@@ -379,19 +391,7 @@ export function WeekPage({
             actions={rowActions}
             onComplete={complete}
           />
-          <div class="side-tiles">
-            {view.overdue.length > 0 && (
-              <OverdueTile
-                entries={view.overdue}
-                names={names}
-                expanded={allOverdue}
-                actions={rowActions}
-                onToggle={() => setAllOverdue(!allOverdue)}
-                onComplete={complete}
-              />
-            )}
-            <ProgressTile progress={view.progress} current={weekOffset === 0} />
-          </div>
+          <ProgressTile progress={view.progress} current={weekOffset === 0} />
           <WeekStrip
             days={view.days}
             chosen={shown.day}

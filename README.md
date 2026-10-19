@@ -4,7 +4,7 @@
 
 Eine kleine App, mit der zwei Personen ihre Aufgaben im Haushalt planen: wiederkehrende Aufgaben wie „Bad putzen“ und kurzfristige wie „Einkaufen“.
 
-Status: im Aufbau (Etappe 1 – Daten bleiben im Browser). Woche, Aufgaben, Erledigt, Einstellungen (Namen, Darstellung, Sicherung herunterladen und einspielen) und die Ersteinrichtung stehen; als Nächstes folgen die Installation als App (PWA) und der Abschluss.
+Status: im Aufbau (Etappe 1 – Daten bleiben im Browser). Woche, Aufgaben, Erledigt, Einstellungen (Namen, Darstellung, Sicherung herunterladen und einspielen) und die Ersteinrichtung stehen; die App lässt sich auf iPhone und Android auf den Home-Bildschirm legen und läuft ohne Internet (Praxistest: `docs/GERAETETEST.md`); als Nächstes folgt der Abschluss.
 
 **Online:** https://stephan-pro.github.io/putzplan/ (wird nach jedem grünen `check` auf `main` automatisch aktualisiert)
 

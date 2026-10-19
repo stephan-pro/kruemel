@@ -3,6 +3,7 @@ import "@fontsource-variable/archivo/wght.css";
 import "./ui/tokens.css";
 import "./ui/app.css";
 import { render } from "preact";
+import { registerServiceWorker } from "./registerServiceWorker";
 import { createLocalStorage, type KeyValueStore } from "./storage/localStorage";
 import { App } from "./ui/App";
 
@@ -42,4 +43,5 @@ if (import.meta.env.MODE === "demo") {
   render(<App storage={storage} demo={demo} />, root);
 } else {
   render(<App storage={createLocalStorage({ store })} />, root);
+  registerServiceWorker();
 }
