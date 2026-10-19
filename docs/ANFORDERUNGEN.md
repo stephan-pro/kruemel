@@ -111,6 +111,10 @@ Präzisierungen zu Abschnitt 4 und 5. Bei Widerspruch gilt dieser Abschnitt. Tec
 - **F3/F5:** „Übernehmen“ bei einer einmaligen Aufgabe weist sie ohne Rückfrage um.
 - **F3 Erledigt:** enthält auch jeden erledigten Durchgang wiederkehrender Aufgaben; Einträge bleiben unbegrenzt.
 - **F4:** Bei wiederkehrenden Aufgaben sind Checklisten Arbeitsschritte (z. B. Bad: Waschbecken, Toilette, Dusche). Beim Abhaken der Aufgabe werden alle Häkchen zurückgesetzt, die Einträge bleiben.
+- **F4 Rückgängig:** Macht man das Abhaken einer wiederkehrenden Aufgabe rückgängig, kommen auch ihre Checklisten-Häkchen zurück.
+- **F4 einmalige Aufgaben:** Beim Abhaken bleiben die Häkchen erhalten.
+- **F5 Zuweisung ändern:** Eine neue feste Zuweisung beendet eine laufende „nur dieses Mal“-Übernahme.
+- **F3 Löschen:** Wird eine Aufgabe gelöscht, verschwinden auch ihre Einträge in „Erledigt“ (Paket 8 kann das ändern, falls die Historie bleiben soll).
 - **F5 „beide“:** Ein Abhaken reicht. Die Aufgabe erscheint bei „nur meine“ für beide Personen.
 - **F5 Namen:** Im Code stehen keine echten Namen. Die beiden Personennamen werden beim ersten Start in den Einstellungen festgelegt; „Ich bin“ wählt danach zwischen diesen Namen. Beispieldaten und Tests verwenden erfundene Namen.
 - **F6:** Wiederkehrende Aufgaben erscheinen nur an ihrem nächsten echten Termin, keine Vorschau weiterer Termine. Vergangene Wochen zeigen erledigte Aufgaben ausgegraut mit „erledigt von“.
