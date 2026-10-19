@@ -776,18 +776,104 @@ main:focus {
 
 /* ---------- Task symbols ---------- */
 
+/* Each symbol has a tone (F8, `src/domain/taskSymbols.ts`); the tile shows it as background and
+   colour of the picture. */
 .task-symbol {
   display: grid;
   place-items: center;
+  flex: none;
+}
+
+.task-symbol--tile {
   width: 44px;
   height: 44px;
-  flex: none;
   border-radius: var(--radius-control);
 }
 
 .task-symbol--blue {
   background: var(--tone-blue-bg);
   color: var(--tone-blue-fg);
+}
+
+.task-symbol--green {
+  background: var(--tone-green-bg);
+  color: var(--tone-green-fg);
+}
+
+.task-symbol--orange {
+  background: var(--tone-orange-bg);
+  color: var(--tone-orange-fg);
+}
+
+/* Only the picture in the tone, on the grey chips of the week. */
+.task-symbol--small.task-symbol--blue,
+.task-symbol--small.task-symbol--green,
+.task-symbol--small.task-symbol--orange {
+  display: inline-grid;
+  margin-right: 6px;
+  vertical-align: -3px;
+  background: none;
+}
+
+/* Only the picture in the text colour, on coloured tiles ("Überfällig"). */
+.task-symbol--plain.task-symbol--blue,
+.task-symbol--plain.task-symbol--green,
+.task-symbol--plain.task-symbol--orange {
+  background: none;
+  color: inherit;
+}
+
+/* The symbol field of the task form: one tile per symbol, the radio lies invisibly on top of it,
+   so it takes clicks, focus and the arrow keys like any radio. */
+.symbol-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 52px);
+  gap: 8px;
+}
+
+.symbol-choice {
+  position: relative;
+}
+
+.symbol-choice__input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.symbol-choice__tile {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border: 3px solid transparent;
+  border-radius: var(--radius-control);
+}
+
+.symbol-choice__input:checked + .symbol-choice__tile {
+  border-color: var(--accent);
+}
+
+/* `:focus`, not `:focus-visible`: Safari drops `:focus-visible` when the arrow keys move to the
+   next symbol, and the frame would vanish exactly while choosing with the keyboard. */
+.symbol-choice__input:focus + .symbol-choice__tile {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (forced-colors: active) {
+  .symbol-choice__tile {
+    border-color: Canvas;
+  }
+
+  .symbol-choice__input:checked + .symbol-choice__tile {
+    border-color: Highlight;
+  }
 }
 
 /* ---------- Tasks ---------- */
@@ -1130,6 +1216,14 @@ main:focus {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+/* The symbol stands at the top right, next to the title (as in the draft). */
+.overdue__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .overdue__title {

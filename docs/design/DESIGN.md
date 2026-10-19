@@ -84,7 +84,7 @@ Fokus: in beiden Themes deutlich sichtbar, 3 px Umriss in `--accent` mit 2 px Ab
 
 - Bibliothek: Lucide (Lizenz ISC, verträglich mit EUPL-1.2). Nur genutzte Symbole einbinden.
 - Navigations- und Bediensymbole aus derselben Bibliothek.
-- Symbol pro Aufgabe (F8, eigenes Paket): Auswahl aus einer festen Liste von etwa 20 Haushaltssymbolen mit Farbton, Standardsymbol für Aufgaben ohne Auswahl.
+- Symbol pro Aufgabe (F8, umgesetzt in Paket R2): Auswahl aus einer festen Liste von 21 Haushaltssymbolen mit festem Farbton (`src/domain/taskSymbols.ts`), Standardsymbol (Haus, Blau) für Aufgaben ohne Auswahl. Im Formular als Radio-Gruppe aus Symbolkacheln (52 px, gewählt mit 3-px-Rahmen in `--accent`); auf der Kachel „Überfällig“ nur das Bild in der Textfarbe, auf den Chips am PC nur das Bild im Ton.
 
 ## 8. Bewegung
 

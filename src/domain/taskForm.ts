@@ -15,6 +15,7 @@ import {
   type RecurringTask,
   type Task,
 } from "./task";
+import { isTaskSymbolId, type TaskSymbolId } from "./taskSymbols";
 
 export const MAX_TITLE_LENGTH = 80;
 export const MAX_NOTE_LENGTH = 500;
@@ -29,6 +30,8 @@ export type TaskKind = Task["kind"];
 /** What the form holds; all fields are text (`assignee` is empty while nothing is chosen). */
 export interface TaskFormInput {
   readonly title: string;
+  /** Id of the chosen symbol (F8); the form starts with the default symbol. */
+  readonly symbol: string;
   readonly dueDate: string;
   readonly assignee: string;
   readonly note: string;
@@ -37,11 +40,19 @@ export interface TaskFormInput {
   readonly unit: string;
 }
 
-export type TaskFormField = "title" | "interval" | "unit" | "dueDate" | "assignee" | "note";
+export type TaskFormField =
+  | "title"
+  | "symbol"
+  | "interval"
+  | "unit"
+  | "dueDate"
+  | "assignee"
+  | "note";
 
 /** The fields in the order the form shows them; the first one with an error gets the focus. */
 export const TASK_FORM_FIELD_ORDER: readonly TaskFormField[] = [
   "title",
+  "symbol",
   "interval",
   "unit",
   "dueDate",
@@ -55,6 +66,7 @@ export type TaskFormErrors = Partial<Record<TaskFormField, string>>;
 /** The checked and cleaned-up values. */
 export interface TaskFormValues {
   readonly title: string;
+  readonly symbol: TaskSymbolId;
   readonly dueDate: CalendarDay;
   readonly assignee: Assignee;
   readonly note?: string;
@@ -119,6 +131,7 @@ export function checkTaskForm(kind: TaskKind, input: TaskFormInput): TaskFormRes
 
   const found: [TaskFormField, string | undefined][] = [
     ["title", titleError(title)],
+    ["symbol", isTaskSymbolId(input.symbol) ? undefined : "Bitte ein Symbol auswählen."],
     ["dueDate", dueDateError(dueDate)],
     ["assignee", isAssignee(input.assignee) ? undefined : "Bitte auswählen, wer zuständig ist."],
     [
@@ -145,6 +158,7 @@ export function checkTaskForm(kind: TaskKind, input: TaskFormInput): TaskFormRes
 
   const values = {
     title,
+    symbol: input.symbol as TaskSymbolId,
     dueDate: dueDate as CalendarDay,
     assignee: input.assignee as Assignee,
     ...(note === "" ? {} : { note }),
@@ -165,6 +179,7 @@ export function taskFromForm(kind: TaskKind, id: string, values: TaskFormValues)
   const common = {
     id,
     title: values.title,
+    symbol: values.symbol,
     assignee: values.assignee,
     dueDate: values.dueDate,
     ...(values.note === undefined ? {} : { note: values.note }),
@@ -189,6 +204,7 @@ export function updateTask(task: Task, values: TaskFormValues): Task {
   const base = {
     ...withoutNote,
     title: values.title,
+    symbol: values.symbol,
     dueDate: values.dueDate,
     ...(values.note === undefined ? {} : { note: values.note }),
   };

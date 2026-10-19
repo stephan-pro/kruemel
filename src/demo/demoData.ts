@@ -135,6 +135,7 @@ export function demoData(today: CalendarDay): AppData {
     {
       id: "demo-bad",
       title: "Bad putzen",
+      symbol: "bath",
       recurrence: { unit: "week", interval: 1 },
       assignee: "personA",
       note: "Mit Essigreiniger, nicht mit Scheuermilch",
@@ -150,6 +151,7 @@ export function demoData(today: CalendarDay): AppData {
     {
       id: "demo-staubsaugen",
       title: "Staubsaugen",
+      symbol: "broom",
       recurrence: { unit: "week", interval: 1 },
       assignee: "both",
     },
@@ -163,6 +165,7 @@ export function demoData(today: CalendarDay): AppData {
     {
       id: "demo-muell",
       title: "Müll rausbringen",
+      symbol: "trash",
       recurrence: { unit: "day", interval: 3 },
       assignee: "personB",
     },
@@ -175,6 +178,7 @@ export function demoData(today: CalendarDay): AppData {
     {
       id: "demo-kueche",
       title: "Küche wischen",
+      symbol: "cooking",
       recurrence: { unit: "week", interval: 1 },
       assignee: "personB",
     },
@@ -186,6 +190,7 @@ export function demoData(today: CalendarDay): AppData {
     {
       id: "demo-fenster",
       title: "Fenster putzen",
+      symbol: "cleaner",
       recurrence: { unit: "month", interval: 2 },
       assignee: "personB",
     },
@@ -196,6 +201,7 @@ export function demoData(today: CalendarDay): AppData {
     {
       id: "demo-bettwaesche",
       title: "Bettwäsche wechseln",
+      symbol: "bed",
       recurrence: { unit: "week", interval: 2 },
       assignee: "both",
     },
@@ -206,21 +212,41 @@ export function demoData(today: CalendarDay): AppData {
   b.oneOff({
     id: "demo-handwerker",
     title: "Handwerker anrufen",
+    symbol: "phone",
     assignee: "personA",
     note: "Wegen des tropfenden Wasserhahns",
     dueInDays: -1,
   });
   b.oneOff(
-    { id: "demo-einkaufen", title: "Einkaufen", assignee: "both", dueInDays: 0 },
+    {
+      id: "demo-einkaufen",
+      title: "Einkaufen",
+      symbol: "shopping",
+      assignee: "both",
+      dueInDays: 0,
+    },
     { items: ["Milch", "Brot", "Obst", "Spülmittel"], checked: [0, 1] },
   );
+  // Nobody chose a symbol: the default one.
   b.oneOff({ id: "demo-paket", title: "Paket abholen", assignee: "personB", dueInDays: 1 });
   b.oneOff(
-    { id: "demo-geschenk", title: "Geschenk kaufen", assignee: "personA", dueInDays: 6 },
+    {
+      id: "demo-geschenk",
+      title: "Geschenk kaufen",
+      symbol: "gift",
+      assignee: "personA",
+      dueInDays: 6,
+    },
     { items: ["Karte", "Geschenkpapier"] },
   );
   b.oneOff(
-    { id: "demo-altglas", title: "Altglas wegbringen", assignee: "personB", dueInDays: -4 },
+    {
+      id: "demo-altglas",
+      title: "Altglas wegbringen",
+      symbol: "recycling",
+      assignee: "personB",
+      dueInDays: -4,
+    },
     { done: [3, "personB"] },
   );
 

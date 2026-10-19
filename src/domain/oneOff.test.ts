@@ -24,6 +24,7 @@ describe("F3 Einmalige Aufgaben", () => {
       kind: "oneOff",
       id: "t-1",
       title: "Paket abholen",
+      symbol: "standard",
       dueDate: "2026-10-22",
       assignee: "personB",
       note: "Postfiliale, Ausweis mitnehmen",
@@ -149,5 +150,31 @@ describe("F1 Wiederkehrende Aufgaben anlegen", () => {
       createRecurringTask({ ...valid, recurrence: { unit: "week", interval: 0 } }),
     ).toThrow(RangeError);
     expect(() => createRecurringTask({ ...valid, title: "" })).toThrow(RangeError);
+  });
+});
+
+describe("F8 Symbol beim Anlegen", () => {
+  const recurring = {
+    id: "t-1",
+    title: "Bad putzen",
+    recurrence: { unit: "week", interval: 1 },
+    assignee: "personA",
+    dueDate: d("2026-10-22"),
+  } as const;
+
+  it("F8 Eine Aufgabe ohne gewähltes Symbol bekommt das Standardsymbol", () => {
+    expect(createRecurringTask(recurring).symbol).toBe("standard");
+    expect(createOneOffTask({ ...recurring, title: "Paket abholen" }).symbol).toBe("standard");
+  });
+
+  it("F8 Eine Aufgabe trägt das gewählte Symbol", () => {
+    expect(createRecurringTask({ ...recurring, symbol: "bath" }).symbol).toBe("bath");
+    expect(createOneOffTask({ ...recurring, symbol: "parcel" }).symbol).toBe("parcel");
+  });
+
+  it("F8 Ein unbekanntes Symbol wird abgelehnt", () => {
+    expect(() =>
+      createRecurringTask({ ...recurring, symbol: "rocket" as unknown as "bath" }),
+    ).toThrow(RangeError);
   });
 });

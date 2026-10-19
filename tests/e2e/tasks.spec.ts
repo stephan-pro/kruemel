@@ -134,7 +134,7 @@ test.describe("F1 Wiederkehrende Aufgabe anlegen", () => {
       await expect(page.locator("label", { hasText: label })).toBeVisible();
     }
     // Gruppen von Auswahlfeldern haben eine sichtbare Überschrift.
-    for (const legend of ["Art der Aufgabe", "Rhythmus", "Zuständig"]) {
+    for (const legend of ["Art der Aufgabe", "Symbol", "Rhythmus", "Zuständig"]) {
       await expect(page.locator("legend", { hasText: legend })).toBeVisible();
     }
     // Kein Feld ohne Beschriftung.

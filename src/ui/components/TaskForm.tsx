@@ -13,6 +13,7 @@ import {
   type TaskFormValues,
   type TaskKind,
 } from "../../domain/taskForm";
+import { DEFAULT_TASK_SYMBOL } from "../../domain/taskSymbols";
 import type { PersonNames } from "../../storage/appData";
 import { routeHash } from "../route";
 import { ErrorAlert } from "./Alert";
@@ -24,6 +25,7 @@ import {
   TextAreaField,
   TextField,
 } from "./fields";
+import { SymbolField } from "./SymbolField";
 
 interface TaskFormProps {
   /** The task being changed; missing when a new one is created. */
@@ -53,6 +55,7 @@ const UNITS: readonly Choice<string>[] = [
 /** The element that takes the focus for the field. Radio groups take their first radio. */
 const FOCUS_TARGET: Record<TaskFormField, string> = {
   title: "task-title",
+  symbol: `task-symbol-${DEFAULT_TASK_SYMBOL}`,
   interval: "task-interval",
   unit: "task-unit",
   dueDate: "task-dueDate",
@@ -62,10 +65,19 @@ const FOCUS_TARGET: Record<TaskFormField, string> = {
 
 function initialInput(task: Task | undefined, today: CalendarDay, person: Person): TaskFormInput {
   if (task === undefined) {
-    return { title: "", dueDate: today, assignee: person, note: "", interval: "1", unit: "week" };
+    return {
+      title: "",
+      symbol: DEFAULT_TASK_SYMBOL,
+      dueDate: today,
+      assignee: person,
+      note: "",
+      interval: "1",
+      unit: "week",
+    };
   }
   return {
     title: task.title,
+    symbol: task.symbol,
     dueDate: task.dueDate,
     assignee: task.assignee,
     note: task.note ?? "",
@@ -84,7 +96,7 @@ function messageOf(error: unknown): string {
 }
 
 /**
- * Creates or changes a task (F1, F3). Every field has a visible label; a message about a field
+ * Creates or changes a task (F1, F3, symbol F8). Every field has a visible label; a message about a field
  * stands at that field. A submit with errors puts the focus on the first field with an error.
  */
 export function TaskForm({ task, names, today, currentPerson, onSubmit, onDelete }: TaskFormProps) {
@@ -166,6 +178,13 @@ export function TaskForm({ task, names, today, currentPerson, onSubmit, onDelete
         value={input.title}
         error={errors.title}
         onInput={(title) => change("title", title)}
+      />
+
+      <SymbolField
+        name="task-symbol"
+        value={input.symbol}
+        error={errors.symbol}
+        onChange={(symbol) => change("symbol", symbol)}
       />
 
       {recurring && (

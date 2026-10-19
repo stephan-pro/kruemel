@@ -14,6 +14,7 @@ import {
 
 const valid: TaskFormInput = {
   title: "Bad putzen",
+  symbol: "standard",
   dueDate: "2026-10-19",
   assignee: "personA",
   note: "",
@@ -34,6 +35,7 @@ describe("F1 Wiederkehrende Aufgaben: Formular prüfen", () => {
       ok: true,
       values: {
         title: "Bad putzen",
+        symbol: "standard",
         dueDate: "2026-10-19",
         assignee: "personA",
         note: "Mit Essigreiniger",
@@ -54,6 +56,7 @@ describe("F1 Wiederkehrende Aufgaben: Formular prüfen", () => {
       ok: true,
       values: {
         title: "Bad putzen",
+        symbol: "standard",
         dueDate: "2026-10-19",
         assignee: "personA",
         recurrence: { unit: "week", interval: 3 },
@@ -165,12 +168,35 @@ describe("F3 Einmalige Aufgaben: Formular prüfen", () => {
 
     expect(result).toEqual({
       ok: true,
-      values: { title: "Bad putzen", dueDate: "2026-10-19", assignee: "personA", note: "Ausweis" },
+      values: {
+        title: "Bad putzen",
+        symbol: "standard",
+        dueDate: "2026-10-19",
+        assignee: "personA",
+        note: "Ausweis",
+      },
     });
   });
 
   it("F3 Das Fälligkeitsdatum ist Pflicht", () => {
     expect(errorsOf("oneOff", { dueDate: "" })).toEqual({ dueDate: "Bitte ein Datum angeben." });
+  });
+});
+
+describe("F8 Symbol im Formular", () => {
+  it("F8 Das gewählte Symbol gehört zu den Werten der Aufgabe, bei beiden Arten", () => {
+    for (const kind of ["recurring", "oneOff"] as const) {
+      const result = checkTaskForm(kind, { ...valid, symbol: "bath" });
+      expect(result.ok && result.values.symbol).toBe("bath");
+    }
+  });
+
+  it("F8 Ein unbekanntes oder fehlendes Symbol wird beim Feld „symbol“ gemeldet", () => {
+    for (const symbol of ["", "rocket"]) {
+      expect(errorsOf("recurring", { symbol })).toEqual({
+        symbol: "Bitte ein Symbol auswählen.",
+      });
+    }
   });
 });
 
@@ -180,6 +206,7 @@ describe("Formular: Fokus auf das erste fehlerhafte Feld", () => {
     expect(firstTaskFormError({ dueDate: "x", assignee: "x" })).toBe("dueDate");
     expect(firstTaskFormError({ assignee: "x", title: "x" })).toBe("title");
     expect(firstTaskFormError({ note: "x" })).toBe("note");
+    expect(firstTaskFormError({ interval: "x", symbol: "x" })).toBe("symbol");
   });
 
   it("Ohne Fehler gibt es kein Feld, das den Fokus bekommt", () => {
@@ -198,6 +225,7 @@ describe("F1 Aufgaben anlegen", () => {
       kind: "recurring",
       id: "t-1",
       title: "Bad putzen",
+      symbol: "standard",
       recurrence: { unit: "week", interval: 2 },
       assignee: "personA",
       dueDate: "2026-10-19",
@@ -210,6 +238,7 @@ describe("F1 Aufgaben anlegen", () => {
     expect(
       taskFromForm("oneOff", "t-2", {
         title: "Paket abholen",
+        symbol: "parcel",
         dueDate: d("2026-10-22"),
         assignee: "personB",
       }),
@@ -217,6 +246,7 @@ describe("F1 Aufgaben anlegen", () => {
       kind: "oneOff",
       id: "t-2",
       title: "Paket abholen",
+      symbol: "parcel",
       dueDate: "2026-10-22",
       assignee: "personB",
       done: false,
@@ -228,6 +258,7 @@ describe("F1 Aufgaben anlegen", () => {
     expect(() =>
       taskFromForm("recurring", "t-1", {
         title: "Bad putzen",
+        symbol: "standard",
         dueDate: d("2026-10-19"),
         assignee: "personA",
       }),
@@ -238,6 +269,7 @@ describe("F1 Aufgaben anlegen", () => {
 describe("F1 Aufgaben bearbeiten", () => {
   const edited = {
     title: "Bad gründlich putzen",
+    symbol: "standard" as const,
     dueDate: d("2026-10-25"),
     assignee: "personA" as const,
     recurrence: { unit: "month" as const, interval: 1 },
@@ -267,6 +299,7 @@ describe("F1 Aufgaben bearbeiten", () => {
     expect(
       updateTask(task, {
         title: "Paket in der Filiale abholen",
+        symbol: "standard",
         dueDate: d("2026-10-23"),
         assignee: "both",
         note: "Ausweis",
@@ -318,10 +351,23 @@ describe("F1 Aufgaben bearbeiten", () => {
   it("F3 Eine erledigte einmalige Aufgabe bleibt erledigt", () => {
     const updated = updateTask(oneOffTask({ done: true }), {
       title: "Paket abholen",
+      symbol: "standard",
       dueDate: d("2026-10-22"),
       assignee: "personB",
     });
 
     expect(updated).toMatchObject({ kind: "oneOff", done: true });
+  });
+
+  it("F8 Beim Bearbeiten lässt sich das Symbol ändern, bei beiden Arten", () => {
+    expect(updateTask(recurringTask(), { ...edited, symbol: "shower" }).symbol).toBe("shower");
+    expect(
+      updateTask(oneOffTask(), {
+        title: "Paket abholen",
+        symbol: "parcel",
+        dueDate: d("2026-10-22"),
+        assignee: "personB",
+      }).symbol,
+    ).toBe("parcel");
   });
 });

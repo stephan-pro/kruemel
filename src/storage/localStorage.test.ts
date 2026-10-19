@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { emptyAppData } from "./appData";
 import { createLocalStorage, requestPersistentStorage } from "./localStorage";
 import { COLOR_SCHEMES, DEFAULT_COLOR_SCHEME, isColorScheme, StorageError } from "./storage";
-import { FakeStore, sampleData } from "./storage.fixtures";
+import { asVersion1, FakeStore, sampleData } from "./storage.fixtures";
 
 describe("F7 Speicher (localStorage)", () => {
   it("F7 Ohne gespeicherte Daten liefert der Speicher leere Daten", async () => {
@@ -34,7 +34,36 @@ describe("F7 Speicher (localStorage)", () => {
 
     await createLocalStorage({ store }).save(sampleData());
 
-    expect(JSON.parse(store.items.get("putzplan:data") as string).schemaVersion).toBe(1);
+    expect(JSON.parse(store.items.get("putzplan:data") as string).schemaVersion).toBe(2);
+  });
+
+  it("F8 Daten der Version 1 im Speicher werden beim Laden migriert: Standardsymbol, sonst gleich", async () => {
+    const store = new FakeStore();
+    const old = JSON.stringify(asVersion1(sampleData()));
+    store.items.set("putzplan:data", old);
+
+    const loaded = await createLocalStorage({ store }).load();
+
+    const expected = sampleData();
+    expect(loaded).toEqual({
+      ...expected,
+      tasks: expected.tasks.map((task) => ({ ...task, symbol: "standard" })),
+    });
+  });
+
+  it("F8 Die Rohdaten der Version 1 bleiben bis zum nächsten Speichern unverändert, dann Version 2", async () => {
+    const store = new FakeStore();
+    const old = JSON.stringify(asVersion1(sampleData()));
+    store.items.set("putzplan:data", old);
+    const storage = createLocalStorage({ store });
+
+    const loaded = await storage.load();
+    expect(store.items.get("putzplan:data")).toBe(old);
+
+    await storage.save(loaded);
+    const saved = JSON.parse(store.items.get("putzplan:data") as string);
+    expect(saved.schemaVersion).toBe(2);
+    expect(saved.tasks.every((task: { symbol?: string }) => task.symbol === "standard")).toBe(true);
   });
 
   it("F7 Verschiedene Namensräume sehen die Daten der anderen nicht", async () => {

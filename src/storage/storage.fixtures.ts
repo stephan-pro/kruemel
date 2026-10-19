@@ -2,7 +2,7 @@
 
 import { addChecklistItem, setChecklistItemChecked } from "../domain/checklist";
 import { oneOffTask, recurringTask, stateOf, tickOff } from "../domain/task.fixtures";
-import type { AppData } from "./appData";
+import { type AppData, SCHEMA_VERSION } from "./appData";
 import type { KeyValueStore } from "./localStorage";
 
 /** A stand-in for the browser's localStorage. */
@@ -35,10 +35,10 @@ export class FakeStore implements KeyValueStore {
 
 /** Data that uses every field: both task kinds, checklists, a takeover, optional notes. */
 export function sampleData(): AppData {
-  let cleaning = addChecklistItem(recurringTask({ id: "t-bad", note: "Mit Essigreiniger" }), {
-    id: "i-1",
-    text: "Waschbecken",
-  });
+  let cleaning = addChecklistItem(
+    recurringTask({ id: "t-bad", note: "Mit Essigreiniger", symbol: "bath" }),
+    { id: "i-1", text: "Waschbecken" },
+  );
   cleaning = addChecklistItem(cleaning, { id: "i-2", text: "Toilette" });
   cleaning = setChecklistItemChecked(cleaning, "i-1", true);
   const ticked = tickOff(stateOf({ ...cleaning, takenOverBy: "personB" }), "2026-10-21", "c-1");
@@ -49,7 +49,7 @@ export function sampleData(): AppData {
     "personB",
   );
   const parcel = tickOff(
-    stateOf(oneOffTask({ id: "t-paket", assignee: "both" })),
+    stateOf(oneOffTask({ id: "t-paket", assignee: "both", symbol: "parcel" })),
     "2026-10-20",
     "c-3",
   );
@@ -62,9 +62,20 @@ export function sampleData(): AppData {
   });
   const open = oneOffTask({ id: "t-offen", title: "Geschenk kaufen" });
   return {
-    schemaVersion: 1,
+    schemaVersion: SCHEMA_VERSION,
     settings: { personNames: { personA: "Alex", personB: "Robin" } },
     tasks: [again.task, windows, parcel.task, open],
     completions: [...again.completions, ...parcel.completions],
   };
+}
+
+/** The data as version 1 stored or exported it (before F8): no symbols. Plain JSON values. */
+// biome-ignore lint/suspicious/noExplicitAny: old files are plain JSON of their own shape
+export function asVersion1(data: AppData): any {
+  const copy = JSON.parse(JSON.stringify(data));
+  copy.schemaVersion = 1;
+  for (const task of copy.tasks) {
+    delete task.symbol;
+  }
+  return copy;
 }

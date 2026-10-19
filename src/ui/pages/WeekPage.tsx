@@ -1,4 +1,4 @@
-import { Check, ChevronLeft, ChevronRight, Plus, TriangleAlert } from "lucide-preact";
+import { Check, ChevronLeft, ChevronRight, Plus } from "lucide-preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { TaskFilter } from "../../domain/assignment";
 import { addWeeks, type CalendarDay } from "../../domain/date";
@@ -322,7 +322,7 @@ function Entry({ entry, names, onComplete }: EntryProps) {
   const checked = checklist.filter((item) => item.checked).length;
   return (
     <li class={`entry${entry.kind === "done" ? " entry--done" : ""}`}>
-      <TaskSymbol />
+      <TaskSymbol symbol={task.symbol} />
       <div class="entry__text">
         <p class="entry__title">{task.title}</p>
         <p class="entry__meta">
@@ -381,12 +381,14 @@ function OverdueTile({ entries, names, expanded, onToggle, onComplete }: Overdue
         <h2 class="tile__label" id="ueberfaellig">
           Überfällig
         </h2>
-        <TriangleAlert size={24} />
       </div>
       <ul class="overdue-list" id="ueberfaellig-liste">
         {shown.map(({ task, daysOverdue }) => (
           <li class="overdue" key={task.id}>
-            <p class="overdue__title">{task.title}</p>
+            <div class="overdue__head">
+              <p class="overdue__title">{task.title}</p>
+              <TaskSymbol symbol={task.symbol} variant="plain" />
+            </div>
             <p class="overdue__meta">
               {describeOverdue(daysOverdue)} (seit {formatShortDay(task.dueDate)}) ·{" "}
               {responsibilityOf(task, names)}
@@ -490,7 +492,10 @@ function WeekStrip({ days, chosen, names, onChoose }: WeekStripProps) {
                     class={`chip${entry.kind === "done" ? " chip--done" : ""}`}
                     key={entry.kind === "done" ? entry.completion.id : entry.task.id}
                   >
-                    <span class="chip__title">{entry.task.title}</span>
+                    <span class="chip__title">
+                      <TaskSymbol symbol={entry.task.symbol} variant="small" />
+                      {entry.task.title}
+                    </span>
                     <span class="chip__meta">
                       {entry.kind === "done"
                         ? `erledigt von ${names[entry.completion.completedBy]}`

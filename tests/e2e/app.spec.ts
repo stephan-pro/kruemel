@@ -63,7 +63,7 @@ test.describe("Ersteinrichtung (F5 Namen)", () => {
     await expect(page.getByText("Ich bin:")).toContainText("Robin");
 
     const data = JSON.parse((await page.evaluate((k) => localStorage.getItem(k), dataKey)) ?? "");
-    expect(data.schemaVersion).toBe(1);
+    expect(data.schemaVersion).toBe(2);
     expect(data.settings.personNames).toEqual({ personA: "Alex", personB: "Robin" });
     // „Ich bin“ gehört zum Gerät, nicht zu den Daten der Sicherung.
     expect(data.currentPerson).toBeUndefined();

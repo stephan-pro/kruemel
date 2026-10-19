@@ -17,7 +17,7 @@ function hintId(id: string): string {
   return `${id}-hinweis`;
 }
 
-function errorId(id: string): string {
+export function errorId(id: string): string {
   return `${id}-fehler`;
 }
 
@@ -27,7 +27,7 @@ function describedBy({ id, hint, error }: FieldProps): string | undefined {
   return ids.length > 0 ? ids.join(" ") : undefined;
 }
 
-function ErrorMessage({ id, message }: { readonly id: string; readonly message: string }) {
+export function ErrorMessage({ id, message }: { readonly id: string; readonly message: string }) {
   return (
     <span class="field__error" id={id}>
       <CircleAlert class="field__error-icon" size={18} />

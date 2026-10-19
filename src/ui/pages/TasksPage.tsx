@@ -146,7 +146,7 @@ function TaskCard({ task, names, onDelete }: TaskCardProps) {
   return (
     <article class="tile task-card" aria-labelledby={titleId}>
       <div class="task-card__head">
-        <TaskSymbol />
+        <TaskSymbol symbol={task.symbol} />
         <h3 class="task-card__title" id={titleId}>
           {task.title}
         </h3>

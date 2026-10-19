@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { d } from "../domain/task.fixtures";
 import { emptyAppData, SCHEMA_VERSION } from "./appData";
 import { exportData, exportFileName, importData, rawDataFileName } from "./exportImport";
-import { sampleData } from "./storage.fixtures";
+import { asVersion1, sampleData } from "./storage.fixtures";
 
 /** Runs the sample export through a change and imports the result. */
 function importChanged(change: (file: any) => void) {
@@ -33,8 +33,20 @@ describe("F7 Export", () => {
     const text = exportData(emptyAppData());
 
     expect(text).toBe(
-      '{\n  "schemaVersion": 1,\n  "settings": {},\n  "tasks": [],\n  "completions": []\n}\n',
+      '{\n  "schemaVersion": 2,\n  "settings": {},\n  "tasks": [],\n  "completions": []\n}\n',
     );
+  });
+
+  it("F8 Der Export schreibt schemaVersion 2 und das Symbol jeder Aufgabe", () => {
+    const file = JSON.parse(exportData(sampleData()));
+
+    expect(file.schemaVersion).toBe(2);
+    expect(file.tasks.map((task: any) => task.symbol)).toEqual([
+      "bath",
+      "standard",
+      "parcel",
+      "standard",
+    ]);
   });
 
   it("F7 Die Sicherungsdatei heißt nach dem Tag des Exports", () => {
@@ -89,6 +101,37 @@ describe("F7 Import", () => {
     });
 
     expect(result.ok && result.data.settings).toEqual({});
+  });
+});
+
+describe("F8 Import alter Sicherungen (schemaVersion 1)", () => {
+  it("F8 Eine Sicherung der Version 1 wird importiert: Standardsymbol für jede Aufgabe, sonst alles gleich", () => {
+    const data = sampleData();
+
+    const result = importData(JSON.stringify(asVersion1(data)));
+
+    expect(result).toEqual({
+      ok: true,
+      data: { ...data, tasks: data.tasks.map((task) => ({ ...task, symbol: "standard" })) },
+    });
+  });
+
+  it("F8 Eine fehlerhafte Sicherung der Version 1 bekommt die üblichen Meldungen", () => {
+    const old = asVersion1(sampleData());
+    old.tasks[1].assignee = "personC";
+
+    expect(errorsOf(importData(JSON.stringify(old)))).toEqual([
+      "tasks[1].assignee: ungültig, erwartet personA, personB oder both",
+    ]);
+  });
+
+  it("F8 Ein Symbol in einer Sicherung der Version 1 wird nicht übernommen (gab es damals nicht)", () => {
+    const old = asVersion1(sampleData());
+    old.tasks[0].symbol = "bath";
+
+    const result = importData(JSON.stringify(old));
+
+    expect(result.ok && result.data.tasks[0]?.symbol).toBe("standard");
   });
 });
 
@@ -166,6 +209,12 @@ describe("F7 Import prüft die Datei", () => {
       "tasks[0].title: ungültig, erwartet einen Titel",
     ],
     ["fehlende Kennung", (task: any) => delete task.id, "tasks[0].id: fehlt"],
+    ["ein fehlendes Symbol (F8)", (task: any) => delete task.symbol, "tasks[0].symbol: fehlt"],
+    [
+      "ein unbekanntes Symbol (F8)",
+      (task: any) => (task.symbol = "rocket"),
+      "tasks[0].symbol: ungültig, erwartet ein Symbol aus der Liste",
+    ],
     [
       "eine unbekannte Zuständigkeit",
       (task: any) => (task.assignee = "personC"),

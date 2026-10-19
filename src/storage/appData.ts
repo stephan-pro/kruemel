@@ -3,8 +3,11 @@
 
 import type { Completion, Task } from "../domain/task";
 
-/** Bumped whenever the stored shape changes in a way old files cannot be read as-is. */
-export const SCHEMA_VERSION = 1;
+/**
+ * Bumped whenever the stored shape changes in a way old files cannot be read as-is; `migrate.ts`
+ * brings older data up to this version. Version 2 (F8): every task has a `symbol`.
+ */
+export const SCHEMA_VERSION = 2;
 
 /** The names of the two people, chosen once on first start (F5). */
 export interface PersonNames {

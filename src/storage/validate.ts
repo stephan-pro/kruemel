@@ -1,6 +1,7 @@
 // Checks untrusted data (an import file or whatever is in the browser storage) and turns it into
-// `AppData`. Nothing is taken over unchecked: every field is validated and only known fields are
-// copied, so unknown extras in a file are dropped.
+// `AppData`. Older versions are migrated first (`migrate.ts`). Nothing is taken over unchecked:
+// every field is validated and only known fields are copied, so unknown extras in a file are
+// dropped.
 
 import type { ChecklistItem } from "../domain/checklist";
 import { isCalendarDay } from "../domain/date";
@@ -12,7 +13,9 @@ import {
   type Recurrence,
   type Task,
 } from "../domain/task";
+import { isTaskSymbolId } from "../domain/taskSymbols";
 import { type AppData, type PersonNames, SCHEMA_VERSION, type Settings } from "./appData";
+import { migrateAppData } from "./migrate";
 
 export type ParseResult =
   | { readonly ok: true; readonly data: AppData }
@@ -156,6 +159,14 @@ function parseTask(value: unknown, path: string, context: Context): Task | undef
   }
   const id = required(record, "id", path, context, isFilledText, "eine Kennung");
   const title = required(record, "title", path, context, isFilledText, "einen Titel");
+  const symbol = required(
+    record,
+    "symbol",
+    path,
+    context,
+    isTaskSymbolId,
+    "ein Symbol aus der Liste",
+  );
   const assignee = required(
     record,
     "assignee",
@@ -171,11 +182,20 @@ function parseTask(value: unknown, path: string, context: Context): Task | undef
   const base =
     id === undefined ||
     title === undefined ||
+    symbol === undefined ||
     assignee === undefined ||
     dueDate === undefined ||
     checklist === undefined
       ? undefined
-      : { id, title, assignee, dueDate, checklist, ...(note === undefined ? {} : { note }) };
+      : {
+          id,
+          title,
+          symbol,
+          assignee,
+          dueDate,
+          checklist,
+          ...(note === undefined ? {} : { note }),
+        };
 
   if (record.kind === "recurring") {
     const recurrence = required(
@@ -312,29 +332,17 @@ function parseSettings(value: unknown, path: string, context: Context): Settings
     : { personNames: { personA: personA.trim(), personB: personB.trim() } satisfies PersonNames };
 }
 
-/** Checks the whole structure and the references between tasks and completions. */
+/**
+ * Checks the whole structure and the references between tasks and completions. Data of an older
+ * version is migrated first; the result is always in the current version.
+ */
 export function parseAppData(value: unknown): ParseResult {
+  const migrated = migrateAppData(value);
+  if (!migrated.ok) {
+    return migrated;
+  }
   const context: Context = { errors: [] };
-  const root = readRecord(value, "Datei", context);
-  if (root === undefined) {
-    return { ok: false, errors: context.errors };
-  }
-
-  const version = root.schemaVersion;
-  if (typeof version !== "number" || !Number.isInteger(version) || version < 1) {
-    return {
-      ok: false,
-      errors: ["schemaVersion fehlt oder ist ungültig – das ist keine Putzplan-Sicherung."],
-    };
-  }
-  if (version > SCHEMA_VERSION) {
-    return {
-      ok: false,
-      errors: [
-        `Die Datei stammt aus einer neueren Version der App (schemaVersion ${version}). Diese App kennt bis Version ${SCHEMA_VERSION}.`,
-      ],
-    };
-  }
+  const root = migrated.value;
 
   const settings = parseSettings(root.settings, "settings", context);
   const taskList = readList(root.tasks, "tasks", context);

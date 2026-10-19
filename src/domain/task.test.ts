@@ -20,6 +20,7 @@ function stateOf(recurrence: Recurrence, dueDate: string): TaskState {
     checklist: [],
     id: "task-1",
     title: "Bad putzen",
+    symbol: "standard",
     recurrence,
     assignee: "personA",
     dueDate: d(dueDate),

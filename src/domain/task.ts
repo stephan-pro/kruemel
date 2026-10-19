@@ -9,6 +9,7 @@ import {
   restoreChecklistChecks,
 } from "./checklist";
 import { addDays, addMonths, addWeeks, type CalendarDay } from "./date";
+import { DEFAULT_TASK_SYMBOL, isTaskSymbolId, type TaskSymbolId } from "./taskSymbols";
 
 export type Person = "personA" | "personB";
 
@@ -27,6 +28,8 @@ export interface Recurrence {
 interface TaskBase {
   readonly id: string;
   readonly title: string;
+  /** Shown next to the title (F8); "standard" when nobody chose one. */
+  readonly symbol: TaskSymbolId;
   /** The fixed assignment; it is what applies again in every new cycle. */
   readonly assignee: Assignee;
   readonly note?: string;
@@ -86,6 +89,8 @@ export interface NewRecurringTask {
   /** The first due date, chosen by the user (the form pre-fills today). */
   readonly dueDate: CalendarDay;
   readonly note?: string;
+  /** Missing = the default symbol. */
+  readonly symbol?: TaskSymbolId;
 }
 
 export interface NewOneOffTask {
@@ -94,6 +99,8 @@ export interface NewOneOffTask {
   readonly assignee: Assignee;
   readonly dueDate: CalendarDay;
   readonly note?: string;
+  /** Missing = the default symbol. */
+  readonly symbol?: TaskSymbolId;
 }
 
 /** True for a whole number of at least 1 with a known unit. */
@@ -124,6 +131,7 @@ function newTaskBase(input: {
   assignee: Assignee;
   dueDate: CalendarDay;
   note?: string | undefined;
+  symbol?: TaskSymbolId | undefined;
 }): TaskBase {
   const title = input.title.trim();
   if (title === "") {
@@ -132,10 +140,15 @@ function newTaskBase(input: {
   if (!isAssignee(input.assignee)) {
     throw new RangeError("Ungültige Zuständigkeit: Person A, Person B oder beide");
   }
+  const symbol = input.symbol ?? DEFAULT_TASK_SYMBOL;
+  if (!isTaskSymbolId(symbol)) {
+    throw new RangeError("Unbekanntes Symbol");
+  }
   const note = input.note?.trim();
   return {
     id: input.id,
     title,
+    symbol,
     assignee: input.assignee,
     dueDate: input.dueDate,
     checklist: [],

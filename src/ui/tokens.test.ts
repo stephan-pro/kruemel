@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { SYMBOL_TONES, TASK_SYMBOLS } from "../domain/taskSymbols";
 import tokensCss from "./tokens.css?raw";
 
 // N2 and DESIGN.md section 2: every combination of colours the app uses is checked here, in both
@@ -76,9 +77,12 @@ const NON_TEXT_PAIRS: readonly [string, string][] = [
   // Selected filter and day against the tile they sit on.
   ["--inverse", "--surface"],
   ["--inverse", "--surface-2"],
-  ["--tone-blue-fg", "--tone-blue-bg"],
-  ["--tone-green-fg", "--tone-green-bg"],
-  ["--tone-orange-fg", "--tone-orange-bg"],
+  // Symbol tiles (F8): the picture on its tone, ...
+  ...SYMBOL_TONES.map((tone): [string, string] => [`--tone-${tone}-fg`, `--tone-${tone}-bg`]),
+  // ... the small picture on the chips of the week, ...
+  ...SYMBOL_TONES.map((tone): [string, string] => [`--tone-${tone}-fg`, "--surface-2"]),
+  // ... and the frame of the chosen symbol in the form, against the tile and the page.
+  ...SYMBOL_TONES.map((tone): [string, string] => ["--accent", `--tone-${tone}-bg`]),
 ];
 
 describe.each([
@@ -102,6 +106,24 @@ describe.each([
       expect(ratio(foreground, background)).toBeGreaterThanOrEqual(3);
     },
   );
+});
+
+describe("F8 Farbtöne der Symbole", () => {
+  it.each(SYMBOL_TONES)(
+    "F8 Der Ton %s hat Hintergrund und Symbolfarbe in beiden Themes",
+    (tone) => {
+      for (const palette of [light, darkChosen]) {
+        expect(palette[`--tone-${tone}-bg`]).toBeDefined();
+        expect(palette[`--tone-${tone}-fg`]).toBeDefined();
+      }
+    },
+  );
+
+  it("F8 Jeder Ton der Symbol-Liste ist ein bekannter Ton", () => {
+    for (const symbol of TASK_SYMBOLS) {
+      expect(SYMBOL_TONES).toContain(symbol.tone);
+    }
+  });
 });
 
 describe("N8 Farbschema", () => {
