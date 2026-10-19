@@ -67,7 +67,7 @@ Akzeptanzkriterien:
 
 ## 5. Rahmenbedingungen
 
-- **N1 Design:** KERN UX (`@kern-ux/native`).
+- **N1 Design:** KERN UX (`@kern-ux/native`). Keine KERN-Kopfzeile mit Bundesflagge oder anderen Hoheitszeichen, da die App kein Angebot einer Behörde ist.
 - **N2 Barrierefreiheit:** WCAG 2.1 AA bzw. BITV 2.0; vollständig per Tastatur bedienbar, mit Screenreader nutzbar.
 - **N3 Geräte:** responsiv für PC und Handy; als PWA auf iPhone und Android installierbar.
 - **N4 Sprache:** Deutsch.
