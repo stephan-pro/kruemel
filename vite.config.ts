@@ -5,7 +5,7 @@ export default defineConfig({
   base: "/putzplan/",
   test: {
     include: ["src/**/*.test.ts"],
-    passWithNoTests: true,
+    // No `passWithNoTests`: `npm run check` must fail if no unit tests are found.
     coverage: {
       provider: "v8",
       include: ["src/domain/**/*.ts"],

@@ -2,7 +2,20 @@
 // Locally Biome fixes formatting; in CI (env CI set) it only checks.
 import { spawnSync } from "node:child_process";
 
+import { existsSync } from "node:fs";
+import { chromium, webkit } from "@playwright/test";
+
 const isCi = Boolean(process.env.CI);
+
+// The end-to-end tests need both browsers; fail early with the fix instead of after minutes of work.
+const missingBrowsers = [chromium, webkit].filter((type) => !existsSync(type.executablePath()));
+if (missingBrowsers.length > 0) {
+  const names = missingBrowsers.map((type) => type.name()).join(", ");
+  console.error(
+    `\n❌ Playwright-Browser fehlen (${names}). Bitte einmal \`npm run setup\` ausführen.\n`,
+  );
+  process.exit(1);
+}
 
 const steps = [
   {

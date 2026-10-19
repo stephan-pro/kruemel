@@ -29,10 +29,12 @@ Grundsatz (N7): Jede Bibliothek muss begründet sein. Was sich mit wenig eigenem
 
 Abhängigkeiten gesamt: 9. Laufzeit: `preact`, `@kern-ux/native`. Entwicklung: `typescript`, `vite`, `vitest`, `@vitest/coverage-v8`, `@playwright/test`, `@axe-core/playwright`, `@biomejs/biome`.
 
+Einrichten: `npm run setup` (`scripts/setup.mjs`) führt `npm install` und `npx playwright install chromium webkit` aus. `npm run check` prüft vorab, ob die Browser vorhanden sind, und verweist sonst auf `setup`.
+
 Schritte von `npm run check`:
 1. `biome check` (lokal mit `--write`, in CI nur prüfen)
 2. `tsc --noEmit`
-3. `vitest run --coverage`
+3. `vitest run --coverage` (schlägt fehl, wenn keine Tests gefunden werden oder die Abdeckung unter 90 % liegt)
 4. `vite build`
 5. `playwright test` (4 Projekte: chromium-desktop, chromium-mobile, webkit-desktop, webkit-mobile)
 

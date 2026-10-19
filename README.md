@@ -10,10 +10,13 @@ Status: im Aufbau (Etappe 1 – Daten bleiben im Browser).
 
 Voraussetzungen: [Node.js](https://nodejs.org/) (Version siehe `.nvmrc`) und [Git](https://git-scm.com/).
 
+Ein Befehl richtet ein frisch heruntergeladenes Projekt komplett ein (Pakete **und** die Browser für die End-to-End-Tests):
+
 ```bash
-npm install
-npx playwright install chromium webkit
+npm run setup
 ```
+
+Der Befehl ist gefahrlos wiederholbar, z. B. nach einem Node-Update oder wenn die Fehlermeldung „Executable doesn't exist“ erscheint. Er ersetzt `npm install` und `npx playwright install chromium webkit`.
 
 ## Prüfen
 
@@ -21,7 +24,11 @@ npx playwright install chromium webkit
 npm run check
 ```
 
-Der Befehl prüft Formatierung, Code-Regeln, Typen, Tests und Build und endet mit „✅ bestanden“ oder „❌ nicht bestanden in Schritt …“.
+Der Befehl prüft Formatierung, Code-Regeln, Typen, Tests und Build und endet mit „✅ bestanden“ oder „❌ nicht bestanden in Schritt …“. Er schlägt auch fehl, wenn
+
+- keine Unit-Tests gefunden werden,
+- die Testabdeckung der Fachlogik (`src/domain/`) unter 90 % liegt oder
+- die Playwright-Browser fehlen (dann mit dem Hinweis, `npm run setup` auszuführen).
 
 ## Lizenz
 

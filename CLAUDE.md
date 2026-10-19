@@ -9,7 +9,7 @@ Anforderungen: `docs/ANFORDERUNGEN.md` · Plan und Arbeitspakete: `docs/PLAN.md`
 - `npm run dev` – Entwicklungsserver.
 - `npm test` – Vitest im Beobachtungsmodus.
 - `npm run e2e` – nur Playwright (braucht vorher `npm run build`).
-- Erstes Einrichten: `npm install` und `npx playwright install chromium webkit`.
+- `npm run setup` – erstes Einrichten (Pakete + Playwright-Browser).
 
 ## Aufbau
 
