@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
+import type { Completion } from "./task";
 import { d, oneOffTask, recurringTask, stateOf, tickOff } from "./task.fixtures";
-import { completionCount, deleteTask, groupOpenTasks } from "./taskManagement";
+import {
+  completeInData,
+  completionCount,
+  deleteTask,
+  groupOpenTasks,
+  undoInData,
+} from "./taskManagement";
 
 describe("F1 Aufgabenliste", () => {
   it("F1 Die Liste trennt wiederkehrende und einmalige Aufgaben", () => {
@@ -89,5 +96,81 @@ describe("F1 Aufgaben löschen", () => {
     expect(completionCount(data.completions, "bad")).toBe(2);
     expect(completionCount(data.completions, "staub")).toBe(1);
     expect(completionCount(data.completions, "gibt-es-nicht")).toBe(0);
+  });
+});
+
+describe("F2 Abhaken und Rückgängig in den Daten", () => {
+  const bad = recurringTask({ id: "bad", dueDate: d("2026-10-19") });
+  const staub = recurringTask({ id: "staub", title: "Staubsaugen", dueDate: d("2026-10-20") });
+  const data = { schemaVersion: 1, tasks: [bad, staub], completions: [] as Completion[] };
+  const input = {
+    completionId: "c-1",
+    completedOn: d("2026-10-21"),
+    completedBy: "personB",
+  } as const;
+
+  it("F2 Das Abhaken ändert nur die Aufgabe und hängt die Erledigung an", () => {
+    const result = completeInData(data, "bad", input);
+
+    expect(result.data.tasks.map((task) => [task.id, task.dueDate])).toEqual([
+      ["bad", "2026-10-28"],
+      ["staub", "2026-10-20"],
+    ]);
+    expect(result.data.completions).toEqual([result.completion]);
+    expect(result.completion).toMatchObject({
+      id: "c-1",
+      taskId: "bad",
+      completedBy: "personB",
+      previousDueDate: "2026-10-19",
+      nextDueDate: "2026-10-28",
+    });
+    expect(result.task).toBe(result.data.tasks[0]);
+  });
+
+  it("F2 Das Abhaken lässt die ursprünglichen Daten unverändert und die übrigen Felder stehen", () => {
+    const result = completeInData(data, "bad", input);
+
+    expect(data.completions).toHaveLength(0);
+    expect(data.tasks[0]).toBe(bad);
+    expect(result.data.schemaVersion).toBe(1);
+  });
+
+  it("F2 Eine unbekannte Aufgabe lässt sich nicht abhaken", () => {
+    expect(() => completeInData(data, "gibt-es-nicht", input)).toThrow(RangeError);
+  });
+
+  it("F2 Rückgängig stellt den vorherigen Termin wieder her und entfernt die Erledigung", () => {
+    const ticked = completeInData(data, "bad", input).data;
+
+    const result = undoInData(ticked, "c-1");
+
+    expect(result.data.tasks).toEqual(data.tasks);
+    expect(result.data.completions).toEqual([]);
+    expect(result.task).toEqual(bad);
+  });
+
+  it("F2 Rückgängig gilt nur für das letzte Abhaken einer Aufgabe", () => {
+    const first = completeInData(data, "bad", input).data;
+    const second = completeInData(first, "bad", {
+      ...input,
+      completionId: "c-2",
+      completedOn: d("2026-10-22"),
+    }).data;
+
+    expect(() => undoInData(second, "c-1")).toThrow(RangeError);
+    expect(undoInData(second, "c-2").data.completions.map((c) => c.id)).toEqual(["c-1"]);
+  });
+
+  it("F2 Rückgängig lässt die Erledigungen anderer Aufgaben stehen", () => {
+    const first = completeInData(data, "staub", { ...input, completionId: "c-s" }).data;
+    const second = completeInData(first, "bad", input).data;
+
+    const result = undoInData(second, "c-1");
+
+    expect(result.data.completions.map((c) => c.id)).toEqual(["c-s"]);
+  });
+
+  it("F2 Eine unbekannte Erledigung lässt sich nicht rückgängig machen", () => {
+    expect(() => undoInData(data, "gibt-es-nicht")).toThrow(RangeError);
   });
 });

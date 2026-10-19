@@ -1,9 +1,9 @@
 import { useEffect, useState } from "preact/hooks";
 import type { DemoInfo } from "../demo/start";
 import type { PersonNameInput } from "../domain/personNames";
-import type { Person, Task } from "../domain/task";
+import type { Completion, Person, Task } from "../domain/task";
 import { type TaskFormValues, type TaskKind, taskFromForm, updateTask } from "../domain/taskForm";
-import { deleteTask } from "../domain/taskManagement";
+import { completeInData, deleteTask, undoInData } from "../domain/taskManagement";
 import type { AppData } from "../storage/appData";
 import { requestPersistentStorage } from "../storage/localStorage";
 import { type AppStorage, type DeviceSettings, StorageError } from "../storage/storage";
@@ -15,8 +15,10 @@ import { SetupPage } from "./pages/SetupPage";
 import { StorageProblemPage } from "./pages/StorageProblemPage";
 import { TaskFormPage } from "./pages/TaskFormPage";
 import { TasksPage } from "./pages/TasksPage";
+import { WeekPage } from "./pages/WeekPage";
 import { WhoAmIPage } from "./pages/WhoAmIPage";
 import { type PageLocation, parseLocation, routeHash } from "./route";
+import { useToday } from "./useToday";
 
 interface AppProps {
   readonly storage: AppStorage;
@@ -82,6 +84,7 @@ export function App({ storage, demo }: AppProps) {
   /** What just happened to a task; the task list shows and announces it, then forgets it. */
   const [notice, setNotice] = useState<string>();
   const { route, taskId } = useLocation();
+  const today = useToday();
 
   async function load() {
     setState({ status: "loading" });
@@ -154,6 +157,31 @@ export function App({ storage, demo }: AppProps) {
     await saveData(deleteTask(state.data, taskId));
     setNotice(`Aufgabe „${title}“ gelöscht.`);
     location.hash = routeHash("tasks");
+  }
+
+  /** Ticks a task off today, noted for the person this device belongs to ("Ich bin"). */
+  async function completeTask(taskId: string): Promise<{ task: Task; completion: Completion }> {
+    const completedBy = state.status === "ready" ? state.device.currentPerson : undefined;
+    if (state.status !== "ready" || completedBy === undefined) {
+      throw new Error("Die App ist noch nicht bereit.");
+    }
+    const result = completeInData(state.data, taskId, {
+      completionId: crypto.randomUUID(),
+      completedOn: today,
+      completedBy,
+    });
+    await saveData(result.data);
+    return { task: result.task, completion: result.completion };
+  }
+
+  /** Takes back the last completion of a task; returns the task as it is then. */
+  async function undoCompletion(completionId: string): Promise<Task> {
+    if (state.status !== "ready") {
+      throw new Error("Die App ist noch nicht bereit.");
+    }
+    const result = undoInData(state.data, completionId);
+    await saveData(result.data);
+    return result.task;
   }
 
   async function discard() {
@@ -250,7 +278,18 @@ export function App({ storage, demo }: AppProps) {
             onDelete={removeTask}
           />
         )}
-        {inApp && (route === "week" || route === "done") && <PlaceholderPage route={route} />}
+        {inApp && route === "week" && (
+          <WeekPage
+            tasks={state.data.tasks}
+            completions={state.data.completions}
+            names={names}
+            currentPerson={person}
+            today={today}
+            onComplete={completeTask}
+            onUndo={undoCompletion}
+          />
+        )}
+        {inApp && route === "done" && <PlaceholderPage route={route} />}
       </main>
     </div>
   );

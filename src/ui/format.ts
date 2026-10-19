@@ -2,7 +2,7 @@
 // data so that they read the same everywhere (and in tests).
 
 import { type CalendarDay, weekdayOf } from "../domain/date";
-import type { Assignee, Person, Recurrence, RecurrenceUnit } from "../domain/task";
+import type { Assignee, Completion, Person, Recurrence, RecurrenceUnit } from "../domain/task";
 import type { PersonNames } from "../storage/appData";
 
 const WEEKDAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"] as const;
@@ -24,6 +24,33 @@ const PLURAL: Record<RecurrenceUnit, string> = { day: "Tage", week: "Wochen", mo
 /** "täglich", "wöchentlich", "monatlich", or "alle 2 Wochen". */
 export function describeRecurrence({ unit, interval }: Recurrence): string {
   return interval === 1 ? SINGULAR[unit] : `alle ${interval} ${PLURAL[unit]}`;
+}
+
+/** "Mo, 19.10.2026 bis So, 25.10.2026" */
+export function formatWeekRange(monday: CalendarDay, sunday: CalendarDay): string {
+  return `${formatDay(monday)} bis ${formatDay(sunday)}`;
+}
+
+/** "1 Tag überfällig", "3 Tage überfällig". */
+export function describeOverdue(days: number): string {
+  return `${days} ${days === 1 ? "Tag" : "Tage"} überfällig`;
+}
+
+/** "Erledigt von Alex am Mi, 14.10.2026" */
+export function describeCompletedBy(completion: Completion, names: PersonNames): string {
+  return `Erledigt von ${names[completion.completedBy]} am ${formatDay(completion.completedOn)}`;
+}
+
+/** What the page says after a task was ticked off: where the task went next. */
+export function completionNotice(title: string, completion: Completion): string {
+  return completion.nextDueDate === undefined
+    ? `„${title}“ ist abgehakt und steht jetzt unter „Erledigt“.`
+    : `„${title}“ ist abgehakt. Nächster Termin: ${formatDay(completion.nextDueDate)}.`;
+}
+
+/** What the page says after a completion was taken back. */
+export function undoNotice(title: string, dueDate: CalendarDay): string {
+  return `Rückgängig gemacht: „${title}“ ist wieder offen, fällig am ${formatDay(dueDate)}.`;
 }
 
 /** The name of a person, or "beide". */

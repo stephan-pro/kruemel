@@ -134,6 +134,84 @@ main:focus {
   list-style: none;
 }
 
+/* Week view (F6) */
+
+.week-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kern-metric-space-default, 16px);
+}
+
+.week-range {
+  margin: var(--kern-metric-space-default, 16px) 0;
+}
+
+.week-day {
+  margin-top: var(--kern-metric-space-large, 24px);
+  padding: var(--kern-metric-space-small, 8px) var(--kern-metric-space-default, 16px);
+  border-left: var(--kern-metric-border-width-default, 2px) solid
+    var(--kern-color-layout-border, #6e7597);
+}
+
+/* Today and overdue are marked by a heavier bar and by words ("heute", "überfällig"), not by
+   colour alone. */
+.week-day--today {
+  border-left-width: var(--kern-metric-border-width-bold, 4px);
+  border-left-color: var(--kern-color-action-default, #0b4f9e);
+  background: var(--kern-color-layout-background-hued, #f1f2f7);
+}
+
+.week-day--overdue {
+  border-left-width: var(--kern-metric-border-width-bold, 4px);
+  border-left-color: var(--kern-color-feedback-danger-contextual, #c31c13);
+}
+
+.week-day h2,
+.week-empty {
+  margin: 0;
+}
+
+.week-items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kern-metric-space-small, 8px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.week-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--kern-metric-space-small, 8px) var(--kern-metric-space-default, 16px);
+  padding: var(--kern-metric-space-small, 8px) var(--kern-metric-space-default, 16px);
+  border: var(--kern-metric-border-width-light, 1px) solid var(--kern-color-layout-border, #6e7597);
+  border-radius: var(--kern-metric-border-radius-default, 4px);
+  background: var(--kern-color-layout-background-default, #fff);
+}
+
+.week-item__text {
+  min-width: 0;
+}
+
+.week-item__title,
+.week-item__meta {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Done in a week that is over: greyed out. */
+.week-item--done {
+  color: var(--kern-color-layout-text-muted, #545b7d);
+}
+
+.week-overdue {
+  font-weight: 700;
+  color: var(--kern-color-feedback-danger-contextual, #c31c13);
+}
+
 .kern-dialog::backdrop {
   background: rgb(0 0 0 / 50%);
 }
