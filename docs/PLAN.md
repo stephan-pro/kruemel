@@ -38,7 +38,7 @@ Schritte von `npm run check`:
 
 ## 2. Ordnerstruktur
 
-Projektwurzel ist `C:\Users\Anwender\Projekte`.
+Projektwurzel ist `C:\Users\Anwender\Projekte\putzplan`.
 
 ```
 .github/          Workflows (check, Pages-Deploy) und dependabot.yml.
