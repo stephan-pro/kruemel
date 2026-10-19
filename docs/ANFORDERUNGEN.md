@@ -65,15 +65,35 @@ Akzeptanzkriterien:
 - Export aller Daten als Datei und Import aus dieser Datei.
 - Dient in Etappe 1 als Backup und später zur Übernahme in die Datenbank.
 
+### F8 Symbole pro Aufgabe (geplant, Paket R2)
+Nach `docs/design/DESIGN.md` Abschnitt 7.
+- Jede Aufgabe kann ein Symbol haben: Auswahl aus einer festen Liste von etwa 20 Haushaltssymbolen, jeweils mit einem Farbton (Blau, Grün, Orange).
+- Aufgaben ohne Auswahl zeigen ein Standardsymbol.
+- Das Symbol wird beim Anlegen und Bearbeiten gewählt und erscheint überall, wo die Aufgabe steht (Wochenübersicht, Aufgaben, später Erledigt).
+- Das Symbol ergänzt den Titel, ersetzt ihn nie; die Auswahl ist per Tastatur und Screenreader bedienbar (N2).
+- Bestehende Daten und Sicherungen bleiben lesbar (neue `schemaVersion` mit Übernahme der alten Daten).
+
 ## 5. Rahmenbedingungen
 
-- **N1 Design:** KERN UX (`@kern-ux/native`). Keine KERN-Kopfzeile mit Bundesflagge oder anderen Hoheitszeichen, da die App kein Angebot einer Behörde ist.
+- **N1 Design:** Eigenes Design nach `docs/design/DESIGN.md`, keine Hoheitszeichen.
 - **N2 Barrierefreiheit:** WCAG 2.1 AA bzw. BITV 2.0; vollständig per Tastatur bedienbar, mit Screenreader nutzbar.
 - **N3 Geräte:** responsiv für PC und Handy; als PWA auf iPhone und Android installierbar.
 - **N4 Sprache:** Deutsch.
 - **N5 Lizenz:** Open Source unter EUPL-1.2.
 - **N6 Kosten:** kostenlos zu betreiben.
 - **N7 Abhängigkeiten:** so wenige wie möglich; jede neue Bibliothek wird begründet.
+- **N8 Farbschema:** Hell, Dunkel oder Automatisch nach `docs/design/DESIGN.md` Abschnitt 3.
+
+### Sicherheit (Etappe 2)
+
+Gilt ab Etappe 2 (gemeinsame Datenbank, Anmeldung). In Etappe 1 nur dokumentiert, nichts davon ist umgesetzt.
+
+- **S1 Anmeldedienst:** Die Anmeldung läuft über einen etablierten Anmeldedienst, nicht über eine eigene Lösung. Der Dienst hat seinen Serverstandort in der EU (DSGVO).
+- **S2 Passkeys:** Passkeys sind der Hauptweg der Anmeldung.
+- **S3 Rückfallebene:** Ein Code aus einer Authenticator-App (TOTP) ist die Rückfallebene, z. B. auf einem Gerät ohne Passkey.
+- **S4 Keine eigene Kryptografie:** Die App speichert keine Passwörter und implementiert keine eigene Kryptografie; beides übernehmen der Anmeldedienst und geprüfte Standardbibliotheken.
+- **S5 Zugriffsregeln in der Datenbank:** Jeder Haushalt sieht nur seine eigenen Daten. Das wird durch Zugriffsregeln auf Datenbankebene erzwungen, nicht nur durch die App, sodass auch ein Fehler in der App keine fremden Daten preisgibt.
+- **S6 Datensparsamkeit:** Gespeichert wird nur, was die App für ihre Funktionen braucht (Anmeldedaten beim Anmeldedienst, Namen, Aufgaben, Erledigungen). Keine Werbe- oder Analysedienste, keine Weitergabe an Dritte, keine Abrufe bei Drittanbietern (z. B. Schriften selbst ausliefern).
 
 ## 6. Qualität und Tests – ohne Claude prüfbar
 
@@ -85,7 +105,7 @@ Jeder neue Stand muss sich **ohne Claude und ohne Tokens** vollständig prüfen 
 - **Q4 Unit-Tests:** Die Fachlogik (vor allem Terminberechnung F2 und Zuständigkeit F5) liegt in reinen Funktionen ohne Oberfläche und ist vollständig getestet. Jedes Akzeptanzkriterium aus Abschnitt 4 ist mindestens ein Test.
 - **Q5 Testabdeckung:** Mindestens 90 % für die Fachlogik; `npm run check` schlägt fehl, wenn sie unterschritten wird.
 - **Q6 End-to-End-Tests:** Die wichtigsten Abläufe werden im echten Browser durchgespielt – in Chromium und WebKit (entspricht Safari auf dem iPhone), jeweils in Desktop- und Handygröße.
-- **Q7 Automatische Barrierefreiheitsprüfung:** Jede Seite wird in den End-to-End-Tests mit axe geprüft; Verstöße lassen den Test fehlschlagen.
+- **Q7 Automatische Barrierefreiheitsprüfung:** Jede Seite wird in den End-to-End-Tests mit axe geprüft, im hellen und im dunklen Farbschema; Verstöße lassen den Test fehlschlagen.
 - **Q8 Testdaten:** Ein Befehl füllt die App mit realistischen Beispieldaten zum manuellen Ausprobieren.
 - **Q9 Automatisierung auf GitHub:** Bei jedem Hochladen läuft dieselbe Prüfung wie `npm run check` automatisch auf GitHub (GitHub Actions). Das Ergebnis ist im Repository sichtbar.
 - **Q10 Schutz vor Fehlern:** Vor jedem Speicherstand (Commit) laufen automatisch Formatierung und Linting.
@@ -118,10 +138,14 @@ Präzisierungen zu Abschnitt 4 und 5. Bei Widerspruch gilt dieser Abschnitt. Tec
 - **F5 „beide“:** Ein Abhaken reicht. Die Aufgabe erscheint bei „nur meine“ für beide Personen.
 - **F5 Namen:** Im Code stehen keine echten Namen. Die beiden Personennamen werden beim ersten Start in den Einstellungen festgelegt; „Ich bin“ wählt danach zwischen diesen Namen. Beispieldaten und Tests verwenden erfundene Namen.
 - **F6:** Wiederkehrende Aufgaben erscheinen nur an ihrem nächsten echten Termin, keine Vorschau weiterer Termine. Vergangene Wochen zeigen erledigte Aufgaben ausgegraut mit „erledigt von“.
-- **F6 Überfälliges (Paket 9):** Überfällige Aufgaben stehen in der laufenden Woche im Block „Überfällig“ ganz oben (älteste zuerst, mit „N Tage überfällig“ und dem ursprünglichen Termin) und nicht noch einmal an ihrem alten Tag. Blättert man in eine vergangene Woche, steht eine dort noch offene Aufgabe an ihrem Tag, als überfällig markiert; künftige Wochen zeigen nichts Überfälliges.
+- **F6 Überfälliges (Paket 9, Darstellung Paket R1):** Überfällige Aufgaben stehen in der laufenden Woche in der orangen Kachel „Überfällig“ im ersten Bildschirm: am PC oben rechts neben der Tageskachel, am Handy direkt darunter (Aufbau nach `docs/design/DESIGN.md`). Sichtbar ist die älteste mit „N Tage überfällig (seit Datum)“ und Zuständigkeit; die übrigen öffnet „+ N weitere anzeigen“. Sie stehen nicht noch einmal an ihrem alten Tag. Blättert man in eine vergangene Woche, steht eine dort noch offene Aufgabe an ihrem Tag, als überfällig markiert; künftige Wochen zeigen nichts Überfälliges. Ohne überfällige Aufgaben entfällt die Kachel.
 - **F6 Erledigtes (Paket 9):** Abgehakte Aufgaben verschwinden aus der laufenden und aus künftigen Wochen. Nur vergangene Wochen zeigen sie ausgegraut, an dem Tag, an dem sie fällig waren, mit „Erledigt von Name am Datum“.
-- **F6 Bedienung (Paket 9):** Die Wochenübersicht öffnet immer mit der laufenden Woche und „Alle Aufgaben“; Woche und Filter werden nicht gespeichert. Wochen blättert man mit „Vorherige Woche“, „Diese Woche“ und „Nächste Woche“. Bleibt die Seite über Mitternacht offen, rückt „heute“ von selbst weiter. „Nur meine Aufgaben“ zeigt auch Aufgaben, die man „nur dieses Mal“ übernommen hat, und Aufgaben für „beide“.
-- **F2 Abhaken (Paket 9):** Jede offene Aufgabe lässt sich mit „Abhaken“ erledigen, auch die der anderen Person und eine überfällige; gespeichert wird „erledigt von“ = „Ich bin“. Danach steht oben ein Hinweis (bei wiederkehrenden mit dem nächsten Termin) mit „Rückgängig“; er bleibt, bis man etwas anderes tut oder die Seite verlässt. Der Hinweis gilt nur für die zuletzt abgehakte Aufgabe; frühere Erledigungen macht man über „Erledigt“ rückgängig (Paket 11).
+- **F6 Bedienung (Paket 9, Darstellung Paket R1):** Die Wochenübersicht öffnet immer mit der laufenden Woche und dem Filter „Alle“; Woche, Tag und Filter werden nicht gespeichert. Die Überschrift nennt die Woche („Diese Woche“, „Nächste Woche“, „Letzte Woche“, „In 2 Wochen“ …), darüber stehen Kalenderwoche und Tage („KW 43 · 19.–25. Oktober“). Wochen blättert man mit „Vorherige Woche“, „Diese Woche“ und „Nächste Woche“. Die Tageskachel zeigt einen Tag mit seinen Aufgaben: in der laufenden Woche heute („Heute · Mi, 21.10.“), sonst den ersten Tag mit Aufgaben; „Woche im Überblick“ zeigt alle sieben Tage mit der Zahl ihrer Aufgaben, ein Tipp darauf zeigt diesen Tag. Am PC stehen dort zusätzlich alle Aufgaben jedes Tages. Bleibt die Seite über Mitternacht offen, rückt „heute“ von selbst weiter. „Nur meine“ zeigt auch Aufgaben, die man „nur dieses Mal“ übernommen hat, und Aufgaben für „beide“.
+- **F6 Stand (Paket R1):** Die Kachel „Stand“ zeigt „erledigt / fällig“ der gezeigten Woche: fällig sind alle Durchgänge mit Termin in dieser Woche, die erledigten eingeschlossen; Überfälliges aus früheren Wochen zählt nicht mit. Der Stand folgt dem Filter „Alle / Nur meine“.
+- **F4 Anzeige (Paket R1):** Eine Aufgabe mit Checkliste zeigt in der Woche „N von M abgehakt“ mit einem Balken. Bedienen lässt sich die Checkliste ab Paket 10.
+- **F2 Abhaken (Paket 9):** Jede offene Aufgabe lässt sich mit „Abhaken“ erledigen, auch die der anderen Person und eine überfällige; gespeichert wird „erledigt von“ = „Ich bin“. Danach steht oben ein Hinweis (bei wiederkehrenden mit dem nächsten Termin) mit „Rückgängig“; er bleibt, bis man etwas anderes tut oder die Seite verlässt. Bestätigt in Paket R1: Anders als in DESIGN.md („kurz eine Meldung“) verschwindet der Hinweis nicht nach einer Zeit, damit niemand unter Zeitdruck gerät (WCAG 2.2.1), und er nimmt den Fokus, statt nur vorgelesen zu werden. Der Hinweis gilt nur für die zuletzt abgehakte Aufgabe; frühere Erledigungen macht man über „Erledigt“ rückgängig (Paket 11).
+- **N8 Darstellung (Paket R1):** Unter „Einstellungen → Darstellung“ wählt man das Farbschema: „Hell“, „Dunkel“ oder „Automatisch (wie das Gerät)“; Standard ist „Automatisch“. Die Wahl wirkt sofort (ohne „Speichern“), gilt nur für dieses Gerät und steht wie „Ich bin“ nicht in der Sicherung. Kann sie nicht gespeichert werden, bleibt das bisherige Farbschema und eine Meldung erscheint.
+- **N1 Design (Paket R1):** Wo der Entwurf und die Barrierefreiheit (N2) auseinandergehen, gilt N2: Der Rahmen des Abhak-Knopfs und der Eingabefelder ist dunkler als im ersten Entwurf (Kontrast 3:1), und Tagesknöpfe sind mindestens 44 px breit (auf sehr schmalen Handys lässt sich die Tagesleiste dafür seitlich schieben). Bis Paket R2 zeigen alle Aufgaben dasselbe Standardsymbol.
 - **F7 Import:** ersetzt alle Daten nach Rückfrage; vorher wird automatisch eine Sicherung heruntergeladen.
 - **F7 Format:** Die Sicherung ist eine JSON-Datei `putzplan-JJJJ-MM-TT.json` mit `schemaVersion`, Einstellungen (Namen), Aufgaben und Erledigungen. „Ich bin“ gehört zum Gerät und steht nicht darin. Eine Datei aus einer neueren App-Version oder mit Fehlern wird mit Fundstelle abgelehnt; die vorhandenen Daten bleiben dann unberührt.
 - **Speicher:** Sind die gespeicherten Daten unlesbar, meldet die App das und überschreibt sie nicht durch leere Daten. Ist der Browser-Speicher voll oder gesperrt, meldet Speichern einen Fehler.
@@ -130,3 +154,4 @@ Präzisierungen zu Abschnitt 4 und 5. Bei Widerspruch gilt dieser Abschnitt. Tec
 - **Betrieb Etappe 1:** Die App liegt kostenlos auf GitHub Pages; die Daten bleiben trotzdem nur im jeweiligen Browser.
 - **Repository:** öffentlich auf GitHub.
 - **Code:** englische Namen im Code, Oberfläche deutsch; Wortliste in `CLAUDE.md`. Oberfläche mit Preact.
+- **Design (19.10.2026):** KERN UX ist durch das eigene Design aus `docs/design/DESIGN.md` ersetzt (Paket R1). Die Schrift Archivo liefert die App selbst aus; es gibt keinen Abruf bei Google Fonts oder anderen Drittanbietern.

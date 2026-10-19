@@ -13,7 +13,7 @@ interface ConfirmDialogProps {
 /**
  * A question the user has to answer, in a native modal `<dialog>`: the browser keeps the focus
  * inside, closes it on Escape and gives the focus back afterwards. "Abbrechen" has the focus first,
- * so a quick Enter never confirms by accident.
+ * so a quick Enter never confirms by accident. The confirming button is orange: it always deletes.
  */
 export function ConfirmDialog({
   open,
@@ -40,7 +40,7 @@ export function ConfirmDialog({
 
   return (
     <dialog
-      class="kern-dialog"
+      class="dialog"
       ref={dialog}
       aria-labelledby={titleId}
       onCancel={(event) => {
@@ -49,18 +49,16 @@ export function ConfirmDialog({
         onCancel();
       }}
     >
-      <div class="kern-dialog__header">
-        <h2 class="kern-title" id={titleId}>
-          {title}
-        </h2>
-      </div>
-      <div class="kern-dialog__body">{children}</div>
-      <div class="kern-dialog__footer">
-        <button class="kern-btn kern-btn--secondary" type="button" autofocus onClick={onCancel}>
-          <span class="kern-label">Abbrechen</span>
+      <h2 class="dialog__title" id={titleId}>
+        {title}
+      </h2>
+      <div class="dialog__body">{children}</div>
+      <div class="button-row">
+        <button class="btn btn--secondary" type="button" autofocus onClick={onCancel}>
+          Abbrechen
         </button>
-        <button class="kern-btn kern-btn--primary" type="button" onClick={onConfirm}>
-          <span class="kern-label">{confirmLabel}</span>
+        <button class="btn btn--warn" type="button" onClick={onConfirm}>
+          {confirmLabel}
         </button>
       </div>
     </dialog>

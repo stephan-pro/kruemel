@@ -5,10 +5,24 @@
 import type { Person } from "../domain/task";
 import type { AppData } from "./appData";
 
+/** "Darstellung" (N8): light, dark, or following the device ("auto"). */
+export type ColorScheme = "light" | "dark" | "auto";
+
+export const COLOR_SCHEMES: readonly ColorScheme[] = ["light", "dark", "auto"];
+
+/** Without a choice the app follows the device. */
+export const DEFAULT_COLOR_SCHEME: ColorScheme = "auto";
+
+export function isColorScheme(value: unknown): value is ColorScheme {
+  return COLOR_SCHEMES.includes(value as ColorScheme);
+}
+
 /** Settings that belong to this device only; they are not part of the backup. */
 export interface DeviceSettings {
   /** "Ich bin": who uses this device. Missing until chosen. */
   readonly currentPerson?: Person;
+  /** Missing means `DEFAULT_COLOR_SCHEME`. */
+  readonly colorScheme?: ColorScheme;
 }
 
 export interface AppStorage {

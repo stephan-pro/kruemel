@@ -1,6 +1,7 @@
 import { useState } from "preact/hooks";
 import type { Person } from "../../domain/task";
 import type { PersonNames } from "../../storage/appData";
+import { ErrorAlert } from "../components/Alert";
 import { PageTitle } from "../components/PageTitle";
 import { PersonChoice } from "../components/PersonChoice";
 
@@ -33,22 +34,12 @@ export function WhoAmIPage({ names, onSubmit }: WhoAmIPageProps) {
   return (
     <>
       <PageTitle title="Wer benutzt dieses Gerät?" />
-      <form class="stack" onSubmit={submit} noValidate>
+      <form class="tile tile--narrow form" onSubmit={submit} noValidate>
         <PersonChoice labels={names} value={person} error={error} onChange={setPerson} />
-        {saveError && (
-          <div class="kern-alert kern-alert--danger" role="alert">
-            <div class="kern-alert__header">
-              <span class="kern-icon kern-icon--danger" aria-hidden="true" />
-              <span class="kern-title">Nicht gespeichert</span>
-            </div>
-            <div class="kern-alert__body">
-              <p class="kern-body">{saveError}</p>
-            </div>
-          </div>
-        )}
-        <div>
-          <button class="kern-btn kern-btn--primary" type="submit">
-            <span class="kern-label">Weiter</span>
+        {saveError && <ErrorAlert title="Nicht gespeichert">{saveError}</ErrorAlert>}
+        <div class="button-row">
+          <button class="btn btn--primary" type="submit">
+            Weiter
           </button>
         </div>
       </form>

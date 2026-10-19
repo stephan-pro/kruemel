@@ -3,7 +3,24 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
     <title>Putzplan</title>
+    <script>
+      // N8: applies the colour scheme chosen on this device before anything is drawn, so the
+      // wrong theme never flashes up. Same rule as src/ui/colorScheme.ts; "Automatisch" (or
+      // nothing stored) leaves it to the device. %MODE% is filled in by Vite ("demo" for
+      // `npm run demo`, which has its own storage).
+      try {
+        const mode = "%MODE%";
+        const key = `${mode === "demo" ? "putzplan-demo" : "putzplan"}:device`;
+        const scheme = JSON.parse(localStorage.getItem(key) || "{}").colorScheme;
+        if (scheme === "light" || scheme === "dark") {
+          document.documentElement.setAttribute("data-theme", scheme);
+        }
+      } catch {
+        // No storage, no choice: follow the device.
+      }
+    </script>
   </head>
   <body>
     <div id="app"></div>

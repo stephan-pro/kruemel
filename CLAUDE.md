@@ -1,7 +1,7 @@
 # Putzplan – Hinweise für Claude
 
 Haushalts-App für zwei Personen. Preact + TypeScript (strict), Vite, läuft rein im Browser.
-Anforderungen: `docs/ANFORDERUNGEN.md` · Plan und Arbeitspakete: `docs/PLAN.md`.
+Anforderungen: `docs/ANFORDERUNGEN.md` · Plan und Arbeitspakete: `docs/PLAN.md` · Design: `docs/design/DESIGN.md` (die `entwurf-*.html` dort sind nur Referenz, nicht lauffähig).
 
 ## Befehle
 
@@ -19,10 +19,11 @@ Anforderungen: `docs/ANFORDERUNGEN.md` · Plan und Arbeitspakete: `docs/PLAN.md`
 - `src/domain/` – Fachlogik, reine Funktionen, Tests `*.test.ts` daneben, Abdeckung ≥ 90 %. `week.ts` (`weekView`: Wochenübersicht F6), `taskManagement.ts` (Liste, Löschen, `completeInData`/`undoInData`).
 - `src/storage/` – `AppStorage`-Schnittstelle, localStorage-Umsetzung, Prüfung (`parseAppData`), Export/Import. Tests daneben, Abdeckung ≥ 90 % wie `src/domain/`.
 - `src/demo/` – Beispieldaten relativ zu „heute“ (`demoData`), Befüllen des Demo-Speichers; nur im Modus `demo` geladen. Abdeckung ≥ 90 % wie `src/domain/`.
-- `src/ui/` – Preact-Komponenten (`pages/`, `components/`), `App.tsx` (Laden, Zustände, Speichern von Aufgaben, Rahmen), `route.ts` (Hash-Router, Seiten und Titel, auch `#/aufgaben/neu` und `#/aufgaben/bearbeiten/<id>`), `format.ts` (Datum, Rhythmus, Zuständigkeit, Hinweistexte auf Deutsch), `useToday.ts` („heute“, rückt über Mitternacht weiter), `pages/WeekPage.tsx` (Wochenübersicht mit Abhaken/Rückgängig), `app.css` (nur Rahmen; sonst KERN-Klassen). Jede Seite hat eine `PageTitle`-`h1` (setzt Tab-Titel, nimmt den Fokus).
-- Formulare bauen auf `components/fields.tsx` (`TextField`, `TextAreaField`, `SelectField`, `RadioGroup`): sichtbare Beschriftung, Meldung direkt am Feld, nach dem Absenden mit Fehlern Fokus auf das erste fehlerhafte Feld. Löschen immer über `DeleteTaskDialog` (Rückfrage).
+- `src/ui/` – Preact-Komponenten (`pages/`, `components/`), `App.tsx` (Laden, Zustände, Speichern, Farbschema, Rahmen), `route.ts` (Hash-Router, Seiten und Titel, auch `#/aufgaben/neu` und `#/aufgaben/bearbeiten/<id>`), `format.ts` (Datum, KW, Rhythmus, Zuständigkeit, Hinweistexte auf Deutsch), `useToday.ts` („heute“, rückt über Mitternacht weiter), `pages/WeekPage.tsx` (Wochenübersicht als Kachel-Board mit Abhaken/Rückgängig), `colorScheme.ts` (`data-theme`; dasselbe macht das Skript in `index.html` vor dem ersten Zeichnen). Jede Seite hat eine `PageTitle`-`h1` (setzt Tab-Titel, nimmt den Fokus; `heading` für eine abweichende Überschrift).
+- Design: `tokens.css` (CSS-Variablen hell/dunkel nach DESIGN.md), `app.css` (alle Bausteine, nur Tokens, keine festen Farben). `tokens.test.ts` prüft die Kontraste jeder verwendeten Kombination in beiden Themes – neue Kombinationen dort eintragen. Symbole aus `lucide-preact` (einzeln importieren), Schrift `@fontsource-variable/archivo`. Klassen: `tile`, `btn btn--primary|secondary|quiet|warn`, `icon-btn`, `segmented`; Fehler über `components/Alert.tsx` (`ErrorAlert`).
+- Formulare bauen auf `components/fields.tsx` (`TextField`, `TextAreaField`, `SelectField`, `RadioGroup`, `FieldGroup`): sichtbare Beschriftung, Meldung direkt am Feld, nach dem Absenden mit Fehlern Fokus auf das erste fehlerhafte Feld. Löschen immer über `DeleteTaskDialog` (Rückfrage).
 - `.github/workflows/` – `check.yml` (npm run check bei Push/PR), `pages.yml` (veröffentlicht `main` auf GitHub Pages nach grünem check): https://stephan-pro.github.io/putzplan/
-- `tests/e2e/` – Playwright-Tests, jede Seite mit axe (`axe.ts`: `expectNoAccessibilityViolations`). `app.spec.ts`: Einrichtung, Navigation, Einstellungen, unlesbare Daten. Der erste Start zeigt die Ersteinrichtung; für eine fertig eingerichtete App Daten vorher in den Speicher schreiben (siehe `startConfigured`).
+- `tests/e2e/` – Playwright-Tests, jede Seite mit axe (`axe.ts`: `expectNoAccessibilityViolations` prüft hell und dunkel). `app.spec.ts`: Einrichtung, Navigation, Einstellungen, unlesbare Daten. `design.spec.ts`: Farbschema N8, Schrift, Navigation, Fokus, Tippflächen. Die Wochenübersicht heißt in der `h1` „Diese Woche“, der Tab-Titel bleibt „Wochenübersicht – Putzplan“. Der erste Start zeigt die Ersteinrichtung; für eine fertig eingerichtete App Daten vorher in den Speicher schreiben (siehe `startConfigured`).
 - `tests/e2e/helpers.ts` – gemeinsame Hilfen (`startConfigured`, `storedData`, `goToPage`). Nach einem Seitenwechsel vor dem Tippen auf den Fokus der Überschrift warten (`goToPage`/`expectPageShown`), sonst nimmt der Fokussprung dem Test den Fokus. `tests/e2e/tasks.spec.ts`: Aufgaben anlegen, bearbeiten, löschen, Formularfehler.
 - `tests/e2e/week.spec.ts` – Wochenübersicht; friert die Browser-Uhr auf Mi 21.10.2026 ein (`page.clock.setFixedTime`), damit `demoData(21.10.2026)` feste Wochentage hat (Überfälliges, nächste/letzte Woche).
 - `tests/e2e/demo.spec.ts` – prüft den Demo-Modus; Playwright startet dafür einen zweiten Server (`vite --mode demo`, Port 4174). Spätere E2E-Tests nehmen `demoData(heute)` als Ausgangslage.
@@ -59,3 +60,6 @@ Anforderungen: `docs/ANFORDERUNGEN.md` · Plan und Arbeitspakete: `docs/PLAN.md`
 | Ich bin | currentPerson |
 | Export / Import | exportData / importData |
 | Gerät (nicht in der Sicherung) | device (`DeviceSettings`) |
+| Darstellung / Farbschema (Hell, Dunkel, Automatisch) | colorScheme (`light`, `dark`, `auto`) |
+| Stand (erledigt / fällig) | progress (`done`, `due`) |
+| Symbol (einer Aufgabe, ab R2) | symbol |

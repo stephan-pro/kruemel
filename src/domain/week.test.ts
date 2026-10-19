@@ -321,6 +321,67 @@ describe("F6 Wochenübersicht: vergangene Wochen zeigen Erledigtes", () => {
   });
 });
 
+describe("F6 Wochenübersicht: Stand der Woche (erledigt / fällig)", () => {
+  it("F6 Fällig sind alle offenen Aufgaben mit Termin in der Woche, Überfälliges aus früheren Wochen nicht", () => {
+    const result = view([
+      oneOffTask({ id: "heute", dueDate: today }),
+      recurringTask({ id: "montag", dueDate: d("2026-10-19") }),
+      recurringTask({ id: "alt", dueDate: d("2026-10-12") }),
+      recurringTask({ id: "naechste", dueDate: d("2026-10-26") }),
+    ]);
+
+    expect(result.progress).toEqual({ done: 0, due: 2 });
+  });
+
+  it("F6 Erledigte Durchgänge zählen als erledigt und als fällig, auch in der laufenden Woche", () => {
+    const first = tickOff(
+      stateOf(
+        recurringTask({
+          id: "muell",
+          recurrence: { unit: "day", interval: 1 },
+          dueDate: d("2026-10-19"),
+        }),
+      ),
+      "2026-10-19",
+      "c-1",
+    );
+    const second = tickOff(first, "2026-10-20", "c-2");
+    const paket = tickOff(stateOf(oneOffTask({ id: "paket", dueDate: today })), "2026-10-21", "p");
+
+    const result = view([second.task, paket.task], {
+      completions: [...second.completions, ...paket.completions],
+    });
+
+    // Müll: Mo und Di erledigt, Mi offen; Paket: erledigt.
+    expect(result.progress).toEqual({ done: 3, due: 4 });
+  });
+
+  it("F6 Eine verspätet erledigte Aufgabe zählt in der Woche, in der sie fällig war", () => {
+    const bad = tickOff(
+      stateOf(recurringTask({ id: "bad", dueDate: d("2026-10-16") })),
+      "2026-10-20",
+    );
+
+    expect(view([bad.task], { completions: bad.completions }).progress).toEqual({
+      done: 0,
+      due: 0,
+    });
+    expect(
+      view([bad.task], { completions: bad.completions, shownDay: d("2026-10-14") }).progress,
+    ).toEqual({ done: 1, due: 1 });
+  });
+
+  it("F6 Der Stand folgt dem Filter „nur meine“", () => {
+    const tasks = [
+      recurringTask({ id: "a", assignee: "personA", dueDate: today }),
+      recurringTask({ id: "b", assignee: "personB", dueDate: today }),
+    ];
+
+    expect(view(tasks, { filter: "mine" }).progress).toEqual({ done: 0, due: 1 });
+    expect(view(tasks).progress).toEqual({ done: 0, due: 2 });
+  });
+});
+
 describe("F6 Wochenübersicht: Filter alle / nur meine", () => {
   const tasks = [
     recurringTask({ id: "a", assignee: "personA", dueDate: today }),

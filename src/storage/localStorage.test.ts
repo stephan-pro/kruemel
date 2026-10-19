@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { emptyAppData } from "./appData";
 import { createLocalStorage, requestPersistentStorage } from "./localStorage";
-import { StorageError } from "./storage";
+import { COLOR_SCHEMES, DEFAULT_COLOR_SCHEME, isColorScheme, StorageError } from "./storage";
 import { FakeStore, sampleData } from "./storage.fixtures";
 
 describe("F7 Speicher (localStorage)", () => {
@@ -179,6 +179,61 @@ describe("F5 „Ich bin“ auf diesem Gerät", () => {
     store.items.set("putzplan:device", text);
 
     expect(await createLocalStorage({ store }).loadDevice()).toEqual({});
+  });
+});
+
+describe("N8 Farbschema (Darstellung) auf diesem Gerät", () => {
+  it("N8 Ohne Auswahl ist kein Farbschema gespeichert; die App folgt dann dem Gerät", async () => {
+    const storage = createLocalStorage({ store: new FakeStore() });
+
+    expect((await storage.loadDevice()).colorScheme).toBeUndefined();
+    expect(DEFAULT_COLOR_SCHEME).toBe("auto");
+  });
+
+  it.each(COLOR_SCHEMES)("N8 Das Farbschema „%s“ bleibt gespeichert", async (colorScheme) => {
+    const store = new FakeStore();
+    await createLocalStorage({ store }).saveDevice({ currentPerson: "personA", colorScheme });
+
+    expect(await createLocalStorage({ store }).loadDevice()).toEqual({
+      currentPerson: "personA",
+      colorScheme,
+    });
+  });
+
+  it("N8 Das Farbschema gehört zum Gerät und steht nicht in den Daten der Sicherung", async () => {
+    const store = new FakeStore();
+    const storage = createLocalStorage({ store });
+
+    await storage.saveDevice({ colorScheme: "dark" });
+    await storage.save(sampleData());
+
+    expect(store.items.get("putzplan:data")).not.toContain("colorScheme");
+  });
+
+  it("N8 Ein unbekanntes Farbschema wird ignoriert, „Ich bin“ bleibt trotzdem erhalten", async () => {
+    const store = new FakeStore();
+    store.items.set(
+      "putzplan:device",
+      JSON.stringify({ currentPerson: "personB", colorScheme: "lila" }),
+    );
+
+    expect(await createLocalStorage({ store }).loadDevice()).toEqual({ currentPerson: "personB" });
+  });
+
+  it("N8 Ein gültiges Farbschema bleibt, auch wenn „Ich bin“ unlesbar ist", async () => {
+    const store = new FakeStore();
+    store.items.set(
+      "putzplan:device",
+      JSON.stringify({ currentPerson: "x", colorScheme: "light" }),
+    );
+
+    expect(await createLocalStorage({ store }).loadDevice()).toEqual({ colorScheme: "light" });
+  });
+
+  it("N8 Nur Hell, Dunkel und Automatisch sind gültige Farbschemata", () => {
+    expect(COLOR_SCHEMES.every(isColorScheme)).toBe(true);
+    expect(isColorScheme("lila")).toBe(false);
+    expect(isColorScheme(undefined)).toBe(false);
   });
 });
 

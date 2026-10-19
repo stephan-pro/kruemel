@@ -2,6 +2,7 @@
 // hint, and an error message right at the field that the field refers to (`aria-describedby`,
 // `aria-invalid`). The forms of the app are made of these, so they all behave the same way.
 
+import { ChevronDown, CircleAlert } from "lucide-preact";
 import type { ComponentChildren } from "preact";
 
 interface FieldProps {
@@ -28,14 +29,14 @@ function describedBy({ id, hint, error }: FieldProps): string | undefined {
 
 function ErrorMessage({ id, message }: { readonly id: string; readonly message: string }) {
   return (
-    <span class="kern-error" id={id}>
-      <span class="kern-icon kern-icon--danger" aria-hidden="true" />
-      <span class="kern-body">{message}</span>
+    <span class="field__error" id={id}>
+      <CircleAlert class="field__error-icon" size={18} />
+      <span>{message}</span>
     </span>
   );
 }
 
-/** Label, hint and error above the control (the order KERN shows them in). */
+/** Label, hint and error above the control, so they are read and seen before it. */
 function FieldFrame({
   field,
   children,
@@ -45,12 +46,12 @@ function FieldFrame({
 }) {
   const { id, label, hint, error } = field;
   return (
-    <div class="kern-form-input">
-      <label class="kern-label" for={id}>
+    <div class="field">
+      <label class="field__label" for={id}>
         {label}
       </label>
       {hint && (
-        <span class="kern-hint" id={hintId(id)}>
+        <span class="field__hint" id={hintId(id)}>
           {hint}
         </span>
       )}
@@ -73,14 +74,14 @@ interface TextFieldProps extends FieldProps {
 }
 
 export function TextField(props: TextFieldProps) {
-  const { id, value, onInput, type = "text", inputMode, min, max, narrow, error } = props;
+  const { id, value, onInput, type = "text", inputMode, min, max, narrow } = props;
   const common = {
-    class: `kern-form-input__input${narrow ? " kern-form-input__input--width-4" : ""}${error ? " kern-form-input__input--error" : ""}`,
+    class: `input${narrow ? " input--narrow" : ""}`,
     id,
     value,
     inputMode,
     autocomplete: "off",
-    "aria-invalid": error ? ("true" as const) : undefined,
+    "aria-invalid": props.error ? ("true" as const) : undefined,
     "aria-describedby": describedBy(props),
     onInput: (event: { currentTarget: HTMLInputElement }) => onInput(event.currentTarget.value),
   };
@@ -106,7 +107,7 @@ export function TextAreaField(props: TextAreaFieldProps) {
   return (
     <FieldFrame field={props}>
       <textarea
-        class={`kern-form-input__input${error ? " kern-form-input__input--error" : ""}`}
+        class="input input--area"
         id={id}
         rows={rows}
         value={value}
@@ -133,9 +134,9 @@ export function SelectField<V extends string>(props: SelectFieldProps<V>) {
   const { id, value, choices, onChange, error } = props;
   return (
     <FieldFrame field={props}>
-      <div class="kern-form-input__select-wrapper">
+      <div class="select">
         <select
-          class={`kern-form-input__select${error ? " kern-form-input__select--error" : ""}`}
+          class="input select__control"
           id={id}
           value={value}
           aria-invalid={error ? "true" : undefined}
@@ -148,6 +149,7 @@ export function SelectField<V extends string>(props: SelectFieldProps<V>) {
             </option>
           ))}
         </select>
+        <ChevronDown class="select__icon" size={20} />
       </div>
     </FieldFrame>
   );
@@ -161,6 +163,8 @@ interface RadioGroupProps<V extends string> {
   readonly value: V | undefined;
   readonly onChange: (value: V) => void;
   readonly error?: string | undefined;
+  /** Puts the choices side by side where there is room (short labels). */
+  readonly inline?: boolean;
 }
 
 /** A group of radio buttons under a visible legend; the error stands inside the group. */
@@ -171,20 +175,18 @@ export function RadioGroup<V extends string>({
   value,
   onChange,
   error,
+  inline,
 }: RadioGroupProps<V>) {
   const groupErrorId = errorId(name);
   return (
-    <fieldset
-      class={`kern-fieldset${error ? " kern-fieldset--error" : ""}`}
-      aria-describedby={error ? groupErrorId : undefined}
-    >
-      <legend class="kern-label">{legend}</legend>
-      <div class="kern-fieldset__body">
-        {error && <ErrorMessage id={groupErrorId} message={error} />}
+    <fieldset class="choices" aria-describedby={error ? groupErrorId : undefined}>
+      <legend class="field__label">{legend}</legend>
+      {error && <ErrorMessage id={groupErrorId} message={error} />}
+      <div class={`choices__list${inline ? " choices__list--inline" : ""}`}>
         {choices.map((choice) => (
-          <div class="kern-form-check" key={choice.value}>
+          <div class="choice" key={choice.value}>
             <input
-              class={`kern-form-check__radio${error ? " kern-form-check__radio--error" : ""}`}
+              class="choice__input"
               type="radio"
               name={name}
               id={`${name}-${choice.value}`}
@@ -192,12 +194,28 @@ export function RadioGroup<V extends string>({
               checked={value === choice.value}
               onChange={() => onChange(choice.value)}
             />
-            <label class="kern-label" for={`${name}-${choice.value}`}>
+            <label class="choice__label" for={`${name}-${choice.value}`}>
               {choice.label}
             </label>
           </div>
         ))}
       </div>
+    </fieldset>
+  );
+}
+
+/** A group of fields under a visible legend (e.g. "Rhythmus": interval and unit). */
+export function FieldGroup({
+  legend,
+  children,
+}: {
+  readonly legend: string;
+  readonly children: ComponentChildren;
+}) {
+  return (
+    <fieldset class="choices">
+      <legend class="field__label">{legend}</legend>
+      <div class="field-row">{children}</div>
     </fieldset>
   );
 }

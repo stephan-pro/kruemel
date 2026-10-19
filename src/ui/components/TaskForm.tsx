@@ -1,3 +1,4 @@
+import { Trash2 } from "lucide-preact";
 import { useState } from "preact/hooks";
 import type { CalendarDay } from "../../domain/date";
 import type { Person, Task } from "../../domain/task";
@@ -14,7 +15,15 @@ import {
 } from "../../domain/taskForm";
 import type { PersonNames } from "../../storage/appData";
 import { routeHash } from "../route";
-import { type Choice, RadioGroup, SelectField, TextAreaField, TextField } from "./fields";
+import { ErrorAlert } from "./Alert";
+import {
+  type Choice,
+  FieldGroup,
+  RadioGroup,
+  SelectField,
+  TextAreaField,
+  TextField,
+} from "./fields";
 
 interface TaskFormProps {
   /** The task being changed; missing when a new one is created. */
@@ -135,7 +144,7 @@ export function TaskForm({ task, names, today, currentPerson, onSubmit, onDelete
   ];
 
   return (
-    <form class="stack" onSubmit={submit} noValidate>
+    <form class="form" onSubmit={submit} noValidate>
       {creating ? (
         <RadioGroup
           name="task-kind"
@@ -145,7 +154,7 @@ export function TaskForm({ task, names, today, currentPerson, onSubmit, onDelete
           onChange={chooseKind}
         />
       ) : (
-        <p class="kern-body">
+        <p>
           Art der Aufgabe: <strong>{recurring ? "Wiederkehrend" : "Einmalig"}</strong> (lässt sich
           nicht ändern)
         </p>
@@ -160,29 +169,26 @@ export function TaskForm({ task, names, today, currentPerson, onSubmit, onDelete
       />
 
       {recurring && (
-        <fieldset class="kern-fieldset">
-          <legend class="kern-label">Rhythmus</legend>
-          <div class="kern-fieldset__body">
-            <TextField
-              id="task-interval"
-              label="Abstand (Anzahl)"
-              hint="Beispiel: 2 und „Wochen“ ergeben „alle 2 Wochen“."
-              value={input.interval}
-              inputMode="numeric"
-              narrow
-              error={errors.interval}
-              onInput={(interval) => change("interval", interval)}
-            />
-            <SelectField
-              id="task-unit"
-              label="Einheit"
-              value={input.unit}
-              choices={UNITS}
-              error={errors.unit}
-              onChange={(unit) => change("unit", unit)}
-            />
-          </div>
-        </fieldset>
+        <FieldGroup legend="Rhythmus">
+          <TextField
+            id="task-interval"
+            label="Abstand (Anzahl)"
+            hint="Beispiel: 2 und „Wochen“ ergeben „alle 2 Wochen“."
+            value={input.interval}
+            inputMode="numeric"
+            narrow
+            error={errors.interval}
+            onInput={(interval) => change("interval", interval)}
+          />
+          <SelectField
+            id="task-unit"
+            label="Einheit"
+            value={input.unit}
+            choices={UNITS}
+            error={errors.unit}
+            onChange={(unit) => change("unit", unit)}
+          />
+        </FieldGroup>
       )}
 
       <TextField
@@ -218,28 +224,19 @@ export function TaskForm({ task, names, today, currentPerson, onSubmit, onDelete
         onInput={(note) => change("note", note)}
       />
 
-      {saveError && (
-        <div class="kern-alert kern-alert--danger" role="alert">
-          <div class="kern-alert__header">
-            <span class="kern-icon kern-icon--danger" aria-hidden="true" />
-            <span class="kern-title">Nicht gespeichert</span>
-          </div>
-          <div class="kern-alert__body">
-            <p class="kern-body">{saveError}</p>
-          </div>
-        </div>
-      )}
+      {saveError && <ErrorAlert title="Nicht gespeichert">{saveError}</ErrorAlert>}
 
       <div class="button-row">
-        <button class="kern-btn kern-btn--primary" type="submit">
-          <span class="kern-label">{creating ? "Aufgabe anlegen" : "Speichern"}</span>
+        <button class="btn btn--primary" type="submit">
+          {creating ? "Aufgabe anlegen" : "Speichern"}
         </button>
-        <a class="kern-btn kern-btn--secondary" href={routeHash("tasks")}>
-          <span class="kern-label">Abbrechen</span>
+        <a class="btn btn--secondary" href={routeHash("tasks")}>
+          Abbrechen
         </a>
         {onDelete && (
-          <button class="kern-btn kern-btn--tertiary" type="button" onClick={onDelete}>
-            <span class="kern-label">Aufgabe löschen …</span>
+          <button class="btn btn--text-warn" type="button" onClick={onDelete}>
+            <Trash2 size={20} />
+            Aufgabe löschen …
           </button>
         )}
       </div>

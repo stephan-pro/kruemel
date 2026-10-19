@@ -8,7 +8,9 @@ test("Erster Start zeigt die Ersteinrichtung unter dem Titel „Putzplan“", as
   await expect(page.getByText("Putzplan", { exact: true })).toBeVisible();
 });
 
-test("Erster Start hat keine Barrierefreiheitsverstöße (axe)", async ({ page }) => {
+test("Erster Start hat keine Barrierefreiheitsverstöße (axe, hell und dunkel)", async ({
+  page,
+}) => {
   await page.goto("./");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expectNoAccessibilityViolations(page);

@@ -9,7 +9,13 @@ export const APP_NAME = "Putzplan";
 let headingShown = false;
 
 interface PageTitleProps {
+  /** Name of the page: title of the browser tab and, unless `heading` is set, the heading. */
   readonly title: string;
+  /**
+   * What the heading says when it changes within the page (the week view: "Nächste Woche").
+   * Changing it neither renames the tab nor moves the focus.
+   */
+  readonly heading?: string;
 }
 
 /**
@@ -17,18 +23,18 @@ interface PageTitleProps {
  * heading, so keyboard and screen reader users start at the top of the new content. (Not for the
  * very first page after loading, see `headingShown`.)
  */
-export function PageTitle({ title }: PageTitleProps) {
-  const heading = useRef<HTMLHeadingElement>(null);
+export function PageTitle({ title, heading }: PageTitleProps) {
+  const element = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     document.title = `${title} – ${APP_NAME}`;
     if (headingShown) {
-      heading.current?.focus();
+      element.current?.focus();
     }
     headingShown = true;
   }, [title]);
   return (
-    <h1 class="kern-title kern-title--large page-title" ref={heading} tabIndex={-1}>
-      {title}
+    <h1 class="page-title" ref={element} tabIndex={-1}>
+      {heading ?? title}
     </h1>
   );
 }

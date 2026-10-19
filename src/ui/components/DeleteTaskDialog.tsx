@@ -40,7 +40,7 @@ export function DeleteTaskDialog({
       onConfirm={onConfirm}
       onCancel={onCancel}
     >
-      <p class="kern-body">
+      <p>
         Die Aufgabe wird gelöscht. {consequence(completionCount)} Das lässt sich nicht rückgängig
         machen.
       </p>

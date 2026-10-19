@@ -4,6 +4,7 @@ import type { Completion, Person, Task } from "../../domain/task";
 import type { TaskFormValues, TaskKind } from "../../domain/taskForm";
 import { completionCount } from "../../domain/taskManagement";
 import type { PersonNames } from "../../storage/appData";
+import { ErrorAlert } from "../components/Alert";
 import { DeleteTaskDialog } from "../components/DeleteTaskDialog";
 import { PageTitle } from "../components/PageTitle";
 import { TaskForm } from "../components/TaskForm";
@@ -49,12 +50,12 @@ export function TaskFormPage({
     return (
       <>
         <PageTitle title="Aufgabe nicht gefunden" />
-        <p class="kern-body">
-          Diese Aufgabe gibt es nicht (mehr). Vielleicht wurde sie gelöscht.{" "}
-          <a class="kern-link" href={routeHash("tasks")}>
-            Zurück zu den Aufgaben
-          </a>
-        </p>
+        <div class="tile tile--narrow">
+          <p>
+            Diese Aufgabe gibt es nicht (mehr). Vielleicht wurde sie gelöscht.{" "}
+            <a href={routeHash("tasks")}>Zurück zu den Aufgaben</a>
+          </p>
+        </div>
       </>
     );
   }
@@ -75,26 +76,20 @@ export function TaskFormPage({
   return (
     <>
       <PageTitle title={routeInfo(shown === undefined ? "taskNew" : "taskEdit").title} />
-      {deleteError && (
-        <div class="kern-alert kern-alert--danger" role="alert">
-          <div class="kern-alert__header">
-            <span class="kern-icon kern-icon--danger" aria-hidden="true" />
-            <span class="kern-title">Nicht gelöscht</span>
-          </div>
-          <div class="kern-alert__body">
-            <p class="kern-body">{deleteError}</p>
-          </div>
+      <div class="page-stack page-stack--narrow">
+        {deleteError && <ErrorAlert title="Nicht gelöscht">{deleteError}</ErrorAlert>}
+        <div class="tile">
+          <TaskForm
+            key={shown?.id ?? "neu"}
+            {...(shown === undefined ? {} : { task: shown })}
+            names={names}
+            today={dayFromDate(new Date())}
+            currentPerson={currentPerson}
+            onSubmit={(kind, values) => onSave(kind, values, shown)}
+            {...(shown === undefined ? {} : { onDelete: () => setAsking(true) })}
+          />
         </div>
-      )}
-      <TaskForm
-        key={shown?.id ?? "neu"}
-        {...(shown === undefined ? {} : { task: shown })}
-        names={names}
-        today={dayFromDate(new Date())}
-        currentPerson={currentPerson}
-        onSubmit={(kind, values) => onSave(kind, values, shown)}
-        {...(shown === undefined ? {} : { onDelete: () => setAsking(true) })}
-      />
+      </div>
       <DeleteTaskDialog
         task={asking ? shown : undefined}
         completionCount={shown ? completionCount(completions, shown.id) : 0}

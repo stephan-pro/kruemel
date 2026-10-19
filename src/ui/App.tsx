@@ -6,7 +6,14 @@ import { type TaskFormValues, type TaskKind, taskFromForm, updateTask } from "..
 import { completeInData, deleteTask, undoInData } from "../domain/taskManagement";
 import type { AppData } from "../storage/appData";
 import { requestPersistentStorage } from "../storage/localStorage";
-import { type AppStorage, type DeviceSettings, StorageError } from "../storage/storage";
+import {
+  type AppStorage,
+  type ColorScheme,
+  DEFAULT_COLOR_SCHEME,
+  type DeviceSettings,
+  StorageError,
+} from "../storage/storage";
+import { applyColorScheme } from "./colorScheme";
 import { Navigation } from "./components/Navigation";
 import { APP_NAME } from "./components/PageTitle";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
@@ -88,7 +95,12 @@ export function App({ storage, demo }: AppProps) {
 
   async function load() {
     setState({ status: "loading" });
-    setState(await loadState(storage));
+    const loaded = await loadState(storage);
+    if (loaded.status === "ready") {
+      // Usually already done by the script in index.html; this keeps both in step.
+      applyColorScheme(loaded.device.colorScheme ?? DEFAULT_COLOR_SCHEME);
+    }
+    setState(loaded);
   }
 
   useEffect(() => {
@@ -109,6 +121,17 @@ export function App({ storage, demo }: AppProps) {
     await storage.saveDevice(device);
     setState({ status: "ready", data, device });
     void requestPersistentStorage();
+  }
+
+  /** "Darstellung" (N8): saved on the device, then shown. Nothing changes if saving fails. */
+  async function saveColorScheme(colorScheme: ColorScheme) {
+    if (state.status !== "ready") {
+      return;
+    }
+    const device: DeviceSettings = { ...state.device, colorScheme };
+    await storage.saveDevice(device);
+    applyColorScheme(colorScheme);
+    setState({ ...state, device });
   }
 
   async function savePerson(person: Person) {
@@ -194,7 +217,7 @@ export function App({ storage, demo }: AppProps) {
   const inApp = state.status === "ready" && names !== undefined && person !== undefined;
 
   return (
-    <div class="app">
+    <div class={`app${inApp ? " app--with-nav" : ""}`}>
       {/* A button, not a "#inhalt" link: that would change the hash and with it the page. */}
       <button
         class="skip-link"
@@ -203,94 +226,95 @@ export function App({ storage, demo }: AppProps) {
       >
         Zum Inhalt springen
       </button>
-      {demo && (
-        <aside class="kern-alert kern-alert--info demo-hint" aria-label="Hinweis zum Demo-Modus">
-          <div class="kern-alert__body">
-            <p class="kern-body">
-              Demo-Modus: {demo.taskCount} Beispielaufgaben und {demo.completionCount} Erledigungen
-              liegen im Demo-Speicher dieses Browsers. Echte Daten bleiben unberührt.{" "}
-              <a class="kern-link" href="?demo=neu">
-                Beispieldaten neu laden
-              </a>
-            </p>
-          </div>
-        </aside>
-      )}
+      {/* Phones: a bar on top with the navigation fixed at the bottom; wide screens: a column. */}
       <header class="app-header">
         <p class="app-name">{APP_NAME}</p>
+        {inApp && <Navigation current={route} />}
         {inApp && (
-          <p class="app-person kern-body kern-body--small">
+          <p class="app-person">
             Ich bin: <strong>{names[person]}</strong>
           </p>
         )}
-        {inApp && <Navigation current={route} />}
       </header>
-      <main id="inhalt" tabIndex={-1}>
-        {state.status === "loading" && (
-          <p class="kern-body" role="status">
-            Wird geladen …
-          </p>
+      <div class="app-content">
+        {demo && (
+          <aside class="demo-hint" aria-label="Hinweis zum Demo-Modus">
+            <p>
+              Demo-Modus: {demo.taskCount} Beispielaufgaben und {demo.completionCount} Erledigungen
+              liegen im Demo-Speicher dieses Browsers. Echte Daten bleiben unberührt.{" "}
+              <a href="?demo=neu">Beispieldaten neu laden</a>
+            </p>
+          </aside>
         )}
-        {state.status === "problem" && (
-          <StorageProblemPage
-            message={state.message}
-            details={state.details}
-            rawData={state.rawData}
-            onDiscard={discard}
-            onRetry={() => void load()}
-          />
-        )}
-        {state.status === "ready" && names === undefined && (
-          <SetupPage onSubmit={saveNamesAndPerson} />
-        )}
-        {state.status === "ready" && names !== undefined && person === undefined && (
-          <WhoAmIPage names={names} onSubmit={savePerson} />
-        )}
-        {inApp && route === "settings" && (
-          <SettingsPage names={names} currentPerson={person} onSubmit={saveNamesAndPerson} />
-        )}
-        {inApp && route === "tasks" && (
-          <TasksPage
-            tasks={state.data.tasks}
-            completions={state.data.completions}
-            names={names}
-            notice={notice}
-            onDelete={removeTask}
-            onLeave={() => setNotice(undefined)}
-          />
-        )}
-        {inApp && route === "taskNew" && (
-          <TaskFormPage
-            completions={state.data.completions}
-            names={names}
-            currentPerson={person}
-            onSave={saveTask}
-            onDelete={removeTask}
-          />
-        )}
-        {inApp && route === "taskEdit" && (
-          <TaskFormPage
-            {...editedTask(state.data.tasks, taskId)}
-            completions={state.data.completions}
-            names={names}
-            currentPerson={person}
-            onSave={saveTask}
-            onDelete={removeTask}
-          />
-        )}
-        {inApp && route === "week" && (
-          <WeekPage
-            tasks={state.data.tasks}
-            completions={state.data.completions}
-            names={names}
-            currentPerson={person}
-            today={today}
-            onComplete={completeTask}
-            onUndo={undoCompletion}
-          />
-        )}
-        {inApp && route === "done" && <PlaceholderPage route={route} />}
-      </main>
+        <main id="inhalt" tabIndex={-1}>
+          {state.status === "loading" && <p role="status">Wird geladen …</p>}
+          {state.status === "problem" && (
+            <StorageProblemPage
+              message={state.message}
+              details={state.details}
+              rawData={state.rawData}
+              onDiscard={discard}
+              onRetry={() => void load()}
+            />
+          )}
+          {state.status === "ready" && names === undefined && (
+            <SetupPage onSubmit={saveNamesAndPerson} />
+          )}
+          {state.status === "ready" && names !== undefined && person === undefined && (
+            <WhoAmIPage names={names} onSubmit={savePerson} />
+          )}
+          {inApp && route === "settings" && (
+            <SettingsPage
+              names={names}
+              currentPerson={person}
+              colorScheme={state.device.colorScheme ?? DEFAULT_COLOR_SCHEME}
+              onSubmit={saveNamesAndPerson}
+              onColorScheme={saveColorScheme}
+            />
+          )}
+          {inApp && route === "tasks" && (
+            <TasksPage
+              tasks={state.data.tasks}
+              completions={state.data.completions}
+              names={names}
+              notice={notice}
+              onDelete={removeTask}
+              onLeave={() => setNotice(undefined)}
+            />
+          )}
+          {inApp && route === "taskNew" && (
+            <TaskFormPage
+              completions={state.data.completions}
+              names={names}
+              currentPerson={person}
+              onSave={saveTask}
+              onDelete={removeTask}
+            />
+          )}
+          {inApp && route === "taskEdit" && (
+            <TaskFormPage
+              {...editedTask(state.data.tasks, taskId)}
+              completions={state.data.completions}
+              names={names}
+              currentPerson={person}
+              onSave={saveTask}
+              onDelete={removeTask}
+            />
+          )}
+          {inApp && route === "week" && (
+            <WeekPage
+              tasks={state.data.tasks}
+              completions={state.data.completions}
+              names={names}
+              currentPerson={person}
+              today={today}
+              onComplete={completeTask}
+              onUndo={undoCompletion}
+            />
+          )}
+          {inApp && route === "done" && <PlaceholderPage route={route} />}
+        </main>
+      </div>
     </div>
   );
 }

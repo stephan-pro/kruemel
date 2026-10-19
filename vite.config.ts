@@ -5,6 +5,8 @@ export default defineConfig({
   base: "/putzplan/",
   test: {
     include: ["src/**/*.test.ts"],
+    // `tokens.test.ts` reads the design tokens; other CSS stays empty in unit tests.
+    css: { include: [/tokens\.css/] },
     // No `passWithNoTests`: `npm run check` must fail if no unit tests are found.
     coverage: {
       provider: "v8",

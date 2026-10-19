@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Putzplan – Kachel-Board am PC</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#1F47D6}a:hover{color:#16359F}
+</style>
+</helmet>
+<div style="box-sizing: border-box; min-height: 860px; background: #EEF1F5; font-family: 'Archivo', system-ui, sans-serif; color: #111318; display: flex; flex-wrap: wrap; align-items: stretch">
+
+  <nav aria-label="Hauptnavigation" style="flex: 1 1 220px; max-width: 100%; box-sizing: border-box; background: #FFFFFF; padding: 24px 16px; display: flex; flex-direction: column; gap: 6px">
+    <span style="font-size: 22px; font-weight: 800; letter-spacing: -0.02em; padding: 0 12px 18px">Putzplan</span>
+    <a href="#" aria-current="page" style="text-decoration: none; color: #FFFFFF; background: #111318; border-radius: 12px; min-height: 48px; padding: 0 12px; display: flex; align-items: center; gap: 12px; font-size: 15px; font-weight: 700">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="3"></rect><path d="M3 9h18M8 2v4M16 2v4"></path></svg>Woche</a>
+    <a href="#" style="text-decoration: none; color: #111318; border-radius: 12px; min-height: 48px; padding: 0 12px; display: flex; align-items: center; gap: 12px; font-size: 15px; font-weight: 600">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"></path><path d="M4 6h.01M4 12h.01M4 18h.01"></path></svg>Aufgaben</a>
+    <a href="#" style="text-decoration: none; color: #111318; border-radius: 12px; min-height: 48px; padding: 0 12px; display: flex; align-items: center; gap: 12px; font-size: 15px; font-weight: 600">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg>Erledigt</a>
+    <a href="#" style="text-decoration: none; color: #111318; border-radius: 12px; min-height: 48px; padding: 0 12px; display: flex; align-items: center; gap: 12px; font-size: 15px; font-weight: 600">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"></path></svg>Einstellungen</a>
+    <div style="margin-top: auto; padding: 16px 12px 0; font-size: 13px; color: #4A5260">Angemeldet auf diesem Gerät als <strong style="color: #111318">Stephan</strong></div>
+  </nav>
+
+  <main style="flex: 999 1 560px; min-width: 0; box-sizing: border-box; padding: 28px clamp(16px, 3vw, 40px) 40px; display: flex; flex-direction: column; gap: 20px">
+
+    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 16px">
+      <div style="display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap">
+        <div style="display: flex; flex-direction: column; gap: 2px">
+          <span style="font-size: 13px; font-weight: 600; color: #4A5260; letter-spacing: 0.04em">KW 43 · 19.–25. OKTOBER</span>
+          <h1 style="margin: 0; font-size: 34px; font-weight: 800; letter-spacing: -0.02em">Diese Woche</h1>
+        </div>
+        <div style="display: flex; gap: 6px; padding-bottom: 2px">
+          <button type="button" aria-label="Vorherige Woche" style="width: 44px; height: 44px; border-radius: 14px; border: 0; background: #FFFFFF; display: flex; align-items: center; justify-content: center; cursor: pointer">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111318" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>
+          </button>
+          <button type="button" aria-label="Nächste Woche" style="width: 44px; height: 44px; border-radius: 14px; border: 0; background: #FFFFFF; display: flex; align-items: center; justify-content: center; cursor: pointer">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111318" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
+          </button>
+        </div>
+      </div>
+      <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center">
+        <div role="group" aria-label="Aufgaben filtern" style="display: flex; gap: 6px; background: #FFFFFF; padding: 4px; border-radius: 14px">
+          <button type="button" aria-pressed="true" style="min-height: 36px; padding: 0 16px; border: 0; border-radius: 10px; background: #111318; color: #FFFFFF; font: 600 14px 'Archivo', sans-serif; cursor: pointer">Alle</button>
+          <button type="button" aria-pressed="false" style="min-height: 36px; padding: 0 16px; border: 0; border-radius: 10px; background: transparent; color: #111318; font: 600 14px 'Archivo', sans-serif; cursor: pointer">Nur meine</button>
+        </div>
+        <button type="button" style="min-height: 44px; padding: 0 18px; border: 0; border-radius: 14px; background: #1F47D6; color: #FFFFFF; font: 700 15px 'Archivo', sans-serif; cursor: pointer; display: flex; align-items: center; gap: 8px">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Neue Aufgabe</button>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 16px">
+
+      <section aria-labelledby="p-heute" style="flex: 2 1 420px; min-width: 0; background: #FFFFFF; border-radius: 22px; padding: 20px; display: flex; flex-direction: column; gap: 6px">
+        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px">
+          <h2 id="p-heute" style="margin: 0; font-size: 20px; font-weight: 800">Heute · Mo 19.</h2>
+          <span style="font-size: 13px; font-weight: 600; color: #4A5260">3 offen</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 14px; min-height: 60px">
+          <span aria-hidden="true" style="width: 44px; height: 44px; flex: none; border-radius: 14px; background: #E3E9FF; display: flex; align-items: center; justify-content: center">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1F47D6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"></path><path d="M10 11v6M14 11v6"></path><path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12"></path><path d="M9 7V4h6v3"></path></svg>
+          </span>
+          <div style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 16px; font-weight: 600">Müll rausbringen</span><span style="font-size: 13px; color: #4A5260">Stephan · wöchentlich</span></div>
+          <button type="button" style="min-height: 40px; padding: 0 12px; border: 0; border-radius: 10px; background: #EEF1F5; color: #111318; font: 600 13px 'Archivo', sans-serif; cursor: pointer">Übernehmen</button>
+          <button type="button" aria-label="Müll rausbringen erledigt" style="width: 44px; height: 44px; flex: none; border-radius: 14px; border: 2px solid #C9CFD8; background: #FFFFFF; cursor: pointer"></button>
+        </div>
+        <div style="display: flex; align-items: center; gap: 14px; min-height: 60px">
+          <span aria-hidden="true" style="width: 44px; height: 44px; flex: none; border-radius: 14px; background: #DDF3E4; display: flex; align-items: center; justify-content: center">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#17703A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21v-8"></path><path d="M12 13c0-4 3-7 8-7 0 4-3 7-8 7z"></path><path d="M12 15c0-3-2.5-5.5-7-5.5 0 3 2.5 5.5 7 5.5z"></path><path d="M8 21h8"></path></svg>
+          </span>
+          <div style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 16px; font-weight: 600">Pflanzen gießen</span><span style="font-size: 13px; color: #4A5260">Beide · alle 3 Tage</span></div>
+          <button type="button" aria-label="Pflanzen gießen erledigt" style="width: 44px; height: 44px; flex: none; border-radius: 14px; border: 2px solid #C9CFD8; background: #FFFFFF; cursor: pointer"></button>
+        </div>
+        <div style="display: flex; align-items: flex-start; gap: 14px; min-height: 60px; padding-top: 8px">
+          <span aria-hidden="true" style="width: 44px; height: 44px; flex: none; border-radius: 14px; background: #FFE9DC; display: flex; align-items: center; justify-content: center">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9A3A0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.5"></circle><circle cx="18" cy="20" r="1.5"></circle><path d="M2 3h3l2.5 12h11l2-8H6"></path></svg>
+          </span>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 8px">
+            <div style="display: flex; flex-direction: column"><span style="font-size: 16px; font-weight: 600">Einkaufen</span><span style="font-size: 13px; color: #4A5260">Dilan · 3 von 5</span></div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px">
+              <label style="display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 12px; border-radius: 10px; background: #EEF1F5; font-size: 14px; color: #4A5260"><input type="checkbox" checked="" style="width: 18px; height: 18px; accent-color: #1F47D6; margin: 0">Milch</label>
+              <label style="display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 12px; border-radius: 10px; background: #EEF1F5; font-size: 14px; color: #4A5260"><input type="checkbox" checked="" style="width: 18px; height: 18px; accent-color: #1F47D6; margin: 0">Brot</label>
+              <label style="display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 12px; border-radius: 10px; background: #EEF1F5; font-size: 14px; color: #4A5260"><input type="checkbox" checked="" style="width: 18px; height: 18px; accent-color: #1F47D6; margin: 0">Kaffee</label>
+              <label style="display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 12px; border-radius: 10px; background: #EEF1F5; font-size: 14px; color: #111318"><input type="checkbox" style="width: 18px; height: 18px; accent-color: #1F47D6; margin: 0">Spülmittel</label>
+              <label style="display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 12px; border-radius: 10px; background: #EEF1F5; font-size: 14px; color: #111318"><input type="checkbox" style="width: 18px; height: 18px; accent-color: #1F47D6; margin: 0">Müllbeutel</label>
+            </div>
+          </div>
+          <button type="button" aria-label="Einkaufen erledigt" style="width: 44px; height: 44px; flex: none; border-radius: 14px; border: 2px solid #C9CFD8; background: #FFFFFF; cursor: pointer"></button>
+        </div>
+      </section>
+
+      <div style="flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+        <section aria-labelledby="p-ueber" style="background: #FF6B2C; border-radius: 22px; padding: 20px; display: flex; flex-direction: column; gap: 6px">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start">
+            <h2 id="p-ueber" style="margin: 0; font-size: 13px; font-weight: 800; letter-spacing: 0.06em">ÜBERFÄLLIG</h2>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#111318" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h18v2a5 5 0 0 1-5 5H8a5 5 0 0 1-5-5z"></path><path d="M6 12V5a2 2 0 0 1 4 0"></path><path d="M7 19l-1 2M17 19l1 2"></path></svg>
+          </div>
+          <span style="font-size: 22px; font-weight: 800">Bad putzen</span>
+          <span style="font-size: 14px; font-weight: 500">seit Samstag · Dilan</span>
+          <div style="display: flex; gap: 8px; margin-top: 10px">
+            <button type="button" style="flex: 1; min-height: 44px; border: 0; border-radius: 12px; background: #111318; color: #FFFFFF; font: 700 14px 'Archivo', sans-serif; cursor: pointer">Übernehmen</button>
+            <button type="button" style="flex: 1; min-height: 44px; border: 2px solid #111318; border-radius: 12px; background: transparent; color: #111318; font: 700 14px 'Archivo', sans-serif; cursor: pointer">Erledigt</button>
+          </div>
+        </section>
+        <section aria-labelledby="p-stand" style="background: #1F47D6; color: #FFFFFF; border-radius: 22px; padding: 20px; display: flex; flex-direction: column; gap: 6px">
+          <h2 id="p-stand" style="margin: 0; font-size: 13px; font-weight: 800; letter-spacing: 0.06em">STAND</h2>
+          <span style="font-size: 44px; font-weight: 800; line-height: 1; letter-spacing: -0.02em">6<span style="font-size: 24px; font-weight: 600"> / 14</span></span>
+          <span style="font-size: 14px; font-weight: 500">diese Woche erledigt</span>
+          <div aria-hidden="true" style="margin-top: 10px; height: 8px; background: rgba(255,255,255,0.25); border-radius: 99px; overflow: hidden"><div style="width: 43%; height: 8px; background: #FFFFFF"></div></div>
+        </section>
+      </div>
+    </div>
+
+    <section aria-labelledby="p-woche" style="background: #FFFFFF; border-radius: 22px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+      <h2 id="p-woche" style="margin: 0; font-size: 18px; font-weight: 800">Rest der Woche</h2>
+      <div style="overflow-x: auto">
+        <div style="min-width: 840px; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px">
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <span style="font-size: 13px; font-weight: 800; color: #1F47D6">Di 20.</span>
+            <span style="background: #EEF1F5; border-radius: 10px; padding: 8px 10px; font-size: 13px; font-weight: 600">Staubsaugen<br><span style="font-weight: 400; color: #4A5260">Stephan</span></span>
+            <span style="background: #EEF1F5; border-radius: 10px; padding: 8px 10px; font-size: 13px; font-weight: 600">Spülmaschine<br><span style="font-weight: 400; color: #4A5260">Dilan</span></span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <span style="font-size: 13px; font-weight: 800; color: #4A5260">Mi 21.</span>
+            <span style="background: #EEF1F5; border-radius: 10px; padding: 8px 10px; font-size: 13px; font-weight: 600">Wäsche waschen<br><span style="font-weight: 400; color: #4A5260">Dilan</span></span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <span style="font-size: 13px; font-weight: 800; color: #4A5260">Do 22.</span>
+            <span style="background: #EEF1F5; border-radius: 10px; padding: 8px 10px; font-size: 13px; font-weight: 600">Küche wischen<br><span style="font-weight: 400; color: #4A5260">Beide</span></span>
+            <span style="background: #EEF1F5; border-radius: 10px; padding: 8px 10px; font-size: 13px; font-weight: 600">Pflanzen gießen<br><span style="font-weight: 400; color: #4A5260">Beide</span></span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <span style="font-size: 13px; font-weight: 800; color: #4A5260">Fr 23.</span>
+            <span style="font-size: 13px; color: #4A5260; padding: 8px 2px">frei</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <span style="font-size: 13px; font-weight: 800; color: #4A5260">Sa 24.</span>
+            <span style="background: #EEF1F5; border-radius: 10px; padding: 8px 10px; font-size: 13px; font-weight: 600">Bettwäsche<br><span style="font-weight: 400; color: #4A5260">Stephan</span></span>
+            <span style="background: #EEF1F5; border-radius: 10px; padding: 8px 10px; font-size: 13px; font-weight: 600">Fenster putzen<br><span style="font-weight: 400; color: #4A5260">Dilan</span></span>
+            <span style="background: #EEF1F5; border-radius: 10px; padding: 8px 10px; font-size: 13px; font-weight: 600">Bad putzen<br><span style="font-weight: 400; color: #4A5260">Dilan</span></span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <span style="font-size: 13px; font-weight: 800; color: #4A5260">So 25.</span>
+            <span style="background: #EEF1F5; border-radius: 10px; padding: 8px 10px; font-size: 13px; font-weight: 600">Kühlschrank<br><span style="font-weight: 400; color: #4A5260">Beide</span></span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <span style="font-size: 13px; font-weight: 800; color: #4A5260">Mo 26.</span>
+            <span style="background: #EEF1F5; border-radius: 10px; padding: 8px 10px; font-size: 13px; font-weight: 600">Müll rausbringen<br><span style="font-weight: 400; color: #4A5260">Stephan</span></span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":860}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

@@ -117,6 +117,16 @@ export function startOfWeek(day: CalendarDay): CalendarDay {
   return addDays(day, -weekdayOf(day));
 }
 
+/**
+ * The calendar week (ISO 8601, as on German calendars): week 1 is the week with the first Thursday
+ * of the year, so 31.12. can be in week 1 and 1.1. in week 52 or 53.
+ */
+export function isoWeek(day: CalendarDay): number {
+  const thursday = addDays(startOfWeek(day), 3);
+  const firstOfYear = calendarDay(`${thursday.slice(0, 4)}-01-01`);
+  return Math.floor(daysBetween(firstOfYear, thursday) / 7) + 1;
+}
+
 /** The seven days Monday to Sunday of the week the day belongs to. */
 export function weekDays(day: CalendarDay): CalendarDay[] {
   const monday = startOfWeek(day);

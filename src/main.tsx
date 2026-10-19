@@ -1,5 +1,6 @@
-import "@kern-ux/native/dist/kern.min.css";
-import "@kern-ux/native/dist/fonts/fira-sans.css";
+// Archivo from the app's own files (no request to Google Fonts, see DESIGN.md section 4).
+import "@fontsource-variable/archivo/wght.css";
+import "./ui/tokens.css";
 import "./ui/app.css";
 import { render } from "preact";
 import { createLocalStorage, type KeyValueStore } from "./storage/localStorage";

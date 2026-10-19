@@ -1,6 +1,7 @@
 import { useState } from "preact/hooks";
 import { dayFromDate } from "../../domain/date";
 import { rawDataFileName } from "../../storage/exportImport";
+import { ErrorAlert } from "../components/Alert";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { PageTitle } from "../components/PageTitle";
 import { downloadTextFile } from "../download";
@@ -55,89 +56,69 @@ export function StorageProblemPage({
       <PageTitle
         title={canRescue ? "Gespeicherte Daten nicht lesbar" : "Speicher nicht verfügbar"}
       />
-      <div class="stack">
-        <div class="kern-alert kern-alert--danger" role="alert">
-          <div class="kern-alert__header">
-            <span class="kern-icon kern-icon--danger" aria-hidden="true" />
-            <span class="kern-title">Die Daten werden nicht angezeigt</span>
-          </div>
-          <div class="kern-alert__body">
-            <p class="kern-body">{message}</p>
-            {details.length > 0 && (
-              <ul class="kern-list kern-list--bullet">
-                {details.map((detail) => (
-                  <li key={detail}>{detail}</li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
+      <div class="page-stack page-stack--narrow">
+        <ErrorAlert title="Die Daten werden nicht angezeigt">
+          <p>{message}</p>
+          {details.length > 0 && (
+            <ul class="bullet-list">
+              {details.map((detail) => (
+                <li key={detail}>{detail}</li>
+              ))}
+            </ul>
+          )}
+        </ErrorAlert>
 
         {canRescue ? (
           <>
-            <p class="kern-body">
+            <p>
               Die Putzplan-App hat nichts verändert und überschreibt die Daten nicht von selbst.
               Sichern Sie sie zuerst als Datei, damit sich der Fehler später reparieren lässt.
               Danach können Sie neu beginnen.
             </p>
-            <section class="stack" aria-labelledby="schritt-1">
-              <h2 class="kern-title" id="schritt-1">
+            <section class="tile form" aria-labelledby="schritt-1">
+              <h2 class="tile__title" id="schritt-1">
                 1. Rohdaten herunterladen
               </h2>
-              <div>
-                <button class="kern-btn kern-btn--primary" type="button" onClick={download}>
-                  <span class="kern-label">Rohdaten herunterladen</span>
+              <div class="button-row">
+                <button class="btn btn--primary" type="button" onClick={download}>
+                  Rohdaten herunterladen
                 </button>
               </div>
-              <p class="kern-body" role="status">
+              <p class="form-status" role="status">
                 {downloaded
                   ? "Die Rohdaten wurden als Datei heruntergeladen. Bewahren Sie die Datei auf."
                   : ""}
               </p>
             </section>
             {downloaded && (
-              <section class="stack" aria-labelledby="schritt-2">
-                <h2 class="kern-title" id="schritt-2">
+              <section class="tile form" aria-labelledby="schritt-2">
+                <h2 class="tile__title" id="schritt-2">
                   2. Neu beginnen
                 </h2>
-                <p class="kern-body">
+                <p>
                   Dabei werden die gespeicherten Daten in diesem Browser gelöscht. Aufgaben und
                   Erledigtes sind dann nur noch in der heruntergeladenen Datei vorhanden.
                 </p>
-                {discardError && (
-                  <div class="kern-alert kern-alert--danger" role="alert">
-                    <div class="kern-alert__header">
-                      <span class="kern-icon kern-icon--danger" aria-hidden="true" />
-                      <span class="kern-title">Nicht gelöscht</span>
-                    </div>
-                    <div class="kern-alert__body">
-                      <p class="kern-body">{discardError}</p>
-                    </div>
-                  </div>
-                )}
-                <div>
-                  <button
-                    class="kern-btn kern-btn--secondary"
-                    type="button"
-                    onClick={() => setAsking(true)}
-                  >
-                    <span class="kern-label">Neu beginnen …</span>
+                {discardError && <ErrorAlert title="Nicht gelöscht">{discardError}</ErrorAlert>}
+                <div class="button-row">
+                  <button class="btn btn--secondary" type="button" onClick={() => setAsking(true)}>
+                    Neu beginnen …
                   </button>
                 </div>
               </section>
             )}
           </>
         ) : (
-          <p class="kern-body">
+          <p>
             Der Browser-Speicher lässt sich gerade nicht lesen. Prüfen Sie, ob das Speichern von
             Website-Daten erlaubt ist (z. B. nicht im privaten Fenster), und versuchen Sie es dann
             erneut.
           </p>
         )}
 
-        <div>
-          <button class="kern-btn kern-btn--tertiary" type="button" onClick={onRetry}>
-            <span class="kern-label">Erneut versuchen</span>
+        <div class="button-row">
+          <button class="btn btn--quiet" type="button" onClick={onRetry}>
+            Erneut versuchen
           </button>
         </div>
       </div>
@@ -149,7 +130,7 @@ export function StorageProblemPage({
         onConfirm={discard}
         onCancel={() => setAsking(false)}
       >
-        <p class="kern-body">
+        <p>
           Die gespeicherten Daten in diesem Browser werden gelöscht. Das lässt sich nicht rückgängig
           machen. Die heruntergeladene Datei bleibt erhalten.
         </p>

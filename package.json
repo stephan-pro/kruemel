@@ -17,7 +17,8 @@
     "prepare": "git config core.hooksPath .githooks"
   },
   "dependencies": {
-    "@kern-ux/native": "^2.8.2",
+    "@fontsource-variable/archivo": "^5.3.0",
+    "lucide-preact": "^1.59.0",
     "preact": "^11.0.1"
   },
   "devDependencies": {

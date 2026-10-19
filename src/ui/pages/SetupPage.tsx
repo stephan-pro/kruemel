@@ -12,17 +12,19 @@ export function SetupPage({ onSubmit }: SetupPageProps) {
   return (
     <>
       <PageTitle title="Ersteinrichtung" />
-      <p class="kern-body intro">
-        Willkommen beim Putzplan. Tragen Sie die Namen der beiden Personen ein, die den Haushalt
-        gemeinsam organisieren, und wählen Sie, wer dieses Gerät benutzt. Beides lässt sich später
-        in den Einstellungen ändern.
-      </p>
-      <NamesForm
-        initialNames={{ personA: "", personB: "" }}
-        initialPerson={undefined}
-        submitLabel="Los geht’s"
-        onSubmit={onSubmit}
-      />
+      <div class="tile tile--narrow">
+        <p class="intro">
+          Willkommen beim Putzplan. Tragen Sie die Namen der beiden Personen ein, die den Haushalt
+          gemeinsam organisieren, und wählen Sie, wer dieses Gerät benutzt. Beides lässt sich später
+          in den Einstellungen ändern.
+        </p>
+        <NamesForm
+          initialNames={{ personA: "", personB: "" }}
+          initialPerson={undefined}
+          submitLabel="Los geht’s"
+          onSubmit={onSubmit}
+        />
+      </div>
     </>
   );
 }

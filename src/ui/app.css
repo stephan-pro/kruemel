@@ -1,223 +1,1310 @@
-/* Layout of the app shell. Colours, fonts and spacing come from the KERN variables, so light and
-   dark mode follow the device without extra rules. */
+/* The look of the app (docs/design/DESIGN.md, style "Kachel-Board"). Colours come only from the
+   tokens in tokens.css, so both colour schemes work without extra rules here.
+   Phones first; from 900 px the navigation becomes a column on the left. */
+
+/* ---------- Base ---------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
 
 body {
   margin: 0;
-  background: var(--kern-color-layout-background-default, #fff);
-  color: var(--kern-color-layout-text-default, #131525);
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.45;
 }
 
-.app {
-  max-width: 48rem;
-  margin: 0 auto;
-  padding: 0 var(--kern-metric-space-default, 16px) var(--kern-metric-space-x-large, 32px);
+h1,
+h2,
+h3,
+p {
+  margin: 0;
 }
+
+a {
+  color: var(--accent);
+  text-underline-offset: 2px;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+/* Clearly visible in both themes (DESIGN.md section 2). */
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Headings and messages only get the focus by script; they are not controls, so no ring. */
+[tabindex="-1"]:focus {
+  outline: none;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+/* ---------- App frame ---------- */
 
 .skip-link {
   position: absolute;
-  left: var(--kern-metric-space-default, 16px);
-  top: 0;
-  padding: var(--kern-metric-space-small, 8px) var(--kern-metric-space-default, 16px);
-  background: var(--kern-color-layout-background-default, #fff);
-  color: var(--kern-color-action-default, #0b4f9e);
-  transform: translateY(-120%);
+  top: 8px;
+  left: 16px;
+  z-index: 20;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--accent);
+  font-weight: 700;
+  transform: translateY(-200%);
 }
 
 .skip-link:focus {
   transform: translateY(0);
-  z-index: 10;
-}
-
-.demo-hint {
-  margin-top: var(--kern-metric-space-default, 16px);
 }
 
 .app-header {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
-  gap: var(--kern-metric-space-small, 8px) var(--kern-metric-space-default, 16px);
-  padding: var(--kern-metric-space-default, 16px) 0;
-  border-bottom: var(--kern-metric-border-width-default, 2px) solid
-    var(--kern-color-layout-border, #6e7597);
+  gap: 8px 16px;
+  padding: 14px var(--page-gutter) 0;
 }
 
 .app-name {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
 .app-person {
-  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
 }
 
-.main-nav {
-  flex-basis: 100%;
+.app-person strong {
+  color: var(--text);
 }
 
 .main-nav__list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--kern-metric-space-small, 8px);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .main-nav__link {
-  display: inline-flex;
-  align-items: center;
-  /* At least 44 px high for fingers (WCAG 2.5.8 asks for 24 px, phones are happier with more). */
-  min-height: 44px;
-  padding: 0 var(--kern-metric-space-default, 16px);
-  border-bottom: var(--kern-metric-border-width-bold, 4px) solid transparent;
-  color: var(--kern-color-action-default, #0b4f9e);
-  font-size: 1.125rem;
+  display: flex;
   text-decoration: none;
+  border-radius: 12px;
 }
 
-.main-nav__link:hover {
-  text-decoration: underline;
+.main-nav__icon {
+  flex: none;
+}
+
+/* Phones: the navigation is a bar at the bottom of the screen. */
+.main-nav {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 10;
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  background: var(--surface);
+  box-shadow: 0 -1px 0 var(--surface-2);
+}
+
+.main-nav__list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.main-nav__link {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 52px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 /* "page": this very page; "true": the section a form page belongs to. */
 .main-nav__link[aria-current] {
-  border-bottom-color: currentColor;
-  font-weight: 700;
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.demo-hint {
+  margin: 16px var(--page-gutter) 0;
+  padding: 12px 16px;
+  border-radius: var(--radius-control);
+  background: var(--tone-blue-bg);
+  color: var(--text);
+  font-size: 14px;
 }
 
 main {
-  padding-top: var(--kern-metric-space-x-large, 32px);
+  max-width: 1200px;
+  padding: 24px var(--page-gutter) 40px;
 }
 
 main:focus {
   outline: none;
 }
 
-.page-title {
-  margin: 0 0 var(--kern-metric-space-default, 16px);
+/* Room for the bottom bar and the floating button, so they never cover the last content. */
+.app--with-nav main {
+  padding-bottom: calc(176px + env(safe-area-inset-bottom));
 }
 
-/* The heading only gets the focus by script; it is not a control, so no ring. */
-[tabindex="-1"]:focus {
-  outline: none;
+.app:not(.app--with-nav) main {
+  max-width: 44rem;
+}
+
+@media (min-width: 900px) {
+  .app--with-nav {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .app--with-nav .app-header {
+    position: sticky;
+    top: 0;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 6px;
+    height: 100vh;
+    padding: 24px 16px;
+    overflow-y: auto;
+    background: var(--surface);
+  }
+
+  .app--with-nav .app-name {
+    padding: 0 12px 18px;
+    font-size: 22px;
+  }
+
+  .app--with-nav .main-nav {
+    position: static;
+    padding: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+  .app--with-nav .main-nav__list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .app--with-nav .main-nav__link {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 12px;
+    min-height: 48px;
+    padding: 0 12px;
+    color: var(--text);
+    font-size: 15px;
+  }
+
+  .app--with-nav .main-nav__link[aria-current] {
+    background: var(--inverse);
+    color: var(--on-inverse);
+  }
+
+  .app--with-nav .app-person {
+    margin-top: auto;
+    padding: 16px 12px 0;
+  }
+
+  .app-content {
+    min-width: 0;
+  }
+
+  main {
+    padding-top: 28px;
+  }
+
+  .app--with-nav main {
+    padding-bottom: 40px;
+  }
+}
+
+/* ---------- Page structure ---------- */
+
+.page-title {
+  margin-bottom: 20px;
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.page-head .page-title,
+.week-head .page-title {
+  margin-bottom: 0;
+}
+
+.page-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tile-gap);
+}
+
+.page-stack--narrow,
+.tile--narrow {
+  max-width: 40rem;
 }
 
 .intro {
-  margin: 0 0 var(--kern-metric-space-default, 16px);
+  margin-bottom: 20px;
 }
 
-.stack {
+.section-title {
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.eyebrow {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.bullet-list {
+  margin: 8px 0 0;
+  padding-left: 1.25em;
+}
+
+.success-note {
+  padding: 14px 16px;
+  border-radius: var(--radius-control);
+  background: var(--tone-green-bg);
+  color: var(--text);
+  font-weight: 600;
+}
+
+@media (min-width: 900px) {
+  .page-title {
+    font-size: 34px;
+  }
+
+  .section-title {
+    font-size: 20px;
+  }
+}
+
+/* ---------- Tiles ---------- */
+
+.tile {
   display: flex;
   flex-direction: column;
-  gap: var(--kern-metric-space-default, 16px);
+  gap: 12px;
+  min-width: 0;
+  padding: var(--tile-padding);
+  border-radius: var(--radius-tile);
+  background: var(--surface);
 }
+
+.tile__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tile__title {
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.tile__aside {
+  flex: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Small capitals label of the coloured tiles ("ÜBERFÄLLIG", "STAND"). */
+.tile__label {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+@media (min-width: 900px) {
+  .tile__title {
+    font-size: 20px;
+  }
+}
+
+/* ---------- Buttons ---------- */
 
 .button-row {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--kern-metric-space-default, 16px);
+  align-items: center;
+  gap: 12px;
 }
 
-.task-group {
-  margin-top: var(--kern-metric-space-large, 24px);
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
 }
 
-.card-list {
+.btn:active,
+.icon-btn:active,
+.tick:active,
+.day-button:active {
+  transform: scale(0.97);
+}
+
+.btn--primary {
+  background: var(--accent-tile);
+  color: var(--on-accent-tile);
+}
+
+/* On a tile. */
+.btn--secondary {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+/* Directly on the page background. */
+.btn--quiet {
+  background: var(--surface);
+  color: var(--text);
+}
+
+/* Confirms something that cannot be undone. */
+.btn--warn {
+  background: var(--warn-tile);
+  color: var(--on-warn-tile);
+}
+
+.btn--text-warn {
+  padding: 0 8px;
+  background: none;
+  color: var(--warn-text);
+}
+
+.btn--small {
+  padding: 0 14px;
+  font-size: 14px;
+}
+
+.icon-btn {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.text-btn {
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* Two or more options, one of them pressed ("Alle / Nur meine"). */
+.segmented {
+  display: flex;
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+  padding: 4px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: var(--surface);
+}
+
+.segmented__option {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--radius-chip);
+  background: none;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.segmented__option[aria-pressed="true"] {
+  background: var(--inverse);
+  color: var(--on-inverse);
+}
+
+/* ---------- Forms ---------- */
+
+.form {
   display: flex;
   flex-direction: column;
-  gap: var(--kern-metric-space-default, 16px);
+  gap: 20px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.field__label {
+  padding: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.field__hint {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.field__error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--warn-text);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.field__error-icon {
+  flex: none;
+}
+
+.input {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 14px;
+  border: 2px solid var(--control-border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 16px;
+}
+
+.input[aria-invalid="true"] {
+  border-color: var(--warn-text);
+}
+
+.input--narrow {
+  width: 8em;
+}
+
+.input--area {
+  min-height: 7em;
+  resize: vertical;
+}
+
+.select {
+  position: relative;
+  max-width: 20rem;
+}
+
+.select__control {
+  padding-right: 44px;
+  appearance: none;
+  cursor: pointer;
+}
+
+.select__icon {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  color: var(--text-muted);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.field-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
   margin: 0;
   padding: 0;
-  list-style: none;
+  border: 0;
 }
 
-/* Week view (F6) */
+.choices > legend {
+  margin-bottom: 8px;
+}
 
-.week-controls {
+.choices__list {
   display: flex;
   flex-direction: column;
-  gap: var(--kern-metric-space-default, 16px);
+  gap: 8px;
 }
 
-.week-range {
-  margin: var(--kern-metric-space-default, 16px) 0;
+.choices__list--inline {
+  flex-direction: row;
+  flex-wrap: wrap;
 }
 
-.week-day {
-  margin-top: var(--kern-metric-space-large, 24px);
-  padding: var(--kern-metric-space-small, 8px) var(--kern-metric-space-default, 16px);
-  border-left: var(--kern-metric-border-width-default, 2px) solid
-    var(--kern-color-layout-border, #6e7597);
+.choice {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 0 14px;
+  border-radius: var(--radius-control);
+  background: var(--surface-2);
 }
 
-/* Today and overdue are marked by a heavier bar and by words ("heute", "überfällig"), not by
-   colour alone. */
-.week-day--today {
-  border-left-width: var(--kern-metric-border-width-bold, 4px);
-  border-left-color: var(--kern-color-action-default, #0b4f9e);
-  background: var(--kern-color-layout-background-hued, #f1f2f7);
+.choice:has(.choice__input:checked) {
+  box-shadow: inset 0 0 0 2px var(--accent);
 }
 
-.week-day--overdue {
-  border-left-width: var(--kern-metric-border-width-bold, 4px);
-  border-left-color: var(--kern-color-feedback-danger-contextual, #c31c13);
-}
-
-.week-day h2,
-.week-empty {
+/* Drawn from the tokens, so the circle has 3:1 against the row in both themes. */
+.choice__input {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  width: 22px;
+  height: 22px;
   margin: 0;
+  border: 2px solid var(--control-border);
+  border-radius: 50%;
+  background: var(--surface);
+  appearance: none;
+  cursor: pointer;
 }
 
-.week-items {
+.choice__input:checked {
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow: inset 0 0 0 4px var(--surface);
+}
+
+/* Windows contrast themes: the browser's own radio buttons know the system colours. */
+@media (forced-colors: active) {
+  .choice__input {
+    appearance: auto;
+  }
+}
+
+.choice__label {
+  flex: 1;
+  padding: 12px 0;
+  cursor: pointer;
+}
+
+/* The whole row answers a click, not only the small circle and its text. */
+.choice__label::before {
+  position: absolute;
+  inset: 0;
+  content: "";
+}
+
+.form-status:empty {
+  margin-top: -20px;
+}
+
+/* ---------- Messages ---------- */
+
+.alert {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  border: 2px solid var(--warn-text);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.alert__icon {
+  flex: none;
+  color: var(--warn-text);
+}
+
+.alert__body {
   display: flex;
   flex-direction: column;
-  gap: var(--kern-metric-space-small, 8px);
-  margin: 0;
-  padding: 0;
-  list-style: none;
+  gap: 4px;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
-.week-item {
+.alert__title {
+  font-weight: 800;
+}
+
+/* After ticking off: what happened, with "Rückgängig". Stays until something else happens. */
+.snackbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--kern-metric-space-small, 8px) var(--kern-metric-space-default, 16px);
-  padding: var(--kern-metric-space-small, 8px) var(--kern-metric-space-default, 16px);
-  border: var(--kern-metric-border-width-light, 1px) solid var(--kern-color-layout-border, #6e7597);
-  border-radius: var(--kern-metric-border-radius-default, 4px);
-  background: var(--kern-color-layout-background-default, #fff);
+  gap: 12px;
+  margin-bottom: var(--tile-gap);
+  padding: 12px 16px;
+  border-radius: var(--radius-control);
+  background: var(--inverse);
+  color: var(--on-inverse);
+  font-weight: 600;
+  animation: rise 160ms ease-out;
 }
 
-.week-item__text {
-  min-width: 0;
+.snackbar :focus-visible {
+  outline-color: var(--on-inverse);
 }
 
-.week-item__title,
-.week-item__meta {
+.btn--snackbar {
+  border: 2px solid var(--on-inverse);
+  background: none;
+  color: var(--on-inverse);
+}
+
+.week-head + .alert,
+.snackbar + .alert {
+  margin-bottom: var(--tile-gap);
+}
+
+/* ---------- Dialog ---------- */
+
+.dialog {
+  width: min(32rem, calc(100vw - 32px));
+  padding: 24px;
+  border: 0;
+  border-radius: var(--radius-tile);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.dialog[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dialog::backdrop {
+  background: var(--backdrop, rgb(0 0 0 / 55%));
+}
+
+.dialog__title {
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+/* ---------- Task symbols ---------- */
+
+.task-symbol {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: var(--radius-control);
+}
+
+.task-symbol--blue {
+  background: var(--tone-blue-bg);
+  color: var(--tone-blue-fg);
+}
+
+/* ---------- Tasks ---------- */
+
+.task-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.task-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: var(--tile-gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.task-cards > li {
+  display: flex;
+}
+
+.task-card {
+  flex: 1;
+}
+
+.task-card__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.task-card__title {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  font-size: 14px;
+}
+
+.details__item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 6px;
+}
+
+.details dt {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.details dt::after {
+  content: ":";
+}
+
+.details dd {
   margin: 0;
   overflow-wrap: anywhere;
 }
 
-/* Done in a week that is over: greyed out. */
-.week-item--done {
-  color: var(--kern-color-layout-text-muted, #545b7d);
+.task-card__actions {
+  margin-top: auto;
 }
 
-.week-overdue {
-  font-weight: 700;
-  color: var(--kern-color-feedback-danger-contextual, #c31c13);
-}
+/* ---------- Week view ---------- */
 
-.kern-dialog::backdrop {
-  background: rgb(0 0 0 / 50%);
-}
-
-.kern-dialog__footer {
+.week-head {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--kern-metric-space-default, 16px);
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px 16px;
+  margin-bottom: 16px;
+}
+
+/* The heading comes first for screen readers; the calendar week is shown above it. */
+.week-head__titles {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column-reverse;
+  gap: 2px;
+}
+
+.week-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.week-head__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  flex-basis: 100%;
+}
+
+/* Phones: "Neue Aufgabe" floats above the navigation bar. */
+.new-task {
+  position: fixed;
+  right: 16px;
+  bottom: calc(88px + env(safe-area-inset-bottom));
+  z-index: 5;
+  width: 60px;
+  height: 60px;
+  padding: 0;
+  border-radius: 20px;
+  background: var(--inverse);
+  color: var(--on-inverse);
+  box-shadow: var(--shadow-float);
+}
+
+.new-task__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (min-width: 900px) {
+  .week-head__titles {
+    flex: 0 1 auto;
+  }
+
+  .week-head__actions {
+    flex-basis: auto;
+    margin-left: auto;
+  }
+
+  .new-task {
+    position: static;
+    width: auto;
+    height: auto;
+    min-height: 44px;
+    padding: 0 18px;
+    border-radius: var(--radius-control);
+    background: var(--accent-tile);
+    color: var(--on-accent-tile);
+    box-shadow: none;
+  }
+
+  .new-task__label {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+  }
+}
+
+.week-board {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--tile-gap);
+}
+
+.day-tile {
+  flex: 2 1 420px;
+}
+
+.side-tiles {
+  display: flex;
+  flex: 1 1 260px;
+  flex-direction: column;
+  gap: var(--tile-gap);
+  min-width: 0;
+}
+
+.week-strip {
+  flex: 1 1 100%;
+  padding-inline: 12px;
+}
+
+@media (min-width: 900px) {
+  .week-strip {
+    padding-inline: var(--tile-padding);
+  }
+}
+
+/* Phones: "Überfällig" and "Stand" side by side; opened up, "Überfällig" takes the whole row. */
+@media (max-width: 699px) {
+  .side-tiles {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .side-tiles > .tile {
+    flex: 1 1 0;
+    min-height: 150px;
+  }
+
+  .side-tiles > .warn-tile--expanded {
+    flex-basis: 100%;
+  }
+}
+
+.entries {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.entry {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  color: var(--text);
+}
+
+.entry__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.entry__title {
+  font-size: 16px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.entry__meta {
+  color: var(--text-muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.entry__meta--warn {
+  color: var(--warn-text);
+  font-weight: 700;
+}
+
+/* Done in a week that is over: greyed out. */
+.entry--done {
+  color: var(--text-muted);
+}
+
+.entry__progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bar {
+  display: block;
+  flex: 1;
+  max-width: 12rem;
+  height: 6px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+}
+
+.bar__fill {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+
+.bar--on-accent {
+  flex: none;
+  max-width: none;
+  height: 8px;
+  margin-top: auto;
+  background: color-mix(in srgb, var(--on-accent-tile) 25%, transparent);
+}
+
+.bar--on-accent .bar__fill {
+  background: var(--on-accent-tile);
+}
+
+/* The box to tick a task off. */
+.tick {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  padding: 0;
+  border: 2px solid var(--control-border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.tick__icon {
+  opacity: 0;
+  transition: opacity 150ms ease-out;
+}
+
+.tick:hover .tick__icon,
+.tick:focus-visible .tick__icon {
+  opacity: 0.6;
+}
+
+.tick--done {
+  border-color: transparent;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  cursor: default;
+}
+
+.warn-tile {
+  background: var(--warn-tile);
+  color: var(--on-warn-tile);
+}
+
+.warn-tile :focus-visible {
+  outline-color: var(--on-warn-tile);
+}
+
+.overdue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.overdue {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.overdue__title {
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.overdue__meta {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.btn--warn-action {
+  margin-top: 4px;
+  background: var(--warn-tile-action);
+  color: var(--on-warn-tile-action);
+}
+
+.accent-tile {
+  gap: 6px;
+  background: var(--accent-tile);
+  color: var(--on-accent-tile);
+}
+
+.stand {
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.stand__of {
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.stand__text {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Positioned, so the hidden texts of the day buttons stay inside the scrolling area. */
+.week-strip__scroll {
+  position: relative;
+  overflow-x: auto;
+}
+
+/* At least 44 px per day; on very narrow phones the row scrolls sideways instead. */
+.week-strip__days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(44px, 1fr));
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.week-strip__day {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.day-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  width: 100%;
+  min-height: 72px;
+  padding: 6px 0;
+  border: 0;
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.day-button__name,
+.day-button__date {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.day-button__count {
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.day-button--today {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.day-button--today:not([aria-pressed="true"]) .day-button__name {
+  color: var(--accent);
+}
+
+.day-button[aria-pressed="true"] {
+  background: var(--inverse);
+  color: var(--on-inverse);
+}
+
+/* The tasks of every day are listed only where there is room. */
+.chips {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .week-strip__days {
+    min-width: 840px;
+    gap: 10px;
+  }
+
+  .day-button {
+    min-height: 64px;
+  }
+
+  .chips {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .chip {
+    display: flex;
+    flex-direction: column;
+    padding: 8px 10px;
+    border-radius: var(--radius-chip);
+    background: var(--surface-2);
+    font-size: 13px;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+
+  .chip__meta {
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+
+  .chip--done {
+    color: var(--text-muted);
+  }
+}
+
+/* ---------- Motion (DESIGN.md section 8) ---------- */
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    /* biome-ignore lint/complexity/noImportantStyles: must win over every animation of the app */
+    animation: none !important;
+    /* biome-ignore lint/complexity/noImportantStyles: must win over every transition of the app */
+    transition: none !important;
+  }
+
+  .btn:active,
+  .icon-btn:active,
+  .tick:active,
+  .day-button:active {
+    transform: none;
+  }
 }

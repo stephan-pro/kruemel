@@ -5,6 +5,7 @@ import {
   type PersonNameInput,
 } from "../../domain/personNames";
 import type { Person } from "../../domain/task";
+import { ErrorAlert } from "./Alert";
 import { TextField } from "./fields";
 import { PersonChoice } from "./PersonChoice";
 
@@ -85,7 +86,7 @@ export function NamesForm({
   };
 
   return (
-    <form class="stack" onSubmit={submit} noValidate>
+    <form class="form" onSubmit={submit} noValidate>
       <TextField
         id="name-personA"
         label="Name der ersten Person"
@@ -106,23 +107,13 @@ export function NamesForm({
         error={errors.person}
         onChange={(chosen) => edit(() => setPerson(chosen))}
       />
-      {saveError && (
-        <div class="kern-alert kern-alert--danger" role="alert">
-          <div class="kern-alert__header">
-            <span class="kern-icon kern-icon--danger" aria-hidden="true" />
-            <span class="kern-title">Nicht gespeichert</span>
-          </div>
-          <div class="kern-alert__body">
-            <p class="kern-body">{saveError}</p>
-          </div>
-        </div>
-      )}
-      <div>
-        <button class="kern-btn kern-btn--primary" type="submit">
-          <span class="kern-label">{submitLabel}</span>
+      {saveError && <ErrorAlert title="Nicht gespeichert">{saveError}</ErrorAlert>}
+      <div class="button-row">
+        <button class="btn btn--primary" type="submit">
+          {submitLabel}
         </button>
       </div>
-      <p class="kern-body" role="status">
+      <p class="form-status" role="status">
         {saved ? savedMessage : ""}
       </p>
     </form>

@@ -8,6 +8,7 @@ import {
   dayFromDate,
   daysBetween,
   isCalendarDay,
+  isoWeek,
   startOfWeek,
   weekDays,
   weekdayOf,
@@ -185,6 +186,21 @@ describe("Wochen: Beginn am Montag", () => {
     const days = weekDays(d("2026-12-31"));
     expect(days[0]).toBe("2026-12-28");
     expect(days[6]).toBe("2027-01-03");
+  });
+
+  it("isoWeek liefert die Kalenderwoche wie im deutschen Kalender", () => {
+    expect(isoWeek(d("2026-10-19"))).toBe(43);
+    expect(isoWeek(d("2026-10-25"))).toBe(43);
+    expect(isoWeek(d("2026-10-26"))).toBe(44);
+    expect(isoWeek(d("2026-01-01"))).toBe(1);
+  });
+
+  it("isoWeek über den Jahreswechsel: KW 53 und KW 1 im Nachbarjahr", () => {
+    expect(isoWeek(d("2026-12-28"))).toBe(53);
+    expect(isoWeek(d("2027-01-03"))).toBe(53);
+    expect(isoWeek(d("2027-01-04"))).toBe(1);
+    expect(isoWeek(d("2024-12-30"))).toBe(1);
+    expect(isoWeek(d("2021-01-03"))).toBe(53);
   });
 
   it("Wochen blättern: vor und zurück mit addWeeks", () => {

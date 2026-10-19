@@ -3,7 +3,7 @@
 
 import { isPerson } from "../domain/task";
 import { type AppData, emptyAppData } from "./appData";
-import { type AppStorage, type DeviceSettings, StorageError } from "./storage";
+import { type AppStorage, type DeviceSettings, isColorScheme, StorageError } from "./storage";
 import { parseAppData } from "./validate";
 
 /** The part of the browser's `Storage` that is used. */
@@ -97,14 +97,20 @@ export function createLocalStorage(options: LocalStorageOptions): AppStorage {
       if (text === null) {
         return {};
       }
-      // Only a preference: if it is unreadable the app simply asks "Ich bin" again.
+      // Only preferences: what is unreadable is left out, so the app asks "Ich bin" again and
+      // follows the device's colour scheme. Each value counts on its own.
+      let parsed: { currentPerson?: unknown; colorScheme?: unknown } | null;
       try {
-        const parsed: unknown = JSON.parse(text);
-        const person = (parsed as { currentPerson?: unknown } | null)?.currentPerson;
-        return isPerson(person) ? { currentPerson: person } : {};
+        parsed = JSON.parse(text);
       } catch {
         return {};
       }
+      const person = parsed?.currentPerson;
+      const scheme = parsed?.colorScheme;
+      return {
+        ...(isPerson(person) ? { currentPerson: person } : {}),
+        ...(isColorScheme(scheme) ? { colorScheme: scheme } : {}),
+      };
     },
 
     async saveDevice(settings: DeviceSettings): Promise<void> {

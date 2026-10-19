@@ -10,7 +10,9 @@ export function PlaceholderPage({ route }: PlaceholderPageProps) {
   return (
     <>
       <PageTitle title={routeInfo(route).title} />
-      <p class="kern-body">Diese Seite ist noch im Aufbau.</p>
+      <div class="tile tile--narrow">
+        <p>Diese Seite ist noch im Aufbau.</p>
+      </div>
     </>
   );
 }

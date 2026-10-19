@@ -59,7 +59,7 @@ test.describe("Ersteinrichtung (F5 Namen)", () => {
     await page.getByRole("button", { name: "Los geht’s" }).click();
 
     await expect(page).toHaveTitle("Wochenübersicht – Putzplan");
-    await expect(page.getByRole("heading", { level: 1, name: "Wochenübersicht" })).toBeFocused();
+    await expect(page.getByRole("heading", { level: 1, name: "Diese Woche" })).toBeFocused();
     await expect(page.getByText("Ich bin:")).toContainText("Robin");
 
     const data = JSON.parse((await page.evaluate((k) => localStorage.getItem(k), dataKey)) ?? "");
@@ -76,11 +76,11 @@ test.describe("Ersteinrichtung (F5 Namen)", () => {
     await fillSetup(page, "Alex", "Robin");
     await page.getByRole("radio", { name: "Alex" }).check();
     await page.getByRole("button", { name: "Los geht’s" }).click();
-    await expect(page.getByRole("heading", { level: 1, name: "Wochenübersicht" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Diese Woche" })).toBeVisible();
 
     await page.reload();
 
-    await expect(page.getByRole("heading", { level: 1, name: "Wochenübersicht" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Diese Woche" })).toBeVisible();
     await expect(page.getByText("Ich bin:")).toContainText("Alex");
   });
 
@@ -116,27 +116,29 @@ test.describe("„Ich bin“ auf einem Gerät ohne Auswahl (F5)", () => {
 
     await page.getByRole("radio", { name: DEMO_NAMES.personB }).check();
     await page.getByRole("button", { name: "Weiter" }).click();
-    await expect(page.getByRole("heading", { level: 1, name: "Wochenübersicht" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Diese Woche" })).toBeVisible();
     await expect(page.getByText("Ich bin:")).toContainText(DEMO_NAMES.personB);
   });
 });
 
 test.describe("Rahmen und Navigation", () => {
+  // The week view names the shown week in its heading; the tab title stays "Wochenübersicht".
   const pages = [
-    { link: "Woche", title: "Wochenübersicht" },
-    { link: "Aufgaben", title: "Aufgaben" },
-    { link: "Erledigt", title: "Erledigt" },
-    { link: "Einstellungen", title: "Einstellungen" },
+    { link: "Woche", title: "Wochenübersicht", heading: "Diese Woche" },
+    { link: "Aufgaben", title: "Aufgaben", heading: "Aufgaben" },
+    { link: "Erledigt", title: "Erledigt", heading: "Erledigt" },
+    { link: "Einstellungen", title: "Einstellungen", heading: "Einstellungen" },
   ];
 
   test("beginnt ohne Adresszusatz mit der Wochenübersicht", async ({ page }) => {
     await startConfigured(page);
 
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Wochenübersicht");
+    await expect(page).toHaveTitle("Wochenübersicht – Putzplan");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Diese Woche");
     await expect(page.getByRole("link", { name: "Woche" })).toHaveAttribute("aria-current", "page");
   });
 
-  for (const { link, title } of pages) {
+  for (const { link, title, heading } of pages) {
     test(`Seite „${title}“: Tab-Titel, Überschrift mit Fokus, aktuelle Seite und axe`, async ({
       page,
     }) => {
@@ -147,7 +149,7 @@ test.describe("Rahmen und Navigation", () => {
       await page.getByRole("link", { name: link, exact: true }).click();
 
       await expect(page).toHaveTitle(`${title} – Putzplan`);
-      await expect(page.getByRole("heading", { level: 1, name: title })).toBeFocused();
+      await expect(page.getByRole("heading", { level: 1, name: heading })).toBeFocused();
       await expect(page.getByRole("link", { name: link, exact: true })).toHaveAttribute(
         "aria-current",
         "page",
@@ -200,7 +202,7 @@ test.describe("Rahmen und Navigation", () => {
 
     await page.goBack();
 
-    await expect(page.getByRole("heading", { level: 1, name: "Wochenübersicht" })).toBeFocused();
+    await expect(page.getByRole("heading", { level: 1, name: "Diese Woche" })).toBeFocused();
   });
 
   test("öffnet eine Seite direkt über ihre Adresse", async ({ page }) => {
@@ -371,7 +373,7 @@ test.describe("Unlesbare Daten (Speicher)", () => {
     await fillSetup(page, "Alex", "Robin");
     await page.getByRole("radio", { name: "Alex" }).check();
     await page.getByRole("button", { name: "Los geht’s" }).click();
-    await expect(page.getByRole("heading", { level: 1, name: "Wochenübersicht" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Diese Woche" })).toBeVisible();
   });
 
   test("„Erneut versuchen“ lädt wieder, nachdem der Fehler behoben ist", async ({ page }) => {

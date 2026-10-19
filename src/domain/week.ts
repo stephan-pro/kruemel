@@ -32,12 +32,22 @@ export interface WeekDayView {
   readonly entries: readonly WeekEntry[];
 }
 
+/**
+ * How far the week is ("Stand"): `due` counts every round of a task with its due date in the week,
+ * the ticked-off ones included; `done` counts those ticked off.
+ */
+export interface WeekProgress {
+  readonly done: number;
+  readonly due: number;
+}
+
 export interface WeekView {
   readonly position: WeekPosition;
   /** Monday to Sunday. */
   readonly days: readonly WeekDayView[];
   /** Open tasks whose due date has passed, oldest first; only in the current week (see below). */
   readonly overdue: readonly OpenWeekEntry[];
+  readonly progress: WeekProgress;
 }
 
 export interface WeekViewInput {
@@ -80,6 +90,8 @@ function positionOf(shownDay: CalendarDay, today: CalendarDay): WeekPosition {
  * - Weeks that are over also show what was ticked off, on the day it was due. The current and
  *   future weeks do not: a ticked-off task is gone from the plan (F3).
  * - "Only mine" keeps what the person is responsible for, "both" included.
+ * - The progress counts the rounds due in the week, in every week, whether they are shown or not
+ *   (overdue tasks from earlier weeks do not count; ticked-off ones do).
  */
 export function weekView(input: WeekViewInput): WeekView {
   const { completions, shownDay, today, filter, person } = input;
@@ -89,10 +101,15 @@ export function weekView(input: WeekViewInput): WeekView {
     weekDays(shownDay).map((day) => [day, []]),
   );
   const overdue: OpenWeekEntry[] = [];
+  let openDue = 0;
+  let done = 0;
 
   for (const task of visibleTasks.filter(isOpen)) {
     const daysOverdue = Math.max(0, daysBetween(task.dueDate, today));
     const entry: OpenWeekEntry = { kind: "open", task, daysOverdue };
+    if (entriesByDay.has(task.dueDate)) {
+      openDue += 1;
+    }
     if (position === "current" && daysOverdue > 0) {
       overdue.push(entry);
     } else {
@@ -100,17 +117,21 @@ export function weekView(input: WeekViewInput): WeekView {
     }
   }
 
-  if (position === "past") {
-    const taskById = new Map(visibleTasks.map((task) => [task.id, task]));
-    for (const completion of completions) {
-      const task = taskById.get(completion.taskId);
-      if (task !== undefined) {
-        entriesByDay.get(completion.previousDueDate)?.push({ kind: "done", task, completion });
-      }
+  const taskById = new Map(visibleTasks.map((task) => [task.id, task]));
+  for (const completion of completions) {
+    const task = taskById.get(completion.taskId);
+    const day = entriesByDay.get(completion.previousDueDate);
+    if (task === undefined || day === undefined) {
+      continue;
+    }
+    done += 1;
+    if (position === "past") {
+      day.push({ kind: "done", task, completion });
     }
   }
 
   return {
+    progress: { done, due: done + openDue },
     position,
     days: [...entriesByDay].map(([day, entries]) => ({
       day,

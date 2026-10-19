@@ -1,9 +1,12 @@
+import { Pencil, Plus, Trash2 } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import type { Completion, Task } from "../../domain/task";
 import { completionCount, groupOpenTasks } from "../../domain/taskManagement";
 import type { PersonNames } from "../../storage/appData";
+import { ErrorAlert } from "../components/Alert";
 import { DeleteTaskDialog } from "../components/DeleteTaskDialog";
 import { PageTitle } from "../components/PageTitle";
+import { TaskSymbol } from "../components/TaskSymbol";
 import { describeRecurrence, describeResponsibility, formatDay } from "../format";
 import { editTaskHash, newTaskHash, routeInfo } from "../route";
 
@@ -62,50 +65,37 @@ export function TasksPage({
 
   return (
     <>
-      <PageTitle title={routeInfo("tasks").title} />
-      <div role="status">
-        {announced && (
-          <div class="kern-alert kern-alert--success">
-            <div class="kern-alert__body">
-              <p class="kern-body">{announced}</p>
-            </div>
+      <div class="page-head">
+        <PageTitle title={routeInfo("tasks").title} />
+        <a class="btn btn--primary" href={newTaskHash()}>
+          <Plus size={20} />
+          Neue Aufgabe
+        </a>
+      </div>
+      <div class="page-stack">
+        <div role="status">{announced && <p class="success-note">{announced}</p>}</div>
+        {deleteError && <ErrorAlert title="Nicht gelöscht">{deleteError}</ErrorAlert>}
+
+        {groups.recurring.length === 0 && groups.oneOff.length === 0 && (
+          <div class="tile">
+            <p>Es gibt noch keine Aufgaben. Legen Sie die erste an.</p>
           </div>
         )}
+        <TaskGroup
+          id="wiederkehrend"
+          title="Wiederkehrende Aufgaben"
+          tasks={groups.recurring}
+          names={names}
+          onDelete={setDeleting}
+        />
+        <TaskGroup
+          id="einmalig"
+          title="Einmalige Aufgaben"
+          tasks={groups.oneOff}
+          names={names}
+          onDelete={setDeleting}
+        />
       </div>
-      {deleteError && (
-        <div class="kern-alert kern-alert--danger" role="alert">
-          <div class="kern-alert__header">
-            <span class="kern-icon kern-icon--danger" aria-hidden="true" />
-            <span class="kern-title">Nicht gelöscht</span>
-          </div>
-          <div class="kern-alert__body">
-            <p class="kern-body">{deleteError}</p>
-          </div>
-        </div>
-      )}
-      <p>
-        <a class="kern-btn kern-btn--primary" href={newTaskHash()}>
-          <span class="kern-label">Neue Aufgabe</span>
-        </a>
-      </p>
-
-      {groups.recurring.length === 0 && groups.oneOff.length === 0 && (
-        <p class="kern-body">Es gibt noch keine Aufgaben. Legen Sie die erste an.</p>
-      )}
-      <TaskGroup
-        id="wiederkehrend"
-        title="Wiederkehrende Aufgaben"
-        tasks={groups.recurring}
-        names={names}
-        onDelete={setDeleting}
-      />
-      <TaskGroup
-        id="einmalig"
-        title="Einmalige Aufgaben"
-        tasks={groups.oneOff}
-        names={names}
-        onDelete={setDeleting}
-      />
 
       <DeleteTaskDialog
         task={deleting}
@@ -130,11 +120,11 @@ function TaskGroup({ id, title, tasks, names, onDelete }: TaskGroupProps) {
     return null;
   }
   return (
-    <section class="stack task-group" aria-labelledby={id}>
-      <h2 class="kern-title" id={id}>
+    <section class="task-group" aria-labelledby={id}>
+      <h2 class="section-title" id={id}>
         {title}
       </h2>
-      <ul class="card-list">
+      <ul class="task-cards">
         {tasks.map((task) => (
           <li key={task.id}>
             <TaskCard task={task} names={names} onDelete={() => onDelete(task)} />
@@ -154,52 +144,51 @@ interface TaskCardProps {
 function TaskCard({ task, names, onDelete }: TaskCardProps) {
   const titleId = `aufgabe-${task.id}`;
   return (
-    <article class="kern-card kern-card--hug" aria-labelledby={titleId}>
-      <div class="kern-card__container">
-        <div class="kern-card__header">
-          <h3 class="kern-title" id={titleId}>
-            {task.title}
-          </h3>
-        </div>
-        <div class="kern-card__body">
-          <dl class="kern-description-list">
-            {task.kind === "recurring" && (
-              <Detail label="Rhythmus" value={describeRecurrence(task.recurrence)} />
-            )}
-            <Detail
-              label={task.kind === "recurring" ? "Nächster Termin" : "Fällig am"}
-              value={formatDay(task.dueDate)}
-            />
-            <Detail
-              label="Zuständig"
-              value={describeResponsibility(
-                task.assignee,
-                task.kind === "recurring" ? task.takenOverBy : undefined,
-                names,
-              )}
-            />
-            {task.note && <Detail label="Notiz" value={task.note} />}
-          </dl>
-        </div>
-        <div class="kern-card__footer">
-          {/* The name starts with the visible text and adds the task, so a button read on its own
-              ("Löschen: Bad putzen") still says what it is for. */}
-          <a
-            class="kern-btn kern-btn--secondary"
-            href={editTaskHash(task.id)}
-            aria-label={`Bearbeiten: ${task.title}`}
-          >
-            <span class="kern-label">Bearbeiten</span>
-          </a>
-          <button
-            class="kern-btn kern-btn--secondary"
-            type="button"
-            aria-label={`Löschen: ${task.title}`}
-            onClick={onDelete}
-          >
-            <span class="kern-label">Löschen</span>
-          </button>
-        </div>
+    <article class="tile task-card" aria-labelledby={titleId}>
+      <div class="task-card__head">
+        <TaskSymbol />
+        <h3 class="task-card__title" id={titleId}>
+          {task.title}
+        </h3>
+      </div>
+      <dl class="details">
+        {task.kind === "recurring" && (
+          <Detail label="Rhythmus" value={describeRecurrence(task.recurrence)} />
+        )}
+        <Detail
+          label={task.kind === "recurring" ? "Nächster Termin" : "Fällig am"}
+          value={formatDay(task.dueDate)}
+        />
+        <Detail
+          label="Zuständig"
+          value={describeResponsibility(
+            task.assignee,
+            task.kind === "recurring" ? task.takenOverBy : undefined,
+            names,
+          )}
+        />
+        {task.note && <Detail label="Notiz" value={task.note} />}
+      </dl>
+      <div class="button-row task-card__actions">
+        {/* The name starts with the visible text and adds the task, so a button read on its own
+            ("Löschen: Bad putzen") still says what it is for. */}
+        <a
+          class="btn btn--secondary btn--small"
+          href={editTaskHash(task.id)}
+          aria-label={`Bearbeiten: ${task.title}`}
+        >
+          <Pencil size={18} />
+          Bearbeiten
+        </a>
+        <button
+          class="btn btn--secondary btn--small"
+          type="button"
+          aria-label={`Löschen: ${task.title}`}
+          onClick={onDelete}
+        >
+          <Trash2 size={18} />
+          Löschen
+        </button>
       </div>
     </article>
   );
@@ -207,9 +196,9 @@ function TaskCard({ task, names, onDelete }: TaskCardProps) {
 
 function Detail({ label, value }: { readonly label: string; readonly value: string }) {
   return (
-    <div class="kern-description-list-item">
-      <dt class="kern-description-list-item__key">{label}</dt>
-      <dd class="kern-description-list-item__value">{value}</dd>
+    <div class="details__item">
+      <dt>{label}</dt>
+      <dd>{value}</dd>
     </div>
   );
 }

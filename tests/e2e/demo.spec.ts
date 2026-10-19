@@ -1,7 +1,7 @@
-import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { demoData } from "../../src/demo/demoData";
 import { dayFromDate } from "../../src/domain/date";
+import { expectNoAccessibilityViolations } from "./axe";
 
 // `npm run demo` serves the app in mode "demo" (see `webServer` in playwright.config.ts).
 const demoUrl = "http://localhost:4174/putzplan/";
@@ -19,13 +19,10 @@ test.describe("Demo-Modus (Q8)", () => {
     expect(JSON.parse(stored ?? "null")).toEqual(JSON.parse(JSON.stringify(expected)));
   });
 
-  test("hat keine Barrierefreiheitsverstöße (axe)", async ({ page }) => {
+  test("hat keine Barrierefreiheitsverstöße (axe, hell und dunkel)", async ({ page }) => {
     await page.goto(demoUrl);
     await expect(page.getByText(hint)).toBeVisible();
-    const results = await new AxeBuilder({ page })
-      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
-      .analyze();
-    expect(results.violations).toEqual([]);
+    await expectNoAccessibilityViolations(page);
   });
 
   test("behält eigene Änderungen beim Neuladen", async ({ page }) => {
