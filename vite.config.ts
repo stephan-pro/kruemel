@@ -8,8 +8,8 @@ export default defineConfig({
     // No `passWithNoTests`: `npm run check` must fail if no unit tests are found.
     coverage: {
       provider: "v8",
-      include: ["src/domain/**/*.ts"],
-      exclude: ["src/domain/**/*.test.ts", "src/domain/**/*.fixtures.ts"],
+      include: ["src/domain/**/*.ts", "src/storage/**/*.ts"],
+      exclude: ["src/**/*.test.ts", "src/**/*.fixtures.ts"],
       thresholds: {
         lines: 90,
         functions: 90,

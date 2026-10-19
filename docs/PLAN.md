@@ -24,7 +24,7 @@ Grundsatz (N7): Jede Bibliothek muss begründet sein. Was sich mit wenig eigenem
 | Hosting | GitHub Pages über GitHub Actions | Kostenlos (N6), https für PWA. Vite-`base` = `/<repo-name>/`. |
 | PWA | Eigenes `manifest.webmanifest` + eigener Service Worker | Spart das PWA-Plugin mit vielen Unterpaketen. |
 | Datum | Eigenes Modul, Kalendertag als `"YYYY-MM-DD"` | Keine Uhrzeit, keine Zeitzonenfehler, keine Bibliothek. |
-| Speicher | localStorage hinter Schnittstelle `Storage` (asynchron) | Etappe 2 tauscht nur die Umsetzung aus. `navigator.storage.persist()` anfragen. |
+| Speicher | localStorage hinter Schnittstelle `AppStorage` (asynchron; nicht `Storage`, damit der Browser-Typ nicht verdeckt wird) | Etappe 2 tauscht nur die Umsetzung aus. `navigator.storage.persist()` anfragen. |
 | IDs, Validierung, Routing | `crypto.randomUUID()`, eigene Prüffunktionen, eigener Hash-Router (`#/woche` …) | Keine Abhängigkeiten. |
 
 Abhängigkeiten gesamt: 9. Laufzeit: `preact`, `@kern-ux/native`. Entwicklung: `typescript`, `vite`, `vitest`, `@vitest/coverage-v8`, `@playwright/test`, `@axe-core/playwright`, `@biomejs/biome`.

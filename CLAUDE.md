@@ -14,7 +14,7 @@ Anforderungen: `docs/ANFORDERUNGEN.md` · Plan und Arbeitspakete: `docs/PLAN.md`
 ## Aufbau
 
 - `src/domain/` – Fachlogik, reine Funktionen, Tests `*.test.ts` daneben, Abdeckung ≥ 90 %.
-- `src/storage/` – Storage-Schnittstelle und localStorage-Umsetzung.
+- `src/storage/` – `AppStorage`-Schnittstelle, localStorage-Umsetzung, Prüfung (`parseAppData`), Export/Import. Tests daneben, Abdeckung ≥ 90 % wie `src/domain/`.
 - `src/ui/` – Preact-Komponenten (`pages/`, `components/`).
 - `tests/e2e/` – Playwright-Tests, jede Seite mit axe.
 - `scripts/check.mjs` – Ablauf von `npm run check`.
@@ -47,3 +47,4 @@ Anforderungen: `docs/ANFORDERUNGEN.md` · Plan und Arbeitspakete: `docs/PLAN.md`
 | Wochenübersicht | weekView |
 | Ich bin | currentPerson |
 | Export / Import | exportData / importData |
+| Gerät (nicht in der Sicherung) | device (`DeviceSettings`) |
