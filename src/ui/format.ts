@@ -112,6 +112,24 @@ export function countTasks(count: number): string {
   return count === 1 ? "1 Aufgabe" : `${count} Aufgaben`;
 }
 
+/** "keine Erledigungen", "1 Erledigung", "3 Erledigungen" */
+export function countCompletions(count: number): string {
+  if (count === 0) {
+    return "keine Erledigungen";
+  }
+  return count === 1 ? "1 Erledigung" : `${count} Erledigungen`;
+}
+
+/** "1 Eintrag", "3 Einträge" – the length of the "Erledigt" list. */
+export function countEntries(count: number): string {
+  return count === 1 ? "1 Eintrag" : `${count} Einträge`;
+}
+
+/** What a set of data holds: "4 Aufgaben und 12 Erledigungen". */
+export function describeContents(taskCount: number, completionCount: number): string {
+  return `${countTasks(taskCount)} und ${countCompletions(completionCount)}`;
+}
+
 /** "3 von 5 abgehakt" for a checklist. */
 export function describeChecklist(items: readonly ChecklistItem[]): string {
   return `${items.filter((item) => item.checked).length} von ${items.length} abgehakt`;
@@ -150,6 +168,16 @@ export function completionNotice(title: string, completion: Completion): string 
 /** What the page says after a completion was taken back. */
 export function undoNotice(title: string, dueDate: CalendarDay): string {
   return `Rückgängig gemacht: „${title}“ ist wieder offen, fällig am ${formatDay(dueDate)}.`;
+}
+
+/** What the settings say after the backup file was downloaded (F7). */
+export function exportNotice(fileName: string): string {
+  return `Die Sicherung „${fileName}“ wurde heruntergeladen. Bewahren Sie die Datei sicher auf.`;
+}
+
+/** What the settings say after a backup was put in place (F7): what it holds and where the old data is. */
+export function importNotice(contents: string, autoBackupName: string): string {
+  return `Sicherung eingespielt: ${contents}. Die bisherigen Daten wurden vorher als „${autoBackupName}“ heruntergeladen.`;
 }
 
 /**

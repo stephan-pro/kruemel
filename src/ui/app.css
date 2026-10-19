@@ -687,6 +687,19 @@ main:focus {
   margin-top: -20px;
 }
 
+/* "Sicherung": two blocks (download, import), each with a short text and one button. */
+.backup__block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.backup__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+}
+
 /* ---------- Messages ---------- */
 
 .alert {
@@ -1377,6 +1390,29 @@ main:focus {
 .entry__meta--warn {
   color: var(--warn-text);
   font-weight: 700;
+}
+
+/* A row of "Erledigt": picture, text and "Rückgängig". On phones the button drops below the text. */
+.done-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  min-height: 56px;
+}
+
+.done-row .entry__text {
+  flex: 1 1 10rem;
+}
+
+.done-row__undo {
+  flex: none;
+}
+
+@media (max-width: 479px) {
+  .done-row__undo {
+    margin-left: 56px;
+  }
 }
 
 /* Done in a week that is over: greyed out. */

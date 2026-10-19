@@ -14,9 +14,31 @@ export function exportFileName(today: CalendarDay): string {
   return `putzplan-${today}.json`;
 }
 
+/**
+ * Name of the copy the app downloads by itself before an import replaces the data, e.g.
+ * "putzplan-vor-import-2026-10-19.json". Different from `exportFileName`, so it never hides
+ * (or gets mistaken for) a backup the user made on purpose.
+ */
+export function autoBackupFileName(today: CalendarDay): string {
+  return `putzplan-vor-import-${today}.json`;
+}
+
 /** Name of the file with unreadable stored data, e.g. "putzplan-rohdaten-2026-10-19.json". */
 export function rawDataFileName(today: CalendarDay): string {
   return `putzplan-rohdaten-${today}.json`;
+}
+
+/**
+ * The largest file taken for a backup. Browser storage holds about 5 MB, so a bigger file is not
+ * one of ours; it is not even read (a wrong choice such as a video must not freeze the page).
+ */
+export const MAX_IMPORT_BYTES = 5 * 1024 * 1024;
+
+/** The reason a file of this size cannot be a backup, or `undefined` if the size is fine. */
+export function importSizeError(bytes: number): string | undefined {
+  return bytes > MAX_IMPORT_BYTES
+    ? "Die Datei ist zu groß für eine Sicherung (höchstens 5 MB)."
+    : undefined;
 }
 
 /**

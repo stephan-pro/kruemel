@@ -2,7 +2,15 @@
 import { describe, expect, it } from "vitest";
 import { d } from "../domain/task.fixtures";
 import { emptyAppData, SCHEMA_VERSION } from "./appData";
-import { exportData, exportFileName, importData, rawDataFileName } from "./exportImport";
+import {
+  autoBackupFileName,
+  exportData,
+  exportFileName,
+  importData,
+  importSizeError,
+  MAX_IMPORT_BYTES,
+  rawDataFileName,
+} from "./exportImport";
 import { asVersion1, sampleData } from "./storage.fixtures";
 
 /** Runs the sample export through a change and imports the result. */
@@ -55,6 +63,32 @@ describe("F7 Export", () => {
 
   it("Die Datei mit unlesbaren Rohdaten ist am Namen von einer Sicherung zu unterscheiden", () => {
     expect(rawDataFileName(d("2026-10-19"))).toBe("putzplan-rohdaten-2026-10-19.json");
+  });
+
+  it("F7 Die automatische Sicherung vor dem Import heißt anders als eine eigene Sicherung desselben Tages", () => {
+    expect(autoBackupFileName(d("2026-10-19"))).toBe("putzplan-vor-import-2026-10-19.json");
+    expect(autoBackupFileName(d("2026-10-19"))).not.toBe(exportFileName(d("2026-10-19")));
+  });
+
+  it("F7 Die automatische Sicherung ist selbst eine gültige Sicherung (sie lässt sich wieder einspielen)", () => {
+    const before = sampleData();
+
+    const result = importData(exportData(before));
+
+    expect(result).toEqual({ ok: true, data: before });
+  });
+});
+
+describe("F7 Größe der Datei", () => {
+  it("F7 Eine Datei bis 5 MB kommt als Sicherung in Frage", () => {
+    expect(importSizeError(0)).toBeUndefined();
+    expect(importSizeError(MAX_IMPORT_BYTES)).toBeUndefined();
+  });
+
+  it("F7 Eine größere Datei wird nicht gelesen und mit klarer Meldung abgelehnt", () => {
+    expect(importSizeError(MAX_IMPORT_BYTES + 1)).toBe(
+      "Die Datei ist zu groß für eine Sicherung (höchstens 5 MB).",
+    );
   });
 });
 

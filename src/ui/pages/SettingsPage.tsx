@@ -1,21 +1,28 @@
 import { useState } from "preact/hooks";
+import type { CalendarDay } from "../../domain/date";
 import type { PersonNameInput } from "../../domain/personNames";
 import type { Person } from "../../domain/task";
-import type { PersonNames } from "../../storage/appData";
+import type { AppData, PersonNames } from "../../storage/appData";
 import type { ColorScheme } from "../../storage/storage";
 import { ErrorAlert } from "../components/Alert";
+import { BackupTile } from "../components/BackupTile";
 import { type Choice, RadioGroup } from "../components/fields";
 import { NamesForm } from "../components/NamesForm";
 import { PageTitle } from "../components/PageTitle";
 import { routeInfo } from "../route";
 
 interface SettingsPageProps {
+  /** Everything the app keeps: what "Sicherung" writes to a file. */
+  readonly data: AppData;
   readonly names: PersonNames;
+  readonly today: CalendarDay;
   readonly currentPerson: Person;
   readonly colorScheme: ColorScheme;
   readonly onSubmit: (names: PersonNameInput, person: Person) => Promise<void>;
   /** Saves and shows the colour scheme; rejects with an `Error` whose message is shown. */
   readonly onColorScheme: (scheme: ColorScheme) => Promise<void>;
+  /** Replaces all data by the imported data; rejects with an `Error` whose message is shown. */
+  readonly onImport: (data: AppData) => Promise<void>;
 }
 
 const SCHEMES: readonly Choice<ColorScheme>[] = [
@@ -25,13 +32,23 @@ const SCHEMES: readonly Choice<ColorScheme>[] = [
 ];
 
 export function SettingsPage({
+  data,
   names,
+  today,
   currentPerson,
   colorScheme,
   onSubmit,
   onColorScheme,
+  onImport,
 }: SettingsPageProps) {
   const [schemeError, setSchemeError] = useState<string>();
+  /** Counts the imported backups; the names form starts over after each one. */
+  const [importCount, setImportCount] = useState(0);
+
+  async function importBackup(imported: AppData) {
+    await onImport(imported);
+    setImportCount((count) => count + 1);
+  }
 
   async function chooseScheme(scheme: ColorScheme) {
     try {
@@ -50,7 +67,9 @@ export function SettingsPage({
           <h2 class="tile__title" id="namen">
             Namen und „Ich bin“
           </h2>
+          {/* The form keeps what is typed; a new key shows the names of an imported backup. */}
           <NamesForm
+            key={importCount}
             initialNames={names}
             initialPerson={currentPerson}
             submitLabel="Speichern"
@@ -73,6 +92,7 @@ export function SettingsPage({
           />
           {schemeError && <ErrorAlert title="Nicht gespeichert">{schemeError}</ErrorAlert>}
         </section>
+        <BackupTile data={data} today={today} onImport={importBackup} />
       </div>
     </>
   );

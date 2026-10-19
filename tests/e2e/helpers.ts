@@ -3,6 +3,10 @@ import { demoData } from "../../src/demo/demoData";
 import { calendarDay, dayFromDate } from "../../src/domain/date";
 import type { AppData } from "../../src/storage/appData";
 
+// Minimal Node typing instead of @types/node (N7: avoid a dependency for one line), as in
+// playwright.config.ts. `never` fits every place that expects a Buffer.
+declare const Buffer: { from(text: string, encoding: "utf8"): never };
+
 // The real app (production build). Its data lives in the browser storage under these keys.
 export const dataKey = "putzplan:data";
 export const deviceKey = "putzplan:device";
@@ -64,10 +68,14 @@ export const notice = (page: Page) => page.getByRole("region", { name: "Hinweis"
 export const taskButton = (scope: Locator, title: string) =>
   scope.getByRole("button", { name: new RegExp(`^${title}(\\s|$)`) });
 
-/** Shows a day of "Woche im Überblick" in the day tile, e.g. `chooseDay(page, "Do 22.", "Do, 22.10.")`. */
+/**
+ * Shows a day of "Woche im Überblick" in the day tile, e.g. `chooseDay(page, "Do 22.", "Do, 22.10.")`.
+ * Waits until the heading of the day tile has the focus: the app moves it there a moment after
+ * drawing, and a test that focuses a button earlier would lose the focus again.
+ */
 export async function chooseDay(page: Page, day: string, heading: string) {
   await page.getByRole("button", { name: new RegExp(`^${day.replace(".", "\\.")} `) }).click();
-  await expect(page.getByRole("heading", { level: 2, name: heading })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: heading })).toBeFocused();
 }
 
 /** The detail view of a task, found by the title it shows. */
@@ -91,6 +99,11 @@ export async function expectPageShown(page: Page, title: string) {
 export async function goToPage(page: Page, link: string, title: string = link) {
   await page.getByRole("link", { name: link, exact: true }).click();
   await expectPageShown(page, title);
+}
+
+/** A file for a file chooser, made from text: `chooser.setFiles(textFile("sicherung.json", "{}"))`. */
+export function textFile(name: string, text: string) {
+  return { name, mimeType: "application/json", buffer: Buffer.from(text, "utf8") };
 }
 
 /** What the app has stored right now, as the app would read it back. */

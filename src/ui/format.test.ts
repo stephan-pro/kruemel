@@ -4,16 +4,21 @@ import type { Completion } from "../domain/task";
 import {
   assigneeLabel,
   completionNotice,
+  countCompletions,
+  countEntries,
   countTasks,
   dayOfMonth,
   describeChecklist,
   describeCompletedBy,
+  describeContents,
   describeOverdue,
   describeRecurrence,
   describeResponsibility,
+  exportNotice,
   formatDay,
   formatShortDay,
   formatWeekLabel,
+  importNotice,
   takeOverNotice,
   undoNotice,
   weekdayName,
@@ -157,6 +162,36 @@ describe("Anzeige der Aufgabenliste (F1)", () => {
     expect(describeResponsibility("personB", undefined, names)).toBe("Robin");
     expect(describeResponsibility("personB", "personA", names)).toBe(
       "Alex (nur dieses Mal übernommen; sonst Robin)",
+    );
+  });
+});
+
+describe("Anzeige von „Erledigt“ und „Sicherung“ (F3, F7)", () => {
+  it("F3 Die Länge der Erledigt-Liste steht im Singular und im Plural", () => {
+    expect(countEntries(1)).toBe("1 Eintrag");
+    expect(countEntries(0)).toBe("0 Einträge");
+    expect(countEntries(10)).toBe("10 Einträge");
+  });
+
+  it("F7 Der Inhalt einer Sicherung nennt Aufgaben und Erledigungen, auch bei null und eins", () => {
+    expect(countCompletions(0)).toBe("keine Erledigungen");
+    expect(countCompletions(1)).toBe("1 Erledigung");
+    expect(describeContents(4, 12)).toBe("4 Aufgaben und 12 Erledigungen");
+    expect(describeContents(1, 1)).toBe("1 Aufgabe und 1 Erledigung");
+    expect(describeContents(0, 0)).toBe("keine Aufgaben und keine Erledigungen");
+  });
+
+  it("F7 Nach dem Herunterladen steht der Dateiname da", () => {
+    expect(exportNotice("putzplan-2026-10-21.json")).toBe(
+      "Die Sicherung „putzplan-2026-10-21.json“ wurde heruntergeladen. Bewahren Sie die Datei sicher auf.",
+    );
+  });
+
+  it("F7 Nach dem Einspielen steht, was die Sicherung enthielt und wo die bisherigen Daten liegen", () => {
+    expect(
+      importNotice("2 Aufgaben und 3 Erledigungen", "putzplan-vor-import-2026-10-21.json"),
+    ).toBe(
+      "Sicherung eingespielt: 2 Aufgaben und 3 Erledigungen. Die bisherigen Daten wurden vorher als „putzplan-vor-import-2026-10-21.json“ heruntergeladen.",
     );
   });
 });

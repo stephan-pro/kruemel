@@ -23,7 +23,7 @@ import {
 import { applyColorScheme } from "./colorScheme";
 import { Navigation } from "./components/Navigation";
 import { APP_NAME } from "./components/PageTitle";
-import { PlaceholderPage } from "./pages/PlaceholderPage";
+import { DonePage } from "./pages/DonePage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { SetupPage } from "./pages/SetupPage";
 import { StorageProblemPage } from "./pages/StorageProblemPage";
@@ -293,11 +293,14 @@ export function App({ storage, demo }: AppProps) {
           )}
           {inApp && route === "settings" && (
             <SettingsPage
+              data={state.data}
               names={names}
+              today={today}
               currentPerson={person}
               colorScheme={state.device.colorScheme ?? DEFAULT_COLOR_SCHEME}
               onSubmit={saveNamesAndPerson}
               onColorScheme={saveColorScheme}
+              onImport={saveData}
             />
           )}
           {inApp && route === "tasks" && (
@@ -342,7 +345,14 @@ export function App({ storage, demo }: AppProps) {
               onChecklistItem={setChecklistItem}
             />
           )}
-          {inApp && route === "done" && <PlaceholderPage route={route} />}
+          {inApp && route === "done" && (
+            <DonePage
+              tasks={state.data.tasks}
+              completions={state.data.completions}
+              names={names}
+              onUndo={undoCompletion}
+            />
+          )}
         </main>
       </div>
     </div>
