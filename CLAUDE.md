@@ -12,6 +12,8 @@ Anforderungen: `docs/ANFORDERUNGEN.md` · Plan und Arbeitspakete: `docs/PLAN.md`
 - `npm run e2e` – nur Playwright (braucht vorher `npm run build`).
 - `npm run setup` – erstes Einrichten (Pakete + Playwright-Browser).
 
+- `/paket <Nummer> [Hinweise]` – Projekt-Skill (`.claude/skills/paket/SKILL.md`): setzt ein Arbeitspaket aus `docs/PLAN.md` komplett um, bis `npm run check` lokal und auf GitHub grün und die Online-Version aktualisiert ist.
+
 ## Aufbau
 
 - `src/domain/` – Fachlogik, reine Funktionen, Tests `*.test.ts` daneben, Abdeckung ≥ 90 %.
