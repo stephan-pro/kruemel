@@ -31,6 +31,8 @@ Anforderungen: `docs/ANFORDERUNGEN.md` · Plan und Arbeitspakete: `docs/PLAN.md`
 - Jedes Akzeptanzkriterium ist mindestens ein Test, benannt nach dem Kriterium.
 - Neue Abhängigkeiten nur mit Begründung in `docs/PLAN.md`.
 - Gespeicherte Daten und Export tragen `schemaVersion`.
+- Dateien immer mit dem Write- oder Edit-Werkzeug anlegen und ändern, nie per Shell-Befehl (kein `echo >`, Heredoc, `sed -i`, `node -e` o. Ä.).
+- Entwicklungsumgebung ist Windows mit PowerShell; Shell-Befehle nur zum Ausführen (npm, git, gh), in PowerShell-Syntax.
 
 ## Wortliste
 
