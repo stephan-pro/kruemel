@@ -16,6 +16,17 @@ export interface AppStorage {
   load(): Promise<AppData>;
   /** Replaces all stored data. Throws `StorageError` if it could not be saved. */
   save(data: AppData): Promise<void>;
+  /**
+   * The stored data exactly as it is kept, or `null` if nothing is stored. Does not check it, so it
+   * also works when `load()` fails; the app offers it as a download for a later repair.
+   * Throws `StorageError` if the storage itself cannot be read.
+   */
+  loadRaw(): Promise<string | null>;
+  /**
+   * Deletes the stored data (not the device settings). Only for starting over after `load()`
+   * reported unreadable data and the user agreed. Throws `StorageError` if it could not be deleted.
+   */
+  discard(): Promise<void>;
   loadDevice(): Promise<DeviceSettings>;
   saveDevice(settings: DeviceSettings): Promise<void>;
 }

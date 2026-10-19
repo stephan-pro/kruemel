@@ -14,6 +14,11 @@ export function exportFileName(today: CalendarDay): string {
   return `putzplan-${today}.json`;
 }
 
+/** Name of the file with unreadable stored data, e.g. "putzplan-rohdaten-2026-10-19.json". */
+export function rawDataFileName(today: CalendarDay): string {
+  return `putzplan-rohdaten-${today}.json`;
+}
+
 /**
  * Reads a backup file. Nothing is changed here: the caller replaces the stored data only after
  * a successful result and the user's confirmation.

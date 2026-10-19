@@ -21,6 +21,11 @@ export class FakeStore implements KeyValueStore {
     this.items.set(key, value);
   }
 
+  removeItem(key: string): void {
+    this.check();
+    this.items.delete(key);
+  }
+
   private check(): void {
     if (this.failWith !== undefined) {
       throw this.failWith;

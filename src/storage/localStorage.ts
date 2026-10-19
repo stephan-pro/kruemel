@@ -10,6 +10,7 @@ import { parseAppData } from "./validate";
 export interface KeyValueStore {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
+  removeItem(key: string): void;
 }
 
 export interface LocalStorageOptions {
@@ -36,6 +37,16 @@ function write(store: KeyValueStore, key: string, value: string): void {
       "Speichern nicht möglich: Der Browser-Speicher ist voll oder gesperrt. Bitte jetzt eine Sicherung exportieren.",
       [String(error)],
     );
+  }
+}
+
+function remove(store: KeyValueStore, key: string): void {
+  try {
+    store.removeItem(key);
+  } catch (error) {
+    throw new StorageError("Löschen nicht möglich: Der Browser-Speicher ist gesperrt.", [
+      String(error),
+    ]);
   }
 }
 
@@ -71,6 +82,14 @@ export function createLocalStorage(options: LocalStorageOptions): AppStorage {
 
     async save(data: AppData): Promise<void> {
       write(store, dataKey, JSON.stringify(data));
+    },
+
+    async loadRaw(): Promise<string | null> {
+      return read(store, dataKey);
+    },
+
+    async discard(): Promise<void> {
+      remove(store, dataKey);
     },
 
     async loadDevice(): Promise<DeviceSettings> {

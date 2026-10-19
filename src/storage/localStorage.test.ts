@@ -94,6 +94,58 @@ describe("F7 Speicher (localStorage)", () => {
   });
 });
 
+describe("Unlesbare Daten (Rohdaten und Verwerfen)", () => {
+  it("Die Rohdaten liefern den gespeicherten Text, auch wenn Laden scheitert", async () => {
+    const store = new FakeStore();
+    store.items.set("putzplan:data", "{kaputt");
+    const storage = createLocalStorage({ store });
+
+    await expect(storage.load()).rejects.toThrow(StorageError);
+
+    expect(await storage.loadRaw()).toBe("{kaputt");
+  });
+
+  it("Ohne gespeicherte Daten gibt es keine Rohdaten", async () => {
+    const storage = createLocalStorage({ store: new FakeStore() });
+
+    expect(await storage.loadRaw()).toBeNull();
+  });
+
+  it("Verwerfen löscht die Daten, danach liefert Laden wieder leere Daten", async () => {
+    const store = new FakeStore();
+    store.items.set("putzplan:data", "{kaputt");
+    const storage = createLocalStorage({ store });
+
+    await storage.discard();
+
+    expect(await storage.load()).toEqual(emptyAppData());
+    expect(await storage.loadRaw()).toBeNull();
+  });
+
+  it("Verwerfen lässt „Ich bin“ dieses Geräts und andere Namensräume unberührt", async () => {
+    const store = new FakeStore();
+    const storage = createLocalStorage({ store });
+    const demo = createLocalStorage({ store, namespace: "putzplan-demo" });
+    await storage.saveDevice({ currentPerson: "personB" });
+    await demo.save(sampleData());
+    store.items.set("putzplan:data", "{kaputt");
+
+    await storage.discard();
+
+    expect(await storage.loadDevice()).toEqual({ currentPerson: "personB" });
+    expect(await demo.load()).toEqual(sampleData());
+  });
+
+  it("Ist der Browser-Speicher gesperrt, melden Rohdaten und Verwerfen einen Fehler", async () => {
+    const store = new FakeStore();
+    store.failWith = new Error("SecurityError");
+    const storage = createLocalStorage({ store });
+
+    await expect(storage.loadRaw()).rejects.toThrow("nicht verfügbar");
+    await expect(storage.discard()).rejects.toThrow("Löschen nicht möglich");
+  });
+});
+
 describe("F5 „Ich bin“ auf diesem Gerät", () => {
   it("F5 Ohne Auswahl ist „Ich bin“ nicht gesetzt", async () => {
     const storage = createLocalStorage({ store: new FakeStore() });
