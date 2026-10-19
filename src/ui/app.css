@@ -82,7 +82,8 @@ body {
   text-decoration: underline;
 }
 
-.main-nav__link[aria-current="page"] {
+/* "page": this very page; "true": the section a form page belongs to. */
+.main-nav__link[aria-current] {
   border-bottom-color: currentColor;
   font-weight: 700;
 }
@@ -112,6 +113,25 @@ main:focus {
   display: flex;
   flex-direction: column;
   gap: var(--kern-metric-space-default, 16px);
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kern-metric-space-default, 16px);
+}
+
+.task-group {
+  margin-top: var(--kern-metric-space-large, 24px);
+}
+
+.card-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kern-metric-space-default, 16px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .kern-dialog::backdrop {

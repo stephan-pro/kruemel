@@ -5,6 +5,7 @@ import {
   type PersonNameInput,
 } from "../../domain/personNames";
 import type { Person } from "../../domain/task";
+import { TextField } from "./fields";
 import { PersonChoice } from "./PersonChoice";
 
 interface NamesFormProps {
@@ -85,15 +86,15 @@ export function NamesForm({
 
   return (
     <form class="stack" onSubmit={submit} noValidate>
-      <NameField
-        person="personA"
+      <TextField
+        id="name-personA"
         label="Name der ersten Person"
         value={names.personA}
         error={errors.personA}
         onInput={(value) => edit(() => setNames({ ...names, personA: value }))}
       />
-      <NameField
-        person="personB"
+      <TextField
+        id="name-personB"
         label="Name der zweiten Person"
         value={names.personB}
         error={errors.personB}
@@ -125,41 +126,5 @@ export function NamesForm({
         {saved ? savedMessage : ""}
       </p>
     </form>
-  );
-}
-
-interface NameFieldProps {
-  readonly person: Person;
-  readonly label: string;
-  readonly value: string;
-  readonly error: string | undefined;
-  readonly onInput: (value: string) => void;
-}
-
-function NameField({ person, label, value, error, onInput }: NameFieldProps) {
-  const id = `name-${person}`;
-  const errorId = `${id}-fehler`;
-  return (
-    <div class="kern-form-input">
-      <label class="kern-label" for={id}>
-        {label}
-      </label>
-      {error && (
-        <span class="kern-error" id={errorId}>
-          <span class="kern-icon kern-icon--danger" aria-hidden="true" />
-          <span class="kern-body">{error}</span>
-        </span>
-      )}
-      <input
-        class={`kern-form-input__input${error ? " kern-form-input__input--error" : ""}`}
-        id={id}
-        type="text"
-        value={value}
-        autocomplete="off"
-        aria-invalid={error ? "true" : undefined}
-        aria-describedby={error ? errorId : undefined}
-        onInput={(event) => onInput(event.currentTarget.value)}
-      />
-    </div>
   );
 }

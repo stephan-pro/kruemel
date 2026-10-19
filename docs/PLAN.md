@@ -81,7 +81,7 @@ Jedes Paket endet mit grünem `npm run check` und einem Commit.
 | 5 | Speicher und F7 | `Storage`-Schnittstelle, localStorage-Umsetzung, Export, Import mit Prüfung und `schemaVersion`. | Tests mit Fake-Speicher grün. |
 | 6 | Testdaten Q8 ✅ | `npm run demo` (`vite --mode demo`): App mit Beispieldaten in eigenem Speicherbereich `putzplan-demo`; `demoData(heute)` liefert dieselben Daten auch für die E2E-Tests. Vorhandene Demo-Daten bleiben beim Neuladen; `?demo=neu` setzt zurück. Bis Paket 7 zeigt die Seite nur einen Demo-Hinweis. | PO kann manuell ausprobieren. |
 | 7 ✅ | App-Rahmen und Veröffentlichung | KERN UX, Navigation, Ersteinrichtung (zwei Namen), „Ich bin“, Seitentitel, Fokusführung; Deploy-Workflow für GitHub Pages. Meldet `load()` unlesbare Daten (`StorageError`), zeigt die App eine verständliche Meldung mit zwei Wegen: 1. Rohdaten als Datei herunterladen (für eine spätere Reparatur), 2. danach bewusst neu beginnen, mit Rückfrage. Dafür braucht `AppStorage` eine Methode für die Rohdaten und eine zum Verwerfen. | App unter GitHub-Pages-Adresse erreichbar (https://stephan-pro.github.io/putzplan/); axe grün. |
-| 8 | Aufgaben verwalten F1/F3 | Formulare anlegen/bearbeiten/löschen (Löschen mit Rückfrage), erster Termin vorbelegt mit heute. | E2E-Tests grün. |
+| 8 ✅ | Aufgaben verwalten F1/F3 | Formulare anlegen/bearbeiten/löschen (Löschen mit Rückfrage), erster Termin vorbelegt mit heute. | E2E-Tests grün. |
 | 9 | Wochenübersicht F6 | Mo–So, heute hervorgehoben, Überfälliges oben, Blättern, vergangene Wochen mit Erledigtem ausgegraut und „erledigt von“, Filter, Abhaken mit Hinweis „Rückgängig“. | E2E-Tests grün. |
 | 10 | Übernehmen und Checklisten-UI F4/F5 | Dialog „nur dieses Mal / dauerhaft“, Checklisten-Einträge hinzufügen/abhaken/löschen. | E2E-Tests grün. |
 | 11 | Erledigt, Export, Import | Erledigt-Liste mit Rückgängig, Export-Download, Import mit Rückfrage und vorheriger Auto-Sicherung. | E2E-Tests grün. |
@@ -99,7 +99,20 @@ Jedes Paket endet mit grünem `npm run check` und einem Commit.
 - **Neue Abhängigkeit:** `@kern-ux/native` (war im Stack vorgesehen, siehe Tabelle oben). Nur CSS und Fira Sans werden eingebunden, nicht die Kopfzeile (Bundesflagge) und kein KERN-JavaScript.
 - **Browser-Besonderheiten in Tests:** Safari springt mit Tab nicht auf Links und fokussiert Buttons beim Klick nicht; die betreffenden Tastaturtests laufen daher nur in Chromium bzw. nutzen `focus()`.
 
-## 6. Hinweise
+## 6. Umsetzung Paket 8 (Entscheidungen)
+
+- **Seiten:** „Aufgaben“ listet alle offenen Aufgaben in zwei Gruppen (wiederkehrend, einmalig), je nach Fälligkeit und Titel sortiert, als Karten mit Bearbeiten und Löschen. Neu: `#/aufgaben/neu` und `#/aufgaben/bearbeiten/<id>`; beide gehören in der Navigation zu „Aufgaben“ (`aria-current="true"`, die Seite selbst hat `"page"` nur bei den vier Hauptseiten). Eine Adresse zu einer unbekannten Aufgabe zeigt „Aufgabe nicht gefunden“. Erledigte einmalige Aufgaben stehen nicht in der Liste, sondern in „Erledigt“ (Paket 11).
+- **Formular:** Feste Felder in dieser Reihenfolge: Art (nur beim Anlegen; später nicht änderbar), Titel, Rhythmus (Abstand und Einheit, nur wiederkehrend), Termin, Zuständig, Notiz. Der Termin ist beim Anlegen heute; „Zuständig“ ist mit „Ich bin“ vorbelegt (sichtbar und änderbar), damit niemand eine fremde Zuständigkeit übersieht, die man erst wählen müsste.
+- **Prüfung (`checkTaskForm`, Fachlogik):** Titel getrimmt, nicht leer, höchstens 80 Zeichen; Notiz höchstens 500; Abstand ganze Zahl 1–365; Termin ein echter Tag zwischen 2000 und 2100 (verhindert Tippfehler und Überläufe der Datumsrechnung). Jede Meldung steht am Feld.
+- **Barrierefreie Formulare:** Alle Felder entstehen aus `fields.tsx` (`TextField`, `TextAreaField`, `SelectField`, `RadioGroup`): sichtbares `<label>`/`<legend>`, Hinweis und Fehler direkt am Feld, `aria-describedby`, `aria-invalid`. Nach dem Absenden mit Fehlern landet der Fokus auf dem ersten fehlerhaften Feld (Reihenfolge `TASK_FORM_FIELD_ORDER`); die Meldung eines Feldes verschwindet, sobald man es ändert. Die Ersteinrichtung nutzt dieselben Bausteine.
+- **Bearbeiten:** `updateTask` ändert Titel, Termin, Notiz, Rhythmus und feste Zuständigkeit. Eine geänderte feste Zuständigkeit beendet eine Übernahme „nur dieses Mal“ (F5); bleibt sie gleich, bleibt die Übernahme. Checkliste, Erledigungen und der erledigt-Zustand bleiben.
+- **Löschen:** Immer über `DeleteTaskDialog` (native `<dialog>`, Fokus zuerst auf „Abbrechen“). Die Rückfrage nennt die Zahl der Einträge in „Erledigt“, die mit verschwinden. Entscheidung: Die Historie wird mit gelöscht (wie in ANFORDERUNGEN.md, F3 Löschen), weil ein Eintrag ohne Aufgabe weder angezeigt noch rückgängig gemacht werden kann; `parseAppData` lehnt verwaiste Erledigungen ohnehin ab. Löschen geht aus der Liste und aus dem Bearbeiten-Formular.
+- **Rückmeldung:** Nach Anlegen, Speichern und Löschen steht auf „Aufgaben“ eine Meldung in einem Bereich mit `role="status"` (wird vorgelesen). Nach einem Löschen in der Liste, wo die Schaltfläche verschwindet, springt der Fokus auf die Überschrift.
+- **Speicherfehler:** Schlägt das Speichern fehl, bleibt man im Formular, die Eingaben bleiben stehen und eine Meldung „Nicht gespeichert“ erscheint; beim Löschen „Nicht gelöscht“.
+- **Schaltflächen in der Liste:** Sichtbarer Text „Bearbeiten“/„Löschen“, zugänglicher Name „Bearbeiten: Titel“ (`aria-label`; der Name beginnt mit dem sichtbaren Text). Text, der nur für Screenreader da ist, wäre in Chromium mit Leerzeichen eingefügt worden.
+- **Tests:** E2E-Tests warten nach einem Seitenwechsel, bis die Überschrift den Fokus hat (`goToPage`, `expectPageShown` in `tests/e2e/helpers.ts`), bevor sie tippen oder Tasten drücken. Der Fokussprung läuft nach dem Zeichnen und nahm vorher in WebKit unter Last gelegentlich einem zu früh gestarteten Test den Fokus (ein bestehender Test war dadurch in etwa 5 % der Läufe rot).
+
+## 7. Hinweise
 
 - Safari auf dem iPhone löscht Website-Daten nach 7 Tagen ohne Nutzung, wenn die App nicht installiert ist. Export (F7) regelmäßig nutzen.
 - Die Daten liegen pro Browser und Gerät getrennt; gemeinsame Daten erst ab Etappe 2.

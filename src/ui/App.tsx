@@ -1,7 +1,9 @@
 import { useEffect, useState } from "preact/hooks";
 import type { DemoInfo } from "../demo/start";
 import type { PersonNameInput } from "../domain/personNames";
-import type { Person } from "../domain/task";
+import type { Person, Task } from "../domain/task";
+import { type TaskFormValues, type TaskKind, taskFromForm, updateTask } from "../domain/taskForm";
+import { deleteTask } from "../domain/taskManagement";
 import type { AppData } from "../storage/appData";
 import { requestPersistentStorage } from "../storage/localStorage";
 import { type AppStorage, type DeviceSettings, StorageError } from "../storage/storage";
@@ -11,8 +13,10 @@ import { PlaceholderPage } from "./pages/PlaceholderPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { SetupPage } from "./pages/SetupPage";
 import { StorageProblemPage } from "./pages/StorageProblemPage";
+import { TaskFormPage } from "./pages/TaskFormPage";
+import { TasksPage } from "./pages/TasksPage";
 import { WhoAmIPage } from "./pages/WhoAmIPage";
-import { parseRoute, type Route } from "./route";
+import { type PageLocation, parseLocation, routeHash } from "./route";
 
 interface AppProps {
   readonly storage: AppStorage;
@@ -54,19 +58,30 @@ async function loadState(storage: AppStorage): Promise<LoadState> {
   }
 }
 
-function useRoute(): Route {
-  const [route, setRoute] = useState(() => parseRoute(location.hash));
+/** The task of the edit address, or a note that there is none (a bookmark of a deleted task). */
+function editedTask(
+  tasks: readonly Task[],
+  taskId: string | undefined,
+): { readonly task: Task } | { readonly missing: true } {
+  const task = tasks.find((candidate) => candidate.id === taskId);
+  return task === undefined ? { missing: true } : { task };
+}
+
+function useLocation(): PageLocation {
+  const [pageLocation, setPageLocation] = useState(() => parseLocation(location.hash));
   useEffect(() => {
-    const update = () => setRoute(parseRoute(location.hash));
+    const update = () => setPageLocation(parseLocation(location.hash));
     addEventListener("hashchange", update);
     return () => removeEventListener("hashchange", update);
   }, []);
-  return route;
+  return pageLocation;
 }
 
 export function App({ storage, demo }: AppProps) {
   const [state, setState] = useState<LoadState>({ status: "loading" });
-  const route = useRoute();
+  /** What just happened to a task; the task list shows and announces it, then forgets it. */
+  const [notice, setNotice] = useState<string>();
+  const { route, taskId } = useLocation();
 
   async function load() {
     setState({ status: "loading" });
@@ -100,6 +115,45 @@ export function App({ storage, demo }: AppProps) {
     const device: DeviceSettings = { ...state.device, currentPerson: person };
     await storage.saveDevice(device);
     setState({ ...state, device });
+  }
+
+  /** Keeps the new data. Nothing changes on screen if saving fails; the caller shows the error. */
+  async function saveData(data: AppData) {
+    if (state.status !== "ready") {
+      return;
+    }
+    await storage.save(data);
+    setState({ status: "ready", data, device: state.device });
+  }
+
+  /** Creates a task, or replaces `existing` by the changed one, then goes back to the list. */
+  async function saveTask(kind: TaskKind, values: TaskFormValues, existing: Task | undefined) {
+    if (state.status !== "ready") {
+      return;
+    }
+    const { data } = state;
+    const task =
+      existing === undefined
+        ? taskFromForm(kind, crypto.randomUUID(), values)
+        : updateTask(existing, values);
+    const tasks =
+      existing === undefined
+        ? [...data.tasks, task]
+        : data.tasks.map((candidate) => (candidate.id === task.id ? task : candidate));
+    await saveData({ ...data, tasks });
+    setNotice(`Aufgabe „${task.title}“ ${existing === undefined ? "angelegt" : "gespeichert"}.`);
+    location.hash = routeHash("tasks");
+  }
+
+  /** Deletes a task together with its completions. */
+  async function removeTask(taskId: string) {
+    if (state.status !== "ready") {
+      return;
+    }
+    const title = state.data.tasks.find((task) => task.id === taskId)?.title ?? "";
+    await saveData(deleteTask(state.data, taskId));
+    setNotice(`Aufgabe „${title}“ gelöscht.`);
+    location.hash = routeHash("tasks");
   }
 
   async function discard() {
@@ -167,7 +221,36 @@ export function App({ storage, demo }: AppProps) {
         {inApp && route === "settings" && (
           <SettingsPage names={names} currentPerson={person} onSubmit={saveNamesAndPerson} />
         )}
-        {inApp && route !== "settings" && <PlaceholderPage route={route} />}
+        {inApp && route === "tasks" && (
+          <TasksPage
+            tasks={state.data.tasks}
+            completions={state.data.completions}
+            names={names}
+            notice={notice}
+            onDelete={removeTask}
+            onLeave={() => setNotice(undefined)}
+          />
+        )}
+        {inApp && route === "taskNew" && (
+          <TaskFormPage
+            completions={state.data.completions}
+            names={names}
+            currentPerson={person}
+            onSave={saveTask}
+            onDelete={removeTask}
+          />
+        )}
+        {inApp && route === "taskEdit" && (
+          <TaskFormPage
+            {...editedTask(state.data.tasks, taskId)}
+            completions={state.data.completions}
+            names={names}
+            currentPerson={person}
+            onSave={saveTask}
+            onDelete={removeTask}
+          />
+        )}
+        {inApp && (route === "week" || route === "done") && <PlaceholderPage route={route} />}
       </main>
     </div>
   );

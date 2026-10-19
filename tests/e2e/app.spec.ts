@@ -2,30 +2,9 @@ import { expect, type Page, test } from "@playwright/test";
 import { DEMO_NAMES, demoData } from "../../src/demo/demoData";
 import { dayFromDate } from "../../src/domain/date";
 import { expectNoAccessibilityViolations } from "./axe";
+import { dataKey, deviceKey, goToPage, startConfigured, store } from "./helpers";
 
 // The real app (production build), first start: nothing stored yet. Packages 7+ of docs/PLAN.md.
-const dataKey = "putzplan:data";
-const deviceKey = "putzplan:device";
-
-/** Puts values into the browser storage before the app reads it. */
-async function store(page: Page, items: Record<string, string>) {
-  await page.goto("./");
-  await page.evaluate((entries) => {
-    for (const [key, value] of Object.entries(entries)) {
-      localStorage.setItem(key, value);
-    }
-  }, items);
-  await page.goto("./");
-}
-
-/** A configured app: names set, this device belongs to the first person. */
-async function startConfigured(page: Page) {
-  const data = demoData(dayFromDate(new Date()));
-  await store(page, {
-    [dataKey]: JSON.stringify(data),
-    [deviceKey]: JSON.stringify({ currentPerson: "personA" }),
-  });
-}
 
 async function fillSetup(page: Page, nameA: string, nameB: string) {
   await page.getByLabel("Name der ersten Person").fill(nameA);
@@ -250,7 +229,7 @@ test.describe("Rahmen und Navigation", () => {
 test.describe("Einstellungen (F5 Namen)", () => {
   test("ändert Namen und „Ich bin“ und meldet das Speichern", async ({ page }) => {
     await startConfigured(page);
-    await page.getByRole("link", { name: "Einstellungen" }).click();
+    await goToPage(page, "Einstellungen");
     await expect(page.getByLabel("Name der ersten Person")).toHaveValue(DEMO_NAMES.personA);
     await expect(page.getByRole("radio", { name: DEMO_NAMES.personA })).toBeChecked();
 
@@ -272,7 +251,7 @@ test.describe("Einstellungen (F5 Namen)", () => {
 
   test("lehnt ungültige Namen auch hier ab", async ({ page }) => {
     await startConfigured(page);
-    await page.getByRole("link", { name: "Einstellungen" }).click();
+    await goToPage(page, "Einstellungen");
 
     await page.getByLabel("Name der ersten Person").fill("");
     await page.getByRole("button", { name: "Speichern" }).click();
