@@ -1,9 +1,29 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Krümel">
   <title>Krümel</title>
-  <!-- App icon in the tile style of the app: blue tile (--accent-tile), white house (Lucide "house", ISC). -->
-  <rect width="512" height="512" rx="112" fill="#1f47d6" />
-  <g transform="translate(88 88) scale(14)" fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" />
-    <path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+  <!-- The app icon: docs/design/kruemel-icon.svg (DESIGN.md section 9), unchanged. `npm run icons`
+       draws the PNG sizes from this file; the first <rect> is the tile, the rest the picture. -->
+  <rect width="512" height="512" rx="112" fill="#5530D9"/>
+  <circle cx="240" cy="270" r="185" fill="#6A4DF4"/>
+  <path d="M446 96 L386 318" stroke="#15131F" stroke-width="26" stroke-linecap="round"/>
+  <path d="M446 96 L386 318" stroke="#FFFFFF" stroke-width="16" stroke-linecap="round"/>
+  <path d="M336 300 L428 324 L414 432 L310 404 Z" fill="#FFD166" stroke="#15131F" stroke-width="9" stroke-linejoin="round"/>
+  <path d="M338 300 L426 324" stroke="#15131F" stroke-width="16" stroke-linecap="round"/>
+  <path d="M350 340 L336 404 M374 346 L362 412 M398 352 L388 418" stroke="#15131F" stroke-width="6" stroke-linecap="round"/>
+  <g transform="translate(-24 0)">
+    <path d="M150 250 C140 190 190 150 245 158 C280 135 340 150 360 195 C400 210 410 265 385 300 C395 350 350 395 300 392 C270 415 215 410 190 385 C140 380 118 330 140 300 C120 285 128 260 150 250 Z" fill="#F2B661"/>
+    <circle cx="200" cy="225" r="6" fill="#C98A3A"/>
+    <circle cx="332" cy="232" r="5" fill="#C98A3A"/>
+    <circle cx="305" cy="358" r="6" fill="#C98A3A"/>
+    <circle cx="182" cy="338" r="5" fill="#C98A3A"/>
+    <circle cx="256" cy="190" r="4" fill="#C98A3A"/>
+    <ellipse cx="225" cy="268" rx="22" ry="26" fill="#FFFFFF"/>
+    <ellipse cx="290" cy="268" rx="22" ry="26" fill="#FFFFFF"/>
+    <circle cx="229" cy="273" r="12" fill="#15131F"/>
+    <circle cx="294" cy="273" r="12" fill="#15131F"/>
+    <circle cx="233" cy="268" r="4" fill="#FFFFFF"/>
+    <circle cx="298" cy="268" r="4" fill="#FFFFFF"/>
+    <ellipse cx="198" cy="308" rx="15" ry="9" fill="#F28B6B" opacity="0.65"/>
+    <ellipse cx="320" cy="308" rx="15" ry="9" fill="#F28B6B" opacity="0.65"/>
+    <path d="M234 316 Q258 340 282 316" stroke="#15131F" stroke-width="8" stroke-linecap="round" fill="none"/>
   </g>
 </svg>

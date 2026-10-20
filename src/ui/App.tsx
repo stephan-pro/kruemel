@@ -28,9 +28,11 @@ import { offersInstallHint, useInstallWay } from "./install";
 import { DonePage } from "./pages/DonePage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { SetupPage } from "./pages/SetupPage";
+import { StatisticsPage } from "./pages/StatisticsPage";
 import { StorageProblemPage } from "./pages/StorageProblemPage";
 import { TaskFormPage } from "./pages/TaskFormPage";
 import { TasksPage } from "./pages/TasksPage";
+import { TodayPage } from "./pages/TodayPage";
 import { WeekPage } from "./pages/WeekPage";
 import { WhoAmIPage } from "./pages/WhoAmIPage";
 import { type PageLocation, parseLocation, routeHash } from "./route";
@@ -403,6 +405,28 @@ export function App({ storage, demo }: AppProps) {
               currentPerson={person}
               onSave={saveTask}
               onDelete={removeTask}
+            />
+          )}
+          {inApp && route === "today" && (
+            <TodayPage
+              tasks={state.data.tasks}
+              completions={state.data.completions}
+              names={names}
+              currentPerson={person}
+              today={today}
+              onComplete={completeTask}
+              onUndo={undoCompletion}
+              onTakeOver={takeOverTask}
+              onChecklistItem={setChecklistItem}
+            />
+          )}
+          {inApp && route === "statistics" && (
+            <StatisticsPage
+              tasks={state.data.tasks}
+              completions={state.data.completions}
+              names={names}
+              currentPerson={person}
+              today={today}
             />
           )}
           {inApp && route === "week" && (

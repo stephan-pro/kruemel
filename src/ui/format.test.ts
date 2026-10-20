@@ -7,19 +7,27 @@ import {
   countCompletions,
   countEntries,
   countTasks,
+  dayField,
   dayOfMonth,
   describeChecklist,
   describeCompletedBy,
   describeContents,
+  describeDoneAt,
   describeOverdue,
   describeRecurrence,
   describeResponsibility,
   exportNotice,
   formatDay,
+  formatLongDay,
   formatShortDay,
+  formatTime,
   formatWeekLabel,
+  formatWeekNumber,
+  greeting,
   importNotice,
+  percentOf,
   takeOverNotice,
+  todaySummary,
   undoNotice,
   weekdayName,
   weekdayShort,
@@ -193,5 +201,85 @@ describe("Anzeige von „Erledigt“ und „Sicherung“ (F3, F7)", () => {
     ).toBe(
       "Sicherung eingespielt: 2 Aufgaben und 3 Erledigungen. Die bisherigen Daten wurden vorher als „kruemel-vor-import-2026-10-21.json“ heruntergeladen.",
     );
+  });
+});
+
+describe("Anzeige von „Heute“", () => {
+  it("Begrüßung: Der Gruß richtet sich nach der Tageszeit und nennt den Namen", () => {
+    expect(greeting(5, "Alex")).toBe("Guten Morgen, Alex!");
+    expect(greeting(10, "Alex")).toBe("Guten Morgen, Alex!");
+    expect(greeting(11, "Alex")).toBe("Hallo, Alex!");
+    expect(greeting(17, "Alex")).toBe("Hallo, Alex!");
+    expect(greeting(18, "Alex")).toBe("Guten Abend, Alex!");
+    expect(greeting(23, "Alex")).toBe("Guten Abend, Alex!");
+    expect(greeting(3, "Alex")).toBe("Hallo, Alex!");
+  });
+
+  it("Zusammenfassung: Der Satz nennt Anzahl und Überfälliges in der richtigen Form", () => {
+    const text = (open: number, overdue: number, done: number) =>
+      todaySummary(open, overdue, done).join("");
+
+    expect(text(3, 1, 0)).toBe("Heute stehen 3 Aufgaben für dich an. Eine davon ist überfällig.");
+    expect(text(3, 2, 0)).toBe("Heute stehen 3 Aufgaben für dich an. 2 davon sind überfällig.");
+    expect(text(3, 3, 0)).toBe("Heute stehen 3 Aufgaben für dich an. Alle sind überfällig.");
+    expect(text(3, 0, 2)).toBe("Heute stehen 3 Aufgaben für dich an.");
+    expect(text(1, 0, 0)).toBe("Heute steht 1 Aufgabe für dich an.");
+    expect(text(1, 1, 0)).toBe("Heute steht 1 Aufgabe für dich an. Sie ist überfällig.");
+    expect(text(0, 0, 0)).toBe("Heute steht nichts für dich an.");
+    expect(text(0, 0, 4)).toBe("Heute ist alles erledigt. Gut gemacht!");
+    // Die Zahl steht für sich, damit sie fett gesetzt werden kann.
+    expect(todaySummary(3, 1, 0)[1]).toBe("3 Aufgaben");
+  });
+
+  it("Datum: Die Kopfzeile nennt Wochentag und Monat, die Wochenwahl die Kalenderwoche", () => {
+    expect(formatLongDay(calendarDay("2026-10-20"))).toBe("Dienstag, 20. Oktober");
+    expect(formatLongDay(calendarDay("2026-03-01"))).toBe("Sonntag, 1. März");
+    expect(formatWeekNumber(calendarDay("2026-10-19"))).toBe("KW 43");
+  });
+
+  it("Uhrzeit: Erledigtes nennt die Uhrzeit, wenn sie bekannt ist, und wer es war, wenn es die andere Person ist", () => {
+    const at = new Date(2026, 9, 21, 8, 5).toISOString();
+
+    expect(formatTime(at)).toBe("08:05");
+    expect(formatTime(undefined)).toBeUndefined();
+    expect(formatTime("kein Datum")).toBeUndefined();
+    expect(describeDoneAt({ ...completion, completedAt: at }, names, "personB")).toBe(
+      "erledigt um 08:05",
+    );
+    expect(describeDoneAt({ ...completion, completedAt: at }, names, "personA")).toBe(
+      "erledigt von Robin um 08:05",
+    );
+    expect(describeDoneAt(completion, names, "personB")).toBe("erledigt");
+  });
+
+  it("Ring: Der Prozentwert ist gerundet und 0, wenn nichts fällig ist", () => {
+    expect(percentOf(9, 14)).toBe(64);
+    expect(percentOf(0, 0)).toBe(0);
+    expect(percentOf(3, 3)).toBe(100);
+  });
+
+  it("Deine Woche: Jedes Tagesfeld hat Zustand, Zeichen und vollständige Beschreibung", () => {
+    const field = (dueCount: number, doneCount: number, isToday = false) =>
+      dayField({ day: calendarDay("2026-10-21"), isToday, entries: [], dueCount, doneCount });
+
+    expect(field(0, 0)).toEqual({ state: "free", mark: "–", label: "Mittwoch, frei" });
+    expect(field(3, 3)).toEqual({ state: "done", mark: "", label: "Mittwoch, alles erledigt" });
+    expect(field(2, 0)).toEqual({ state: "open", mark: "2", label: "Mittwoch, 2 Aufgaben" });
+    expect(field(1, 0)).toEqual({ state: "open", mark: "1", label: "Mittwoch, 1 Aufgabe" });
+    expect(field(3, 1)).toEqual({
+      state: "open",
+      mark: "2",
+      label: "Mittwoch, 2 Aufgaben offen, 1 erledigt",
+    });
+    expect(field(3, 1, true)).toEqual({
+      state: "today",
+      mark: "1/3",
+      label: "Mittwoch, heute, 1 von 3 erledigt",
+    });
+    expect(field(0, 0, true)).toEqual({
+      state: "today",
+      mark: "–",
+      label: "Mittwoch, heute, frei",
+    });
   });
 });

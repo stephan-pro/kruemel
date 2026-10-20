@@ -1,13 +1,19 @@
 // The pages and their addresses (hash router: "#/woche" …). Pure functions; the page itself
 // listens to `hashchange`.
 
-/** The four pages in the navigation. */
-export type MainRoute = "week" | "tasks" | "done" | "settings";
+/** The pages in the navigation (the plus for a new task is a link to a form, not a page). */
+export type MainRoute = "today" | "week" | "statistics" | "settings";
 
-/** The main pages plus the two task forms, which belong to "Aufgaben". */
-export type Route = MainRoute | "taskNew" | "taskEdit";
+/** Pages reached from "Woche" and the settings, not from the navigation. */
+export type SubRoute = "tasks" | "done";
 
-interface RouteInfo<R extends Route = MainRoute> {
+/** Every page with a list entry in `ROUTES`. */
+export type ListedRoute = MainRoute | SubRoute;
+
+/** The listed pages plus the two task forms, which belong to "Aufgaben". */
+export type Route = ListedRoute | "taskNew" | "taskEdit";
+
+interface RouteInfo<R extends ListedRoute = ListedRoute> {
   readonly route: R;
   /** Part after "#/". */
   readonly path: string;
@@ -18,19 +24,24 @@ interface RouteInfo<R extends Route = MainRoute> {
 }
 
 export const ROUTES: readonly RouteInfo[] = [
+  { route: "today", path: "heute", label: "Heute", title: "Heute" },
   { route: "week", path: "woche", label: "Woche", title: "Wochenübersicht" },
   { route: "tasks", path: "aufgaben", label: "Aufgaben", title: "Aufgaben" },
   { route: "done", path: "erledigt", label: "Erledigt", title: "Erledigt" },
+  { route: "statistics", path: "statistik", label: "Statistik", title: "Statistik" },
   { route: "settings", path: "einstellungen", label: "Einstellungen", title: "Einstellungen" },
 ];
+
+/** The entries of the navigation, in this order (the plus for a new task sits after "Woche"). */
+export const NAVIGATION: readonly MainRoute[] = ["today", "week", "statistics", "settings"];
 
 const NEW_TASK_PATH = "aufgaben/neu";
 const EDIT_TASK_PREFIX = "aufgaben/bearbeiten/";
 
 const TASK_FORM_TITLES = { taskNew: "Neue Aufgabe", taskEdit: "Aufgabe bearbeiten" } as const;
 
-/** The week view is the start page, also for an empty or unknown address. */
-export const DEFAULT_ROUTE: MainRoute = "week";
+/** "Heute" is the start page, also for an empty or unknown address. */
+export const DEFAULT_ROUTE: MainRoute = "today";
 
 /** Where the browser is: the page and, for the edit form, the task it is about. */
 export interface PageLocation {
@@ -45,9 +56,16 @@ export function routeInfo(route: Route): { readonly title: string } {
   return ROUTES.find((info) => info.route === route) ?? (ROUTES[0] as RouteInfo);
 }
 
-/** The navigation entry a page belongs to; the task forms belong to "Aufgaben". */
+/** The text of an entry in the navigation. */
+export function routeLabel(route: MainRoute): string {
+  return (ROUTES.find((info) => info.route === route) as RouteInfo).label;
+}
+
+/** The navigation entry a page belongs to; the list pages and task forms belong to "Woche". */
 export function navigationRoute(route: Route): MainRoute {
-  return route === "taskNew" || route === "taskEdit" ? "tasks" : route;
+  return route === "tasks" || route === "done" || route === "taskNew" || route === "taskEdit"
+    ? "week"
+    : route;
 }
 
 /** Reads `location.hash` (e.g. "#/aufgaben" or "#/aufgaben/bearbeiten/abc"). */
@@ -74,8 +92,8 @@ export function parseRoute(hash: string): Route {
   return parseLocation(hash).route;
 }
 
-/** The link target for a main page, e.g. "#/aufgaben". */
-export function routeHash(route: MainRoute): string {
+/** The link target for a listed page, e.g. "#/aufgaben". */
+export function routeHash(route: ListedRoute): string {
   const info = ROUTES.find((candidate) => candidate.route === route) as RouteInfo;
   return `#/${info.path}`;
 }

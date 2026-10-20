@@ -115,7 +115,9 @@ const FAKE_SERVER = process.env.FAKE_SERVER_URL ?? "http://localhost:4180";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, ".", "VITE_");
-  const backend = backendMode(mode, env.VITE_BACKEND);
+  // The test build (`e2e`) never reads the setting from an .env file: a `.env.local` made for
+  // trying the real project (`VITE_BACKEND=local`) must not turn the tests' fake backend off.
+  const backend = backendMode(mode, mode === "e2e" ? process.env.VITE_BACKEND : env.VITE_BACKEND);
   const connectTo =
     backend === "fake"
       ? [new URL(FAKE_SERVER).origin]

@@ -356,6 +356,28 @@ describe("F6 Wochenübersicht: Stand der Woche (erledigt / fällig)", () => {
     expect(result.progress).toEqual({ done: 3, due: 4 });
   });
 
+  it("F6 Jeder Tag zählt seine fälligen und erledigten Durchgänge, auch wenn die Liste sie nicht zeigt", () => {
+    const first = tickOff(
+      stateOf(
+        recurringTask({
+          id: "muell",
+          recurrence: { unit: "day", interval: 1 },
+          dueDate: d("2026-10-19"),
+        }),
+      ),
+      "2026-10-19",
+      "c-1",
+    );
+    // Mo erledigt, Di offen und überfällig (steht im Überfällig-Block, nicht auf dem Tag).
+    const result = view([first.task, oneOffTask({ id: "fr", dueDate: d("2026-10-23") })], {
+      completions: first.completions,
+    });
+    const counts = result.days.map((day) => `${day.doneCount}/${day.dueCount}`);
+
+    expect(counts).toEqual(["1/1", "0/1", "0/0", "0/0", "0/1", "0/0", "0/0"]);
+    expect(result.days[0]?.entries).toEqual([]);
+  });
+
   it("F6 Eine verspätet erledigte Aufgabe zählt in der Woche, in der sie fällig war", () => {
     const bad = tickOff(
       stateOf(recurringTask({ id: "bad", dueDate: d("2026-10-16") })),

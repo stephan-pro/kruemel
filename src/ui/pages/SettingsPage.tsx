@@ -14,7 +14,7 @@ import { OtherDeviceTile } from "../components/OtherDeviceTile";
 import { PageTitle } from "../components/PageTitle";
 import { VersionTile } from "../components/VersionTile";
 import type { InstallWay } from "../install";
-import { routeInfo } from "../route";
+import { routeHash, routeInfo } from "../route";
 
 interface SettingsPageProps {
   /** Everything the app keeps: what "Sicherung" writes to a file. */
@@ -74,6 +74,19 @@ export function SettingsPage({
     <>
       <PageTitle title={routeInfo("settings").title} />
       <div class="page-stack">
+        <section class="tile tile--narrow" aria-labelledby="listen">
+          <h2 class="tile__title" id="listen">
+            Aufgaben und Erledigtes
+          </h2>
+          <div class="button-row">
+            <a class="btn btn--secondary" href={routeHash("tasks")}>
+              Aufgaben
+            </a>
+            <a class="btn btn--secondary" href={routeHash("done")}>
+              Erledigt
+            </a>
+          </div>
+        </section>
         <section class="tile tile--narrow" aria-labelledby="namen">
           <h2 class="tile__title" id="namen">
             Namen und „Ich bin“

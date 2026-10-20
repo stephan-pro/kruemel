@@ -4,7 +4,15 @@ import { calendarDay } from "../../src/domain/date";
 import { TASK_SYMBOLS } from "../../src/domain/taskSymbols";
 import type { AppData } from "../../src/storage/appData";
 import { expectNoAccessibilityViolations } from "./axe";
-import { dataKey, expectPageShown, goToPage, startConfigured, store, storedData } from "./helpers";
+import {
+  dataKey,
+  expectPageShown,
+  goToPage,
+  startConfigured,
+  store,
+  storedData,
+  WEEK_HASH,
+} from "./helpers";
 
 // Package R2: a symbol per task (F8), chosen in the task form and shown wherever the task stands.
 // The clock stands still on Wednesday 21.10.2026 (as in week.spec.ts): "Einkaufen" is due today,
@@ -16,10 +24,14 @@ const demo = () => demoData(TODAY);
 async function start(page: Page, data: AppData | string = demo()) {
   await page.clock.setFixedTime(new Date(2026, 9, 21, 12, 0, 0));
   if (typeof data === "string") {
-    await store(page, {
-      [dataKey]: data,
-      "putzplan:device": JSON.stringify({ currentPerson: "personA" }),
-    });
+    await store(
+      page,
+      {
+        [dataKey]: data,
+        "putzplan:device": JSON.stringify({ currentPerson: "personA" }),
+      },
+      WEEK_HASH,
+    );
   } else {
     await startConfigured(page, data);
   }

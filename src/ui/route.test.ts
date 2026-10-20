@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_ROUTE,
   editTaskHash,
+  NAVIGATION,
   navigationRoute,
   newTaskHash,
   parseLocation,
@@ -9,6 +10,7 @@ import {
   ROUTES,
   routeHash,
   routeInfo,
+  routeLabel,
 } from "./route";
 
 describe("Navigation (Hash-Router)", () => {
@@ -20,18 +22,26 @@ describe("Navigation (Hash-Router)", () => {
 
   it("Die Adressen sind deutsch und folgen dem Muster #/name", () => {
     expect(ROUTES.map(({ route }) => routeHash(route))).toEqual([
+      "#/heute",
       "#/woche",
       "#/aufgaben",
       "#/erledigt",
+      "#/statistik",
       "#/einstellungen",
     ]);
   });
 
-  it("Ohne Adresse oder bei unbekannter Adresse startet die Wochenübersicht", () => {
-    expect(DEFAULT_ROUTE).toBe("week");
-    expect(parseRoute("")).toBe("week");
-    expect(parseRoute("#")).toBe("week");
-    expect(parseRoute("#/gibt-es-nicht")).toBe("week");
+  it("Die Navigation zeigt Heute, Woche, Statistik und Einstellungen; Aufgaben und Erledigt liegen dahinter", () => {
+    expect(NAVIGATION.map(routeLabel)).toEqual(["Heute", "Woche", "Statistik", "Einstellungen"]);
+    expect(NAVIGATION).not.toContain("tasks");
+    expect(NAVIGATION).not.toContain("done");
+  });
+
+  it("Ohne Adresse oder bei unbekannter Adresse startet „Heute“", () => {
+    expect(DEFAULT_ROUTE).toBe("today");
+    expect(parseRoute("")).toBe("today");
+    expect(parseRoute("#")).toBe("today");
+    expect(parseRoute("#/gibt-es-nicht")).toBe("today");
   });
 
   it("Auch eine Adresse ohne Schrägstrich wird erkannt", () => {
@@ -40,6 +50,7 @@ describe("Navigation (Hash-Router)", () => {
 
   it("Jede Seite hat einen Titel für Überschrift und Browser-Tab", () => {
     expect(routeInfo("week").title).toBe("Wochenübersicht");
+    expect(routeInfo("statistics").title).toBe("Statistik");
     expect(ROUTES.every(({ title, label }) => title !== "" && label !== "")).toBe(true);
   });
 });
@@ -64,21 +75,23 @@ describe("Navigation zu den Aufgabenformularen (F1, F3)", () => {
     expect(parseLocation(editTaskHash(id))).toEqual({ route: "taskEdit", taskId: id });
   });
 
-  it("Eine Bearbeiten-Adresse ohne oder mit kaputter Kennung startet die Wochenübersicht", () => {
-    expect(parseRoute("#/aufgaben/bearbeiten/")).toBe("week");
-    expect(parseRoute("#/aufgaben/bearbeiten/%E0%A4%A")).toBe("week");
+  it("Eine Bearbeiten-Adresse ohne oder mit kaputter Kennung startet „Heute“", () => {
+    expect(parseRoute("#/aufgaben/bearbeiten/")).toBe("today");
+    expect(parseRoute("#/aufgaben/bearbeiten/%E0%A4%A")).toBe("today");
   });
 
-  it("Die Formulare haben eigene Titel und gehören in der Navigation zu „Aufgaben“", () => {
+  it("Die Formulare haben eigene Titel; sie und die Listen gehören in der Navigation zu „Woche“", () => {
     expect(routeInfo("taskNew").title).toBe("Neue Aufgabe");
     expect(routeInfo("taskEdit").title).toBe("Aufgabe bearbeiten");
-    expect(navigationRoute("taskNew")).toBe("tasks");
-    expect(navigationRoute("taskEdit")).toBe("tasks");
-    expect(navigationRoute("done")).toBe("done");
+    expect(navigationRoute("taskNew")).toBe("week");
+    expect(navigationRoute("taskEdit")).toBe("week");
+    expect(navigationRoute("tasks")).toBe("week");
+    expect(navigationRoute("done")).toBe("week");
+    expect(navigationRoute("settings")).toBe("settings");
   });
 
   it("Die Aufgabenliste behält ihre eigene Adresse", () => {
     expect(parseRoute("#/aufgaben")).toBe("tasks");
-    expect(parseRoute("#/aufgaben/unbekannt")).toBe("week");
+    expect(parseRoute("#/aufgaben/unbekannt")).toBe("today");
   });
 });

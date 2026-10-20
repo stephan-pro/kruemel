@@ -38,6 +38,7 @@ async function startInstalled(page: Page) {
     ([dataName, deviceName, data]) => {
       localStorage.setItem(dataName as string, data as string);
       localStorage.setItem(deviceName as string, JSON.stringify({ currentPerson: "personA" }));
+      location.hash = "#/woche";
     },
     [dataKey, deviceKey, JSON.stringify(demoData(FROZEN_TODAY))],
   );
@@ -78,8 +79,8 @@ test.describe("N3 Manifest und Symbole", () => {
       display: "standalone",
       start_url: "./",
       scope: "./",
-      background_color: "#eef1f5",
-      theme_color: "#eef1f5",
+      background_color: "#f3f2f8",
+      theme_color: "#f3f2f8",
     });
   });
 
@@ -143,8 +144,8 @@ test.describe("N3 Farbe der Leiste je Farbschema", () => {
     await startConfigured(page);
 
     expect(await themeColors(page)).toEqual([
-      "light:(prefers-color-scheme: light):#eef1f5",
-      "dark:(prefers-color-scheme: dark):#0f1115",
+      "light:(prefers-color-scheme: light):#f3f2f8",
+      "dark:(prefers-color-scheme: dark):#0b1022",
     ]);
   });
 
@@ -157,8 +158,8 @@ test.describe("N3 Farbe der Leiste je Farbschema", () => {
     });
 
     expect(await themeColors(page)).toEqual([
-      "light:(prefers-color-scheme: light):#0f1115",
-      "dark:(prefers-color-scheme: dark):#0f1115",
+      "light:(prefers-color-scheme: light):#0b1022",
+      "dark:(prefers-color-scheme: dark):#0b1022",
     ]);
   });
 
@@ -170,20 +171,20 @@ test.describe("N3 Farbe der Leiste je Farbschema", () => {
 
     await page.getByRole("radio", { name: "Dunkel" }).check();
     expect(await themeColors(page)).toEqual([
-      "light:(prefers-color-scheme: light):#0f1115",
-      "dark:(prefers-color-scheme: dark):#0f1115",
+      "light:(prefers-color-scheme: light):#0b1022",
+      "dark:(prefers-color-scheme: dark):#0b1022",
     ]);
 
     await page.getByRole("radio", { name: "Hell" }).check();
     expect(await themeColors(page)).toEqual([
-      "light:(prefers-color-scheme: light):#eef1f5",
-      "dark:(prefers-color-scheme: dark):#eef1f5",
+      "light:(prefers-color-scheme: light):#f3f2f8",
+      "dark:(prefers-color-scheme: dark):#f3f2f8",
     ]);
 
     await page.getByRole("radio", { name: /^Automatisch/ }).check();
     expect(await themeColors(page)).toEqual([
-      "light:(prefers-color-scheme: light):#eef1f5",
-      "dark:(prefers-color-scheme: dark):#0f1115",
+      "light:(prefers-color-scheme: light):#f3f2f8",
+      "dark:(prefers-color-scheme: dark):#0b1022",
     ]);
   });
 });

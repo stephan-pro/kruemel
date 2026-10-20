@@ -16,23 +16,47 @@ export function today() {
   return dayFromDate(new Date());
 }
 
-/** Puts values into the browser storage before the app reads it. */
-export async function store(page: Page, items: Record<string, string>) {
+/** The week view; most tests start there. The start page of the app is "Heute" (`#/heute`). */
+export const WEEK_HASH = "#/woche";
+
+/** The heading of "Heute": the greeting of the time of day, by default for anybody ("Hallo, Alex!"). */
+export const greetingHeading = (name = ".+") =>
+  new RegExp(`^(Guten Morgen|Hallo|Guten Abend), ${name}!$`);
+
+/**
+ * Puts values into the browser storage before the app reads it, then opens the app (at `hash`,
+ * "" for the start page).
+ */
+export async function store(page: Page, items: Record<string, string>, hash = "") {
   await page.goto("./");
-  await page.evaluate((entries) => {
-    for (const [key, value] of Object.entries(entries)) {
-      localStorage.setItem(key, value);
-    }
-  }, items);
-  await page.goto("./");
+  await page.evaluate(
+    ([entries, target]) => {
+      for (const [key, value] of Object.entries(entries as Record<string, string>)) {
+        localStorage.setItem(key, value);
+      }
+      if (target) {
+        location.hash = target as string;
+      }
+    },
+    [items, hash],
+  );
+  await page.reload();
 }
 
-/** A configured app: names set, this device belongs to the first person. */
-export async function startConfigured(page: Page, data: AppData = demoData(today())) {
-  await store(page, {
-    [dataKey]: JSON.stringify(data),
-    [deviceKey]: JSON.stringify({ currentPerson: "personA" }),
-  });
+/** A configured app on the week view: names set, this device belongs to the first person. */
+export async function startConfigured(
+  page: Page,
+  data: AppData = demoData(today()),
+  hash: string = WEEK_HASH,
+) {
+  await store(
+    page,
+    {
+      [dataKey]: JSON.stringify(data),
+      [deviceKey]: JSON.stringify({ currentPerson: "personA" }),
+    },
+    hash,
+  );
 }
 
 /** The day the week tests stand on: Wednesday 21.10.2026 (see `week.spec.ts` for what falls where). */
@@ -50,11 +74,36 @@ export async function openWeek(
   person: "personA" | "personB" = "personA",
 ) {
   await freezeClock(page);
-  await store(page, {
-    [dataKey]: JSON.stringify(data),
-    [deviceKey]: JSON.stringify({ currentPerson: person }),
-  });
+  await store(
+    page,
+    {
+      [dataKey]: JSON.stringify(data),
+      [deviceKey]: JSON.stringify({ currentPerson: person }),
+    },
+    WEEK_HASH,
+  );
   await expect(page.getByRole("heading", { level: 1, name: "Diese Woche" })).toBeVisible();
+}
+
+/**
+ * "Heute" for the demo data (or `data`) on the frozen day, for the given person's device. The clock
+ * stands at noon, so the greeting is "Hallo, …!".
+ */
+export async function openToday(
+  page: Page,
+  data: AppData = demoData(FROZEN_TODAY),
+  person: "personA" | "personB" = "personA",
+) {
+  await freezeClock(page);
+  await store(
+    page,
+    {
+      [dataKey]: JSON.stringify(data),
+      [deviceKey]: JSON.stringify({ currentPerson: person }),
+    },
+    "#/heute",
+  );
+  await expect(page.getByRole("heading", { level: 1, name: /^Hallo, / })).toBeVisible();
 }
 
 /** A tile of the week view, found by its heading ("Heute · Mi, 21.10.", "Do, 22.10.", "Überfällig"). */
@@ -91,13 +140,31 @@ export const detailValue = (dialog: Locator, label: string) =>
  * a moment after drawing the page; typing or pressing keys before that would lose the focus
  * again (a person is not that fast).
  */
-export async function expectPageShown(page: Page, title: string) {
+export async function expectPageShown(page: Page, title: string | RegExp) {
   await expect(page.getByRole("heading", { level: 1, name: title })).toBeFocused();
 }
 
-/** Follows a link of the navigation and waits for the page it leads to. */
-export async function goToPage(page: Page, link: string, title: string = link) {
-  await page.getByRole("link", { name: link, exact: true }).click();
+/** Pages that are not in the navigation: reached from "Woche" and the settings (see `app.spec.ts`). */
+const LIST_PAGES: Record<string, string> = { Aufgaben: "#/aufgaben", Erledigt: "#/erledigt" };
+
+/**
+ * Goes to a page and waits for it. The pages of the navigation (Heute, Woche, Statistik,
+ * Einstellungen) are reached by its link; "Aufgaben" and "Erledigt" by their address, the links to
+ * them are tested on their own.
+ */
+export async function goToPage(page: Page, link: string, title: string | RegExp = link) {
+  const address = LIST_PAGES[link];
+  if (address === undefined) {
+    await page.getByRole("link", { name: link, exact: true }).click();
+  } else {
+    // The page the app starts on has to be there first: the first heading takes no focus, so a
+    // page opened before it would not take the focus either.
+    await expect(page.getByRole("navigation", { name: "Hauptnavigation" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await page.evaluate((hash) => {
+      location.hash = hash;
+    }, address);
+  }
   await expectPageShown(page, title);
 }
 

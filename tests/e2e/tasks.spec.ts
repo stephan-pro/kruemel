@@ -107,9 +107,14 @@ test.describe("F1 Wiederkehrende Aufgabe anlegen", () => {
 
     await expect(page).toHaveTitle("Neue Aufgabe – Krümel");
     await expect(page.getByRole("heading", { level: 1, name: "Neue Aufgabe" })).toBeFocused();
-    await expect(page.getByRole("link", { name: "Aufgaben", exact: true })).toHaveAttribute(
+    // Das Formular gehört zur Woche; das Plus der Navigation ist die aktuelle Seite.
+    await expect(page.getByRole("link", { name: "Woche", exact: true })).toHaveAttribute(
       "aria-current",
       "true",
+    );
+    await expect(page.getByRole("link", { name: "Neue Aufgabe" })).toHaveAttribute(
+      "aria-current",
+      "page",
     );
     await expect(page.getByLabel("Erster Termin")).toHaveValue(today());
     await expect(

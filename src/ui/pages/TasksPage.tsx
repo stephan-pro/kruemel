@@ -1,4 +1,4 @@
-import { Pencil, Plus, Trash2 } from "lucide-preact";
+import { Pencil, Trash2 } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import type { Completion, Task } from "../../domain/task";
 import { completionCount, groupOpenTasks } from "../../domain/taskManagement";
@@ -8,7 +8,7 @@ import { DeleteTaskDialog } from "../components/DeleteTaskDialog";
 import { PageTitle } from "../components/PageTitle";
 import { TaskSymbol } from "../components/TaskSymbol";
 import { describeRecurrence, describeResponsibility, formatDay } from "../format";
-import { editTaskHash, newTaskHash, routeInfo } from "../route";
+import { editTaskHash, routeInfo } from "../route";
 
 interface TasksPageProps {
   readonly tasks: readonly Task[];
@@ -67,10 +67,6 @@ export function TasksPage({
     <>
       <div class="page-head">
         <PageTitle title={routeInfo("tasks").title} />
-        <a class="btn btn--primary" href={newTaskHash()}>
-          <Plus size={20} />
-          Neue Aufgabe
-        </a>
       </div>
       <div class="page-stack">
         <div role="status">{announced && <p class="success-note">{announced}</p>}</div>

@@ -30,6 +30,13 @@ export interface WeekDayView {
   readonly isToday: boolean;
   /** Open entries first, then done ones, each by title. */
   readonly entries: readonly WeekEntry[];
+  /**
+   * Every round due on this day, ticked off or not, whether or not `entries` shows it ("Deine
+   * Woche" in "Heute"): overdue tasks count on their old day, done rounds on the day they were due.
+   */
+  readonly dueCount: number;
+  /** How many of those rounds are ticked off. */
+  readonly doneCount: number;
 }
 
 /**
@@ -101,14 +108,19 @@ export function weekView(input: WeekViewInput): WeekView {
     weekDays(shownDay).map((day) => [day, []]),
   );
   const overdue: OpenWeekEntry[] = [];
+  const countsByDay = new Map<CalendarDay, { due: number; done: number }>(
+    [...entriesByDay.keys()].map((day) => [day, { due: 0, done: 0 }]),
+  );
   let openDue = 0;
   let done = 0;
 
   for (const task of visibleTasks.filter(isOpen)) {
     const daysOverdue = Math.max(0, daysBetween(task.dueDate, today));
     const entry: OpenWeekEntry = { kind: "open", task, daysOverdue };
-    if (entriesByDay.has(task.dueDate)) {
+    const counts = countsByDay.get(task.dueDate);
+    if (counts !== undefined) {
       openDue += 1;
+      counts.due += 1;
     }
     if (position === "current" && daysOverdue > 0) {
       overdue.push(entry);
@@ -125,6 +137,9 @@ export function weekView(input: WeekViewInput): WeekView {
       continue;
     }
     done += 1;
+    const counts = countsByDay.get(completion.previousDueDate) as { due: number; done: number };
+    counts.due += 1;
+    counts.done += 1;
     if (position === "past") {
       day.push({ kind: "done", task, completion });
     }
@@ -137,6 +152,8 @@ export function weekView(input: WeekViewInput): WeekView {
       day,
       isToday: day === today,
       entries: entries.sort(byKindThenTitle),
+      dueCount: (countsByDay.get(day) as { due: number }).due,
+      doneCount: (countsByDay.get(day) as { done: number }).done,
     })),
     overdue: overdue.sort(
       (a, b) => a.task.dueDate.localeCompare(b.task.dueDate) || byTitle(a.task, b.task),

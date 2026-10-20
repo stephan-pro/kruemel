@@ -2,7 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 import { DEMO_NAMES, demoData } from "../../src/demo/demoData";
 import { dayFromDate } from "../../src/domain/date";
 import { expectNoAccessibilityViolations } from "./axe";
-import { dataKey, deviceKey, goToPage, startConfigured, store } from "./helpers";
+import { dataKey, deviceKey, goToPage, greetingHeading, startConfigured, store } from "./helpers";
 
 // The real app (production build), first start: nothing stored yet. Packages 7+ of docs/PLAN.md.
 
@@ -52,14 +52,16 @@ test.describe("Ersteinrichtung (F5 Namen)", () => {
     await expect(page.getByRole("radio", { name: "Robin" })).toBeVisible();
   });
 
-  test("speichert Namen und „Ich bin“ und öffnet die Wochenübersicht", async ({ page }) => {
+  test("speichert Namen und „Ich bin“ und öffnet „Heute“", async ({ page }) => {
     await page.goto("./");
     await fillSetup(page, "  Alex ", "Robin");
     await page.getByRole("radio", { name: "Robin" }).check();
     await page.getByRole("button", { name: "Los geht’s" }).click();
 
-    await expect(page).toHaveTitle("Wochenübersicht – Krümel");
-    await expect(page.getByRole("heading", { level: 1, name: "Diese Woche" })).toBeFocused();
+    await expect(page).toHaveTitle("Heute – Krümel");
+    await expect(
+      page.getByRole("heading", { level: 1, name: greetingHeading("Robin") }),
+    ).toBeFocused();
     await expect(page.getByText("Ich bin:")).toContainText("Robin");
 
     const data = JSON.parse((await page.evaluate((k) => localStorage.getItem(k), dataKey)) ?? "");
@@ -76,11 +78,15 @@ test.describe("Ersteinrichtung (F5 Namen)", () => {
     await fillSetup(page, "Alex", "Robin");
     await page.getByRole("radio", { name: "Alex" }).check();
     await page.getByRole("button", { name: "Los geht’s" }).click();
-    await expect(page.getByRole("heading", { level: 1, name: "Diese Woche" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { level: 1, name: greetingHeading("Alex") }),
+    ).toBeVisible();
 
     await page.reload();
 
-    await expect(page.getByRole("heading", { level: 1, name: "Diese Woche" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { level: 1, name: greetingHeading("Alex") }),
+    ).toBeVisible();
     await expect(page.getByText("Ich bin:")).toContainText("Alex");
   });
 
@@ -116,26 +122,31 @@ test.describe("„Ich bin“ auf einem Gerät ohne Auswahl (F5)", () => {
 
     await page.getByRole("radio", { name: DEMO_NAMES.personB }).check();
     await page.getByRole("button", { name: "Weiter" }).click();
-    await expect(page.getByRole("heading", { level: 1, name: "Diese Woche" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { level: 1, name: greetingHeading(DEMO_NAMES.personB) }),
+    ).toBeVisible();
     await expect(page.getByText("Ich bin:")).toContainText(DEMO_NAMES.personB);
   });
 });
 
 test.describe("Rahmen und Navigation", () => {
-  // The week view names the shown week in its heading; the tab title stays "Wochenübersicht".
+  // The week view names the shown week in its heading and "Heute" greets by name; the tab title
+  // stays "Wochenübersicht" and "Heute".
   const pages = [
+    { link: "Heute", title: "Heute", heading: greetingHeading() },
     { link: "Woche", title: "Wochenübersicht", heading: "Diese Woche" },
-    { link: "Aufgaben", title: "Aufgaben", heading: "Aufgaben" },
-    { link: "Erledigt", title: "Erledigt", heading: "Erledigt" },
+    { link: "Statistik", title: "Statistik", heading: "Statistik" },
     { link: "Einstellungen", title: "Einstellungen", heading: "Einstellungen" },
   ];
 
-  test("beginnt ohne Adresszusatz mit der Wochenübersicht", async ({ page }) => {
-    await startConfigured(page);
+  test("beginnt ohne Adresszusatz mit „Heute“", async ({ page }) => {
+    await startConfigured(page, undefined, "");
 
-    await expect(page).toHaveTitle("Wochenübersicht – Krümel");
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Diese Woche");
-    await expect(page.getByRole("link", { name: "Woche" })).toHaveAttribute("aria-current", "page");
+    await expect(page).toHaveTitle("Heute – Krümel");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      greetingHeading(DEMO_NAMES.personA),
+    );
+    await expect(page.getByRole("link", { name: "Heute" })).toHaveAttribute("aria-current", "page");
   });
 
   for (const { link, title, heading } of pages) {
@@ -144,7 +155,12 @@ test.describe("Rahmen und Navigation", () => {
     }) => {
       await startConfigured(page);
       // Not the start page first, so the change is visible for every page.
-      await page.getByRole("link", { name: link === "Woche" ? "Erledigt" : "Woche" }).click();
+      await page
+        .getByRole("link", {
+          name: link === "Einstellungen" ? "Woche" : "Einstellungen",
+          exact: true,
+        })
+        .click();
 
       await page.getByRole("link", { name: link, exact: true }).click();
 
@@ -155,6 +171,30 @@ test.describe("Rahmen und Navigation", () => {
         "page",
       );
       await expect(page.locator('[aria-current="page"]')).toHaveCount(1);
+      await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+      await expectNoAccessibilityViolations(page);
+    });
+  }
+
+  // Not in the navigation: reached from "Woche" and the settings (today.spec.ts follows the links).
+  for (const { title, hash } of [
+    { title: "Aufgaben", hash: "#/aufgaben" },
+    { title: "Erledigt", hash: "#/erledigt" },
+  ]) {
+    test(`Seite „${title}“: Tab-Titel, Überschrift mit Fokus, „Woche“ als Abschnitt und axe`, async ({
+      page,
+    }) => {
+      await startConfigured(page, undefined, hash);
+      await goToPage(page, "Einstellungen");
+
+      await goToPage(page, title);
+
+      await expect(page).toHaveTitle(`${title} – Krümel`);
+      await expect(page.locator('[aria-current="page"]')).toHaveCount(0);
+      await expect(page.getByRole("link", { name: "Woche", exact: true })).toHaveAttribute(
+        "aria-current",
+        "true",
+      );
       await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
       await expectNoAccessibilityViolations(page);
     });
@@ -173,7 +213,7 @@ test.describe("Rahmen und Navigation", () => {
     await page.keyboard.press("Enter");
 
     await expect(page.locator("main")).toBeFocused();
-    await expect(page).toHaveURL(/\/kruemel\/$/);
+    await expect(page).toHaveURL(/\/kruemel\/#\/woche$/);
   });
 
   test("Tastatur: Die Navigation ist mit Tab und Enter bedienbar", async ({
@@ -190,19 +230,19 @@ test.describe("Rahmen und Navigation", () => {
 
     await page.keyboard.press("Tab");
     await expect(page.getByRole("button", { name: "Zum Inhalt springen" })).toBeFocused();
-    for (const name of ["Woche", "Aufgaben", "Erledigt"]) {
+    for (const name of ["Heute", "Woche", "Neue Aufgabe", "Statistik", "Einstellungen"]) {
       await page.keyboard.press("Tab");
       await expect(page.getByRole("link", { name, exact: true })).toBeFocused();
     }
     await page.keyboard.press("Enter");
 
-    await expect(page.getByRole("heading", { level: 1, name: "Erledigt" })).toBeFocused();
+    await expect(page.getByRole("heading", { level: 1, name: "Einstellungen" })).toBeFocused();
   });
 
   test("Browser-Zurück führt zur vorigen Seite", async ({ page }) => {
     await startConfigured(page);
-    await page.getByRole("link", { name: "Aufgaben" }).click();
-    await expect(page.getByRole("heading", { level: 1, name: "Aufgaben" })).toBeVisible();
+    await page.getByRole("link", { name: "Einstellungen", exact: true }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Einstellungen" })).toBeVisible();
 
     await page.goBack();
 
@@ -377,7 +417,9 @@ test.describe("Unlesbare Daten (Speicher)", () => {
     await fillSetup(page, "Alex", "Robin");
     await page.getByRole("radio", { name: "Alex" }).check();
     await page.getByRole("button", { name: "Los geht’s" }).click();
-    await expect(page.getByRole("heading", { level: 1, name: "Diese Woche" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { level: 1, name: greetingHeading("Alex") }),
+    ).toBeVisible();
   });
 
   test("„Erneut versuchen“ lädt wieder, nachdem der Fehler behoben ist", async ({ page }) => {

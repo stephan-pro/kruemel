@@ -6,8 +6,8 @@ import { dataKey, deviceKey, goToPage, startConfigured, store, storedData, today
 // Package R1: the own design (N1, DESIGN.md) and the colour scheme setting (N8).
 
 // The page background of the two themes (DESIGN.md: --bg).
-const LIGHT_BG = "rgb(238, 241, 245)";
-const DARK_BG = "rgb(15, 17, 21)";
+const LIGHT_BG = "rgb(243, 242, 248)";
+const DARK_BG = "rgb(11, 16, 34)";
 
 async function background(page: Page): Promise<string> {
   return page.evaluate(() => getComputedStyle(document.body).backgroundColor);
@@ -158,7 +158,7 @@ test.describe("N1 Eigenes Design", () => {
     expect(requests.filter((url) => !url.startsWith("http://localhost:"))).toEqual([]);
   });
 
-  test("N1 Navigation: am Handy eine Leiste unten, am PC eine Spalte links", async ({
+  test("N1 Navigation: am Handy eine schwebende Leiste unten, am PC eine Spalte links", async ({
     page,
     isMobile,
   }) => {
@@ -173,8 +173,11 @@ test.describe("N1 Eigenes Design", () => {
       return;
     }
     if (isMobile) {
-      expect(Math.round(box.y + box.height)).toBe(viewport.height);
-      expect(box.width).toBe(viewport.width);
+      // 16 px Rand links und rechts, 18 px über dem unteren Rand, 68 px hoch (DESIGN.md Abschnitt 7).
+      expect(Math.round(box.y + box.height)).toBe(viewport.height - 18);
+      expect(Math.round(box.x)).toBe(16);
+      expect(Math.round(box.width)).toBe(viewport.width - 32);
+      expect(Math.round(box.height)).toBe(68);
     } else {
       expect(box.x).toBeLessThan(40);
       expect(box.width).toBeLessThan(260);
@@ -187,8 +190,8 @@ test.describe("N1 Eigenes Design", () => {
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 
     for (const [colorScheme, accent] of [
-      ["light", "rgb(31, 71, 214)"],
-      ["dark", "rgb(143, 168, 255)"],
+      ["light", "rgb(85, 48, 217)"],
+      ["dark", "rgb(183, 166, 255)"],
     ] as const) {
       await page.emulateMedia({ colorScheme });
       await page.keyboard.press("Tab");

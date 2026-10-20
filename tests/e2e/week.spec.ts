@@ -2,17 +2,7 @@ import { expect, type Locator, type Page, test } from "@playwright/test";
 import { demoData } from "../../src/demo/demoData";
 import { calendarDay } from "../../src/domain/date";
 import { expectNoAccessibilityViolations } from "./axe";
-import {
-  dataKey,
-  deviceKey,
-  expectPageShown,
-  FROZEN_TODAY,
-  freezeClock,
-  openWeek,
-  startConfigured,
-  store,
-  storedData,
-} from "./helpers";
+import { expectPageShown, FROZEN_TODAY, openWeek, startConfigured, storedData } from "./helpers";
 
 // Package 9 in the design of package R1: the week view (F6) as a board of tiles, with ticking off
 // and undo (F2, F3, F4, F5).
@@ -389,11 +379,7 @@ test.describe("F6 Filter alle / nur meine", () => {
   test("F5 Eine Aufgabe für beide erscheint bei „nur meine“ für beide Personen", async ({
     page,
   }) => {
-    await freezeClock(page);
-    await store(page, {
-      [dataKey]: JSON.stringify(demo()),
-      [deviceKey]: JSON.stringify({ currentPerson: "personB" }),
-    });
+    await openWeek(page, demo(), "personB");
     await expect(page.getByText("Ich bin:")).toContainText("Robin");
 
     await page.getByRole("button", { name: "Nur meine" }).click();

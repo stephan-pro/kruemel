@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { expectNoAccessibilityViolations } from "./axe";
-import { goToPage, startConfigured } from "./helpers";
+import { goToPage, greetingHeading, startConfigured } from "./helpers";
 
 test("Erster Start zeigt die Ersteinrichtung unter dem Titel „Krümel“", async ({ page }) => {
   await page.goto("./");
@@ -25,7 +25,9 @@ test("Die Hauptseiten öffnen sich und haben keine Barrierefreiheitsverstöße (
   await startConfigured(page);
   await expect(page.getByRole("heading", { level: 1, name: "Diese Woche" })).toBeVisible();
   await expectNoAccessibilityViolations(page);
-  for (const title of ["Aufgaben", "Erledigt", "Einstellungen"]) {
+  await goToPage(page, "Heute", greetingHeading());
+  await expectNoAccessibilityViolations(page);
+  for (const title of ["Statistik", "Aufgaben", "Erledigt", "Einstellungen"]) {
     await goToPage(page, title);
     await expectNoAccessibilityViolations(page);
   }

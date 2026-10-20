@@ -276,6 +276,8 @@ Jedes Paket endet wie bisher mit grünem `npm run check` (lokal und auf GitHub) 
 | E2-4 | Redesign „Persönlich“ und Statistik | E2-4a: neue Tokens (Alpha-Kontraste in `tokens.test.ts`), Navigation, Seite „Heute“, Seite „Woche“, Leistenfarben, Umbenennung in „Krümel“ (sichtbare Texte, Manifest, Seitentitel, Dateinamen der Sicherung), App-Symbol aus `design/kruemel-icon.svg` (alle Größen, sichere Zone maskierbarer Symbole prüfen). E2-4b: `statistics.ts` und Seite „Statistik“ mit SVG-Diagrammen. Zwei Commits. | Unit-Tests für Statistik, Begrüßung und Zusammenfassungssatz; alle E2E-Tests auf die neue Navigation umgestellt; `phone.spec.ts` prüft „Heute“ bei 360 × 640 und 390 × 844; axe, Kontrast und Kontrastmodus grün. |
 | E2-5 | Gerätetest und Abschluss | `docs/GERAETETEST.md` erweitern (Anmeldung, Einladung, zwei Geräte, offline, gleichzeitig abhaken, Abmelden, Update), PO führt ihn durch; `ETAPPE2.md` abhaken; Datenschutzhinweis und einfaches Impressum in den Einstellungen; README (Anmeldung, Einladung, Pausierung, Sicherung, Konto löschen und Haushalt verlassen von Hand, Daten aus Etappe 1); Neuanmeldungen abschalten; erste Sicherung herunterladen. | Gerätetest bestanden, `ETAPPE2.md` vollständig abgehakt, `check` und `check:db` grün, PO nimmt Etappe 2 ab. |
 
+**Reihenfolge (Entscheidung des PO, 20.10.2026):** E2-4 kommt vor E2-2 und E2-3 (Gmail-Versand wegen Google-Sperre noch offen; E2-4 hängt nicht davon ab, läuft im Modus `local` und geht damit schon online), also E2-0, E2-1, E2-4, E2-2, E2-3, E2-5.
+
 Umsetzungsabschnitte der Pakete („Umsetzung Paket E2-N (Entscheidungen)“) kommen als `## E2.4`, `## E2.5` … hinter diese Tabelle, vor das Kapitel „Nach Etappe 2“.
 
 ## E2.4 Umsetzung Paket E2-0 (Entscheidungen)

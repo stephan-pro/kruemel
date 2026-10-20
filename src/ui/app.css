@@ -1,4 +1,4 @@
-/* The look of the app (docs/design/DESIGN.md, style "Kachel-Board"). Colours come only from the
+/* The look of the app (docs/design/DESIGN.md, version 2 "Persönlich"). Colours come only from the
    tokens in tokens.css, so both colour schemes work without extra rules here.
    Phones first; from 900 px the navigation becomes a column on the left. */
 
@@ -16,8 +16,13 @@ html {
 }
 
 body {
+  min-height: 100vh;
   margin: 0;
-  background: var(--bg);
+  /* Dark: a faint glow at the top (`--bg-image`); light: none. */
+  background-color: var(--bg);
+  background-image: var(--bg-image);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
   color: var(--text);
   font-family: var(--font);
   font-size: 16px;
@@ -81,7 +86,7 @@ textarea {
   padding: 10px 16px;
   border: 0;
   border-radius: 12px;
-  background: var(--surface);
+  background: var(--surface-solid);
   color: var(--accent);
   font-weight: 700;
   transform: translateY(-200%);
@@ -124,47 +129,89 @@ textarea {
 .main-nav__link {
   display: flex;
   text-decoration: none;
-  border-radius: 12px;
+  border-radius: var(--radius-pill);
 }
 
 .main-nav__icon {
   flex: none;
 }
 
-/* Phones: the navigation is a bar at the bottom of the screen. */
+/* Phones: a floating bar above the bottom edge (DESIGN.md section 7). */
 .main-nav {
   position: fixed;
-  right: 0;
-  bottom: 0;
-  left: 0;
+  right: max(16px, env(safe-area-inset-right, 0px));
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  left: max(16px, env(safe-area-inset-left, 0px));
   z-index: 10;
-  padding: 6px max(8px, env(safe-area-inset-right, 0px))
-    calc(6px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px));
-  background: var(--surface);
-  box-shadow: 0 -1px 0 var(--surface-2);
+  height: 68px;
+  padding: 0 10px;
+  border-radius: var(--radius-pill);
+  background: var(--nav);
+  box-shadow:
+    var(--shadow-float),
+    inset 0 0 0 1px var(--surface-border);
 }
 
 .main-nav__list {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
 }
 
 .main-nav__link {
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  min-height: 52px;
-  color: var(--text-muted);
-  font-size: 12px;
-  font-weight: 600;
+  gap: 8px;
+  min-width: 48px;
+  height: 48px;
+  padding: 0 12px;
+  color: var(--on-nav);
+  font-size: 14px;
+  font-weight: 800;
 }
 
-/* "page": this very page; "true": the section a form page belongs to. */
-.main-nav__link[aria-current] {
-  color: var(--accent);
-  font-weight: 800;
+/* Only the page you are on shows its name, in a light pill; the others keep it for screen readers.
+   "page": this very page; "true": the section a list or form page belongs to. */
+.main-nav__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.main-nav__link[aria-current="page"] {
+  padding: 0 16px;
+  background: var(--on-nav);
+  color: var(--nav);
+}
+
+.main-nav__link[aria-current="page"] .main-nav__label {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip-path: none;
+}
+
+/* The plus: a round button of its own; its name is never shown on a phone. */
+.main-nav__plus,
+.main-nav__plus[aria-current="page"] {
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  background: var(--accent-strong);
+  color: var(--on-accent-tile);
+}
+
+.main-nav__plus[aria-current="page"] .main-nav__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
 }
 
 .demo-hint {
@@ -185,9 +232,27 @@ main:focus {
   outline: none;
 }
 
-/* Room for the bottom bar and the floating button, so they never cover the last content. */
+/* Room for the floating bar (18 px + 68 px), so it never covers the last content. */
 .app--with-nav main {
-  padding-bottom: calc(176px + env(safe-area-inset-bottom));
+  padding-bottom: calc(120px + env(safe-area-inset-bottom));
+}
+
+/* Phones: the pages begin with their own heading; the name of the app and "Ich bin" sit in the
+   column of wide screens only. */
+@media (max-width: 899px) {
+  .app--with-nav .app-name,
+  .app--with-nav .app-person {
+    display: none;
+  }
+
+  .app--with-nav .app-header {
+    padding-bottom: 0;
+  }
+
+  /* Little room above the first content: the overdue tasks of "Heute" must be in sight. */
+  .app--with-nav main {
+    padding-top: 12px;
+  }
 }
 
 .app:not(.app--with-nav) main {
@@ -212,7 +277,7 @@ main:focus {
     height: 100vh;
     padding: 24px 16px 24px max(16px, env(safe-area-inset-left, 0px));
     overflow-y: auto;
-    background: var(--surface);
+    background: var(--surface-solid);
   }
 
   .app--with-nav .app-name {
@@ -222,30 +287,50 @@ main:focus {
 
   .app--with-nav .main-nav {
     position: static;
+    height: auto;
     padding: 0;
+    border-radius: 0;
     background: none;
     box-shadow: none;
   }
 
   .app--with-nav .main-nav__list {
-    display: flex;
     flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
     gap: 6px;
   }
 
-  .app--with-nav .main-nav__link {
-    flex-direction: row;
+  .app--with-nav .main-nav__link,
+  .app--with-nav .main-nav__plus {
     justify-content: flex-start;
     gap: 12px;
+    width: auto;
+    height: auto;
     min-height: 48px;
-    padding: 0 12px;
+    padding: 0 16px;
     color: var(--text);
     font-size: 15px;
   }
 
-  .app--with-nav .main-nav__link[aria-current] {
+  .app--with-nav .main-nav__label,
+  .app--with-nav .main-nav__plus[aria-current="page"] .main-nav__label {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+  }
+
+  .app--with-nav .main-nav__link[aria-current="page"] {
     background: var(--inverse);
     color: var(--on-inverse);
+  }
+
+  .app--with-nav .main-nav__plus,
+  .app--with-nav .main-nav__plus[aria-current="page"] {
+    background: var(--accent-tile);
+    color: var(--on-accent-tile);
   }
 
   .app--with-nav .app-person {
@@ -268,12 +353,14 @@ main:focus {
 
 /* ---------- Page structure ---------- */
 
+/* Page titles and the greeting: heavy capitals (DESIGN.md section 3). */
 .page-title {
   margin-bottom: 20px;
-  font-size: 30px;
-  font-weight: 800;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
+  font-size: clamp(24px, 7.5vw, 36px);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
   overflow-wrap: anywhere;
 }
 
@@ -332,9 +419,18 @@ main:focus {
   font-weight: 600;
 }
 
+/* Small capitals label of a section ("DEINE WOCHE", "HEUTE FÜR DICH"). */
+.section-label {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 @media (min-width: 900px) {
   .page-title {
-    font-size: 34px;
+    font-size: 36px;
   }
 
   .section-title {
@@ -352,6 +448,21 @@ main:focus {
   padding: var(--tile-padding);
   border-radius: var(--radius-tile);
   background: var(--surface);
+}
+
+/* Glass in the dark theme: a faint edge (transparent in the light theme). */
+.tile,
+.alert,
+.install-hint,
+.segmented,
+.icon-btn,
+.btn--quiet,
+.today-card,
+.stat-tile,
+.week-pill,
+.filter-pill,
+.day-field {
+  box-shadow: inset 0 0 0 1px var(--surface-border);
 }
 
 .tile__head {
@@ -891,7 +1002,7 @@ main:focus {
   padding: 24px;
   border: 0;
   border-radius: var(--radius-tile);
-  background: var(--surface);
+  background: var(--surface-solid);
   color: var(--text);
 }
 
@@ -1310,28 +1421,12 @@ main:focus {
   flex-basis: 100%;
 }
 
-/* Phones: "Neue Aufgabe" floats above the navigation bar. */
-.new-task {
-  position: fixed;
-  right: max(16px, env(safe-area-inset-right, 0px));
-  bottom: calc(88px + env(safe-area-inset-bottom, 0px));
-  z-index: 5;
-  width: 60px;
-  height: 60px;
-  padding: 0;
-  border-radius: 20px;
-  background: var(--inverse);
-  color: var(--on-inverse);
-  box-shadow: var(--shadow-float);
-}
-
-.new-task__label {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
+/* The lists behind the week ("Aufgaben", "Erledigt"), below the board. */
+.week-lists {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: var(--tile-gap);
 }
 
 @media (min-width: 900px) {
@@ -1342,26 +1437,6 @@ main:focus {
   .week-head__actions {
     flex-basis: auto;
     margin-left: auto;
-  }
-
-  .new-task {
-    position: static;
-    width: auto;
-    height: auto;
-    min-height: 44px;
-    padding: 0 18px;
-    border-radius: var(--radius-control);
-    background: var(--accent-tile);
-    color: var(--on-accent-tile);
-    box-shadow: none;
-  }
-
-  .new-task__label {
-    position: static;
-    width: auto;
-    height: auto;
-    overflow: visible;
-    clip-path: none;
   }
 }
 
@@ -1832,6 +1907,414 @@ main:focus {
   }
 }
 
+/* ---------- Today (DESIGN.md section 5) ---------- */
+
+.today {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 44rem;
+}
+
+.today > .page-title {
+  margin: 2px 0 0;
+}
+
+.today__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.today__who {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.today__date {
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--person-a);
+  color: var(--on-person);
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.avatar--b {
+  background: var(--person-b);
+}
+
+/* "‹ KW 43 ›": the week the day fields and the two tiles show. */
+.week-pill {
+  display: flex;
+  align-items: center;
+  flex: none;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.week-pill__step,
+.week-pill__today {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: none;
+  cursor: pointer;
+}
+
+.week-pill__today {
+  padding: 0 12px;
+  font-weight: 800;
+}
+
+.today__summary {
+  color: var(--text-muted);
+  font-size: 15px;
+}
+
+.today__summary strong {
+  color: var(--text);
+}
+
+.today__week,
+.today__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Seven fields side by side, each at least 44 px wide even on the smallest phone. */
+.day-fields {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 400px) {
+  .day-fields {
+    gap: 6px;
+  }
+}
+
+.day-field {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 60px;
+  padding: 6px 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.day-field__mark {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.day-field--open .day-field__mark {
+  border: 2px dashed var(--control-border);
+  font-weight: 700;
+}
+
+.day-field--done .day-field__mark {
+  background: var(--accent-tile);
+  color: var(--on-accent-tile);
+}
+
+.day-field--today {
+  background: var(--inverse);
+  color: var(--on-inverse);
+}
+
+.day-field--today .day-field__mark {
+  background: var(--on-inverse);
+  color: var(--inverse);
+}
+
+/* The day shown in the list below. */
+.day-field[aria-pressed="true"] {
+  box-shadow: inset 0 0 0 3px var(--accent);
+}
+
+.day-field--today[aria-pressed="true"] {
+  box-shadow:
+    0 0 0 2px var(--bg),
+    0 0 0 4px var(--accent);
+}
+
+.today__tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--tile-gap);
+}
+
+.stat-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 14px;
+  border-radius: var(--radius-tile);
+  background: var(--surface);
+}
+
+.stat-tile--together {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  background: var(--accent-tile);
+  color: var(--on-accent-tile);
+}
+
+.stat-tile__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.stat-tile__label {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.stat-tile--together .stat-tile__label {
+  color: inherit;
+}
+
+.stat-tile__value {
+  font-size: 36px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.stat-tile__of {
+  color: var(--text-muted);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.stat-tile__text {
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.stat-tile:not(.stat-tile--together) .stat-tile__text {
+  color: var(--text-muted);
+}
+
+.ring {
+  flex: none;
+}
+
+/* Small phones: a smaller ring, so that "Gemeinsam" fits next to it. */
+@media (max-width: 399px) {
+  .stat-tile--together {
+    gap: 8px;
+    padding-inline: 12px;
+  }
+
+  .ring {
+    width: 52px;
+    height: 52px;
+  }
+}
+
+.ring__track {
+  stroke: color-mix(in srgb, var(--on-accent-tile) 25%, transparent);
+}
+
+.ring__fill {
+  stroke: var(--on-accent-tile);
+  transition: stroke-dasharray 180ms ease-out;
+}
+
+.ring__text {
+  fill: var(--on-accent-tile);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.today__list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.filter-pill {
+  display: flex;
+  flex: none;
+  min-width: 0;
+  margin: 0;
+  padding: 3px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+}
+
+.filter-pill__option {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.filter-pill__option[aria-pressed="true"] {
+  background: var(--inverse);
+  color: var(--on-inverse);
+}
+
+.today-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.today-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 10px 10px 12px;
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.today-card--done {
+  background: var(--accent-soft);
+}
+
+/* Picture and text are one button that opens the details of the task. */
+.today-card__open {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.today-card__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.today-card__title {
+  font-size: 16px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.today-card--done .today-card__title {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.today-card__meta {
+  color: var(--text-muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.today-card__meta--warn {
+  color: var(--warn-text);
+  font-weight: 700;
+}
+
+/* The round button to tick a task off. */
+.tick-round {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 2px solid var(--control-border);
+  border-radius: 50%;
+  background: var(--surface-solid);
+  color: var(--text);
+  cursor: pointer;
+  transition: background-color 150ms ease-out;
+}
+
+.tick-round:active {
+  transform: scale(0.95);
+}
+
+.tick-round__icon {
+  opacity: 0;
+  transition: opacity 150ms ease-out;
+}
+
+.tick-round:hover .tick-round__icon,
+.tick-round:focus-visible .tick-round__icon {
+  opacity: 0.6;
+}
+
+.tick-round--done {
+  border-color: transparent;
+  background: var(--accent-tile);
+  color: var(--on-accent-tile);
+  cursor: default;
+}
+
 /* ---------- Motion (DESIGN.md section 8) ---------- */
 
 @keyframes rise {
@@ -1850,6 +2333,10 @@ main:focus {
   .btn,
   .icon-btn,
   .segmented__option,
+  .filter-pill__option,
+  .week-pill__step,
+  .day-field,
+  .tick-round,
   .day-button {
     border: 1px solid ButtonText;
   }
@@ -1859,11 +2346,18 @@ main:focus {
   .snackbar,
   .install-hint,
   .install-note,
-  .demo-hint {
+  .demo-hint,
+  .today-card,
+  .stat-tile,
+  .week-pill,
+  .filter-pill,
+  .main-nav {
     border: 1px solid CanvasText;
   }
 
   .segmented__option[aria-pressed="true"],
+  .filter-pill__option[aria-pressed="true"],
+  .day-field[aria-pressed="true"],
   .day-button[aria-pressed="true"] {
     forced-color-adjust: none;
     border-color: Highlight;
@@ -1871,8 +2365,29 @@ main:focus {
     color: HighlightText;
   }
 
-  .day-button--today {
+  .day-button--today,
+  .day-field--today {
     border: 3px double ButtonText;
+  }
+
+  /* Done is told by the tick, not by a colour. */
+  .day-field--done .day-field__mark,
+  .tick-round--done {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+  }
+
+  .ring__track {
+    stroke: GrayText;
+  }
+
+  .ring__fill {
+    stroke: Highlight;
+  }
+
+  .ring__text {
+    fill: CanvasText;
   }
 
   .main-nav__link[aria-current] {
@@ -1895,6 +2410,7 @@ main:focus {
   .btn:active,
   .icon-btn:active,
   .tick:active,
+  .tick-round:active,
   .day-button:active {
     transform: none;
   }

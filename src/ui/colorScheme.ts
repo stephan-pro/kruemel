@@ -5,7 +5,7 @@ import type { ColorScheme } from "../storage/storage";
  * tokens.css) of each scheme. `tokens.test.ts` keeps them equal to the tokens; index.html and the
  * manifest repeat them (`pwa.test.ts` checks that too).
  */
-export const THEME_COLORS = { light: "#eef1f5", dark: "#0f1115" } as const;
+export const THEME_COLORS = { light: "#f3f2f8", dark: "#0b1022" } as const;
 
 /**
  * Shows the app in the chosen colour scheme (N8). "Automatisch" removes the choice, so the

@@ -21,7 +21,7 @@ Die App hilft selbst dabei (seit Paket 13): unten auf der Seite „Woche“ steh
 
 Die Adresse muss man nicht abtippen: Am PC unter **Einstellungen → Auf anderem Gerät öffnen → QR-Code zeigen** und den Code mit der Handykamera scannen.
 
-- [ ] Auf dem Home-Bildschirm erscheint ein Symbol: **blaue Kachel mit weißem Haus**, darunter „Krümel“ (das Symbol selbst wechselt erst mit E2-4).
+- [ ] Auf dem Home-Bildschirm erscheint ein Symbol: **der goldbraune Keks-Krümel mit Besen auf violetter Kachel**, darunter „Krümel“ (seit E2-4a; ältere Installationen zeigen das alte blaue Haus, bis das Symbol neu geladen wird).
 - [ ] Ein Tipp auf das Symbol öffnet die App **ohne Adressleiste** (wie eine normale App).
 - [ ] Beim ersten Start erscheint die **Ersteinrichtung** (Namen eintragen, „Ich bin“ wählen). Einrichten und eine Aufgabe anlegen.
 - [ ] Oben (Uhrzeit, Akku) und unten (Leiste Woche · Aufgaben · Erledigt · Einstellungen) wird **nichts abgeschnitten oder verdeckt**, auch nicht vom schwarzen Balken unten am iPhone.

@@ -1,30 +1,49 @@
-/* Design tokens (docs/design/DESIGN.md). Components use only these variables, never fixed colours.
-   Light is the default; dark applies when the device prefers it and the user did not choose
-   "Hell", or when the user chose "Dunkel" (`data-theme` on <html>, set before the first paint by
-   the script in index.html). `tokens.test.ts` checks the contrast of every combination in use. */
+/* Design tokens (docs/design/DESIGN.md, version 2 "Persönlich"). Components use only these
+   variables, never fixed colours. Light is the default; dark applies when the device prefers it and
+   the user did not choose "Hell", or when the user chose "Dunkel" (`data-theme` on <html>, set
+   before the first paint by the script in index.html). `tokens.test.ts` checks the contrast of
+   every combination in use, glass surfaces mixed onto the real background. */
 
 :root {
   color-scheme: light;
 
-  --bg: #eef1f5;
+  --bg: #f3f2f8;
+  /* The brightest point of the background: the glow at the top in dark mode (none in light). */
+  --bg-glow: #f3f2f8;
+  --bg-image: none;
   --surface: #ffffff;
-  --surface-2: #eef1f5;
-  --text: #111318;
-  --text-muted: #4a5260;
-  /* Darker than in the first draft of DESIGN.md: controls need 3:1 against their surroundings
-     (WCAG 1.4.11). */
-  --control-border: #7a8494;
-  --accent: #1f47d6;
-  --accent-tile: #1f47d6;
+  /* Surfaces that lie over other content (dialogs): never see-through. */
+  --surface-solid: #ffffff;
+  --surface-border: transparent;
+  --surface-2: #efedf6;
+  --text: #15131f;
+  --text-muted: #5a5670;
+  /* Tick buttons, dashed day circles, fields: 3:1 against their surroundings (WCAG 1.4.11). */
+  --control-border: #847f9c;
+  /* Links, focus ring and accent texts. */
+  --accent: #5530d9;
+  /* Accent surfaces ("Gemeinsam", done circles, primary buttons) with white on them. */
+  --accent-tile: #5530d9;
   --on-accent-tile: #ffffff;
+  /* Background of tasks done today. */
+  --accent-soft: #eae5fb;
+  /* The plus button in the navigation (only the symbol on it). */
+  --accent-strong: #7b5cff;
   --warn-tile: #ff6b2c;
-  --on-warn-tile: #111318;
+  --on-warn-tile: #15131f;
   /* Buttons on the warn tile: dark with white text in both themes. */
-  --warn-tile-action: #111318;
+  --warn-tile-action: #15131f;
   --on-warn-tile-action: #ffffff;
   --warn-text: #a03a0e;
-  --inverse: #111318;
+  --inverse: #15131f;
   --on-inverse: #ffffff;
+  /* The floating navigation of phones; the current page is a pill in `--on-nav` with `--nav` text. */
+  --nav: #15131f;
+  --on-nav: #ffffff;
+  /* The two people in statistics and avatars. */
+  --person-a: #5530d9;
+  --person-b: #c2650a;
+  --on-person: #ffffff;
 
   --tone-blue-bg: #e3e9ff;
   --tone-blue-fg: #1f47d6;
@@ -35,21 +54,22 @@
 
   /* QR code ("Auf anderem Gerät öffnen"): dark on light in both themes; not every scanner reads
      a light code on dark. */
-  --qr-dark: #111318;
+  --qr-dark: #15131f;
   --qr-light: #ffffff;
 
-  --shadow-float: 0 8px 20px rgb(17 19 24 / 25%);
-  --backdrop: rgb(17 19 24 / 50%);
+  --shadow-float: 0 12px 30px rgb(21 19 31 / 28%);
+  --backdrop: rgb(21 19 31 / 50%);
 
   --font: "Archivo Variable", "Archivo", system-ui, sans-serif;
 
-  --radius-tile: 22px;
+  --radius-tile: 24px;
+  --radius-card: 22px;
   --radius-control: 14px;
   --radius-chip: 10px;
   --radius-pill: 999px;
 
   --page-gutter: 16px;
-  --tile-gap: 12px;
+  --tile-gap: 10px;
   --tile-padding: 16px;
 
   /* The side margins, but never less than the notch of a phone held sideways (the page uses the
@@ -61,7 +81,7 @@
 @media (min-width: 900px) {
   :root {
     --page-gutter: clamp(16px, 3vw, 40px);
-    --tile-gap: 16px;
+    --tile-gap: 14px;
     --tile-padding: 20px;
   }
 }
@@ -71,17 +91,28 @@
   :root:not([data-theme="light"]) {
     color-scheme: dark;
 
-    --bg: #0f1115;
-    --surface: #1a1d24;
-    --surface-2: #262a33;
-    --text: #f3f5f8;
-    --text-muted: #9aa3b2;
-    --control-border: #6e7789;
-    --accent: #8fa8ff;
-    --accent-tile: #2b4fe0;
-    --warn-text: #ff8a65;
-    --inverse: #f3f5f8;
-    --on-inverse: #0f1115;
+    --bg: #0b1022;
+    --bg-glow: #1e2c6b;
+    --bg-image: radial-gradient(120% 60% at 50% 0%, #1e2c6b 0%, #0b1022 62%);
+    --surface: rgba(255, 255, 255, 0.07);
+    --surface-solid: #1c2132;
+    --surface-border: rgba(255, 255, 255, 0.1);
+    --surface-2: rgba(255, 255, 255, 0.1);
+    --text: #f2f3fa;
+    --text-muted: #b4bbd9;
+    --control-border: #8890b8;
+    --accent: #b7a6ff;
+    --accent-tile: #6a4df4;
+    --accent-soft: rgba(106, 77, 244, 0.18);
+    --accent-strong: #6a4df4;
+    --warn-text: #ff9a73;
+    --inverse: #f2f3fa;
+    --on-inverse: #0b1022;
+    --nav: #1c2240;
+    --on-nav: #f2f3fa;
+    --person-a: #8b6cff;
+    --person-b: #f2a33a;
+    --on-person: #0b1022;
 
     --tone-blue-bg: #26304f;
     --tone-blue-fg: #a9bcff;
@@ -90,7 +121,7 @@
     --tone-orange-bg: #3d2418;
     --tone-orange-fg: #ffb08a;
 
-    --shadow-float: 0 8px 20px rgb(0 0 0 / 50%);
+    --shadow-float: 0 12px 30px rgb(0 0 0 / 50%);
     --backdrop: rgb(0 0 0 / 65%);
   }
 }
@@ -98,17 +129,28 @@
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  --bg: #0f1115;
-  --surface: #1a1d24;
-  --surface-2: #262a33;
-  --text: #f3f5f8;
-  --text-muted: #9aa3b2;
-  --control-border: #6e7789;
-  --accent: #8fa8ff;
-  --accent-tile: #2b4fe0;
-  --warn-text: #ff8a65;
-  --inverse: #f3f5f8;
-  --on-inverse: #0f1115;
+  --bg: #0b1022;
+  --bg-glow: #1e2c6b;
+  --bg-image: radial-gradient(120% 60% at 50% 0%, #1e2c6b 0%, #0b1022 62%);
+  --surface: rgba(255, 255, 255, 0.07);
+  --surface-solid: #1c2132;
+  --surface-border: rgba(255, 255, 255, 0.1);
+  --surface-2: rgba(255, 255, 255, 0.1);
+  --text: #f2f3fa;
+  --text-muted: #b4bbd9;
+  --control-border: #8890b8;
+  --accent: #b7a6ff;
+  --accent-tile: #6a4df4;
+  --accent-soft: rgba(106, 77, 244, 0.18);
+  --accent-strong: #6a4df4;
+  --warn-text: #ff9a73;
+  --inverse: #f2f3fa;
+  --on-inverse: #0b1022;
+  --nav: #1c2240;
+  --on-nav: #f2f3fa;
+  --person-a: #8b6cff;
+  --person-b: #f2a33a;
+  --on-person: #0b1022;
 
   --tone-blue-bg: #26304f;
   --tone-blue-fg: #a9bcff;
@@ -117,6 +159,6 @@
   --tone-orange-bg: #3d2418;
   --tone-orange-fg: #ffb08a;
 
-  --shadow-float: 0 8px 20px rgb(0 0 0 / 50%);
+  --shadow-float: 0 12px 30px rgb(0 0 0 / 50%);
   --backdrop: rgb(0 0 0 / 65%);
 }
