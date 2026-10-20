@@ -33,6 +33,11 @@
   --tone-orange-bg: #ffe9dc;
   --tone-orange-fg: #9a3a0b;
 
+  /* QR code ("Auf anderem Gerät öffnen"): dark on light in both themes; not every scanner reads
+     a light code on dark. */
+  --qr-dark: #111318;
+  --qr-light: #ffffff;
+
   --shadow-float: 0 8px 20px rgb(17 19 24 / 25%);
   --backdrop: rgb(17 19 24 / 50%);
 

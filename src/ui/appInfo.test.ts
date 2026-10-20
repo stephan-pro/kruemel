@@ -1,0 +1,26 @@
+import { describe, expect, it } from "vitest";
+import { APP_BUILD, appAddress, formatBuild } from "./appInfo";
+
+describe("Version und Adresse der App", () => {
+  it("Die Version nennt Datum, Uhrzeit und Commit des Builds", () => {
+    expect(formatBuild({ time: "2026-10-20T12:32:00Z", commit: "a1b2c3d" }, "Europe/Berlin")).toBe(
+      "20.10.2026, 14:32 Uhr (a1b2c3d)",
+    );
+  });
+
+  it("Ein Build ohne Commit (auf dem eigenen Rechner) heißt „lokal gebaut“", () => {
+    expect(formatBuild({ time: "2026-01-05T08:00:00Z", commit: null }, "Europe/Berlin")).toBe(
+      "05.01.2026, 09:00 Uhr (lokal gebaut)",
+    );
+  });
+
+  it("Der Build trägt seine Zeit (vite.config.ts)", () => {
+    expect(Number.isNaN(Date.parse(APP_BUILD.time))).toBe(false);
+  });
+
+  it("N3 Die Adresse der App ist die Startseite unter /putzplan/, ohne Unterseite", () => {
+    expect(appAddress("https://stephan-pro.github.io", "/putzplan/")).toBe(
+      "https://stephan-pro.github.io/putzplan/",
+    );
+  });
+});

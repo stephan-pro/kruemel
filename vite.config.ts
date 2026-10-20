@@ -1,6 +1,19 @@
 import type { Plugin } from "vite";
 import { defineConfig } from "vitest/config";
 
+// Minimal Node typing instead of @types/node (N7), as in playwright.config.ts.
+declare const process: { env: Record<string, string | undefined> };
+
+/**
+ * What "Einstellungen → Version" shows: when this build was made and from which commit (set by
+ * the workflow `pages`; missing in local builds). Every build differs, so every deployment is a
+ * new version for the service worker.
+ */
+const BUILD = {
+  time: new Date().toISOString(),
+  commit: process.env.APP_COMMIT?.slice(0, 7) ?? null,
+};
+
 /** Files from `public/` that the page needs; they are not part of the bundle, so they are listed. */
 const PUBLIC_FILES = [
   "manifest.webmanifest",
@@ -70,6 +83,7 @@ export default defineConfig({
   // GitHub Pages serves the app under /<repo-name>/.
   base: "/putzplan/",
   plugins: [serviceWorker()],
+  define: { __APP_BUILD__: JSON.stringify(BUILD) },
   test: {
     include: ["src/**/*.test.ts"],
     // `tokens.test.ts` reads the design tokens; other CSS stays empty in unit tests.

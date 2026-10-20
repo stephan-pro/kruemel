@@ -266,6 +266,48 @@ describe("N8 Farbschema (Darstellung) auf diesem Gerät", () => {
   });
 });
 
+describe("N3 Hinweis „Putzplan als App“ auf diesem Gerät", () => {
+  it("N3 Ein geschlossener Hinweis bleibt geschlossen, zusammen mit den übrigen Werten", async () => {
+    const store = new FakeStore();
+    await createLocalStorage({ store }).saveDevice({
+      currentPerson: "personA",
+      colorScheme: "dark",
+      installHintDismissed: true,
+    });
+
+    expect(await createLocalStorage({ store }).loadDevice()).toEqual({
+      currentPerson: "personA",
+      colorScheme: "dark",
+      installHintDismissed: true,
+    });
+  });
+
+  it.each([false, "ja", 1])(
+    "N3 Ein anderer Wert als true (%s) zählt als nicht geschlossen, der Rest bleibt",
+    async (value) => {
+      const store = new FakeStore();
+      store.items.set(
+        "putzplan:device",
+        JSON.stringify({ currentPerson: "personB", installHintDismissed: value }),
+      );
+
+      expect(await createLocalStorage({ store }).loadDevice()).toEqual({
+        currentPerson: "personB",
+      });
+    },
+  );
+
+  it("N3 Der Hinweis gehört zum Gerät und steht nicht in den Daten der Sicherung", async () => {
+    const store = new FakeStore();
+    const storage = createLocalStorage({ store });
+
+    await storage.saveDevice({ installHintDismissed: true });
+    await storage.save(sampleData());
+
+    expect(store.items.get("putzplan:data")).not.toContain("installHint");
+  });
+});
+
 describe("Dauerhafter Speicher", () => {
   it("Die Anfrage nach dauerhaftem Speicher gibt die Antwort des Browsers weiter", async () => {
     expect(await requestPersistentStorage({ persist: async () => true })).toBe(true);

@@ -303,6 +303,20 @@ test.describe("N3 Service Worker und Nutzung ohne Internet", () => {
     ).toBeVisible();
   });
 
+  test("N3 Auch ohne Internet zeigt „Auf anderem Gerät öffnen“ den QR-Code (nachgeladene Datei)", async ({
+    page,
+    context,
+  }) => {
+    await startInstalled(page);
+    await context.setOffline(true);
+    await page.reload();
+    await goToPage(page, "Einstellungen");
+
+    await page.getByRole("button", { name: "QR-Code zeigen" }).click();
+
+    await expect(page.getByRole("img", { name: /^QR-Code mit der Adresse / })).toBeVisible();
+  });
+
   test("N3 Der Speicher des Service Workers enthält nur Dateien der App, auch nach einem Download", async ({
     page,
   }) => {

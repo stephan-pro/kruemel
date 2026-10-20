@@ -38,6 +38,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+        env:
+          # Shown under "Einstellungen → Version", so an installed app tells which build it runs.
+          APP_COMMIT: ${{ github.event.workflow_run.head_sha || github.sha }}
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:

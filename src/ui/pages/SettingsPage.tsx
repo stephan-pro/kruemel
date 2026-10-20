@@ -4,11 +4,16 @@ import type { PersonNameInput } from "../../domain/personNames";
 import type { Person } from "../../domain/task";
 import type { AppData, PersonNames } from "../../storage/appData";
 import type { ColorScheme } from "../../storage/storage";
+import { appAddress } from "../appInfo";
 import { ErrorAlert } from "../components/Alert";
 import { BackupTile } from "../components/BackupTile";
 import { type Choice, RadioGroup } from "../components/fields";
+import { InstallTile } from "../components/InstallTile";
 import { NamesForm } from "../components/NamesForm";
+import { OtherDeviceTile } from "../components/OtherDeviceTile";
 import { PageTitle } from "../components/PageTitle";
+import { VersionTile } from "../components/VersionTile";
+import type { InstallWay } from "../install";
 import { routeInfo } from "../route";
 
 interface SettingsPageProps {
@@ -23,6 +28,10 @@ interface SettingsPageProps {
   readonly onColorScheme: (scheme: ColorScheme) => Promise<void>;
   /** Replaces all data by the imported data; rejects with an `Error` whose message is shown. */
   readonly onImport: (data: AppData) => Promise<void>;
+  /** How this browser puts the app on the home screen ("Als App installieren"). */
+  readonly installWay: InstallWay;
+  /** The browser's own install question; resolves `true` if accepted. */
+  readonly onInstall: () => Promise<boolean>;
 }
 
 const SCHEMES: readonly Choice<ColorScheme>[] = [
@@ -40,6 +49,8 @@ export function SettingsPage({
   onSubmit,
   onColorScheme,
   onImport,
+  installWay,
+  onInstall,
 }: SettingsPageProps) {
   const [schemeError, setSchemeError] = useState<string>();
   /** Counts the imported backups; the names form starts over after each one. */
@@ -93,6 +104,9 @@ export function SettingsPage({
           {schemeError && <ErrorAlert title="Nicht gespeichert">{schemeError}</ErrorAlert>}
         </section>
         <BackupTile data={data} today={today} onImport={importBackup} />
+        <InstallTile way={installWay} onInstall={onInstall} />
+        <OtherDeviceTile address={appAddress()} />
+        <VersionTile />
       </div>
     </>
   );

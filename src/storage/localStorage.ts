@@ -99,7 +99,11 @@ export function createLocalStorage(options: LocalStorageOptions): AppStorage {
       }
       // Only preferences: what is unreadable is left out, so the app asks "Ich bin" again and
       // follows the device's colour scheme. Each value counts on its own.
-      let parsed: { currentPerson?: unknown; colorScheme?: unknown } | null;
+      let parsed: {
+        currentPerson?: unknown;
+        colorScheme?: unknown;
+        installHintDismissed?: unknown;
+      } | null;
       try {
         parsed = JSON.parse(text);
       } catch {
@@ -110,6 +114,7 @@ export function createLocalStorage(options: LocalStorageOptions): AppStorage {
       return {
         ...(isPerson(person) ? { currentPerson: person } : {}),
         ...(isColorScheme(scheme) ? { colorScheme: scheme } : {}),
+        ...(parsed?.installHintDismissed === true ? { installHintDismissed: true } : {}),
       };
     },
 

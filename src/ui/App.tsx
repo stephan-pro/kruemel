@@ -21,8 +21,10 @@ import {
   StorageError,
 } from "../storage/storage";
 import { applyColorScheme } from "./colorScheme";
+import { InstallHint } from "./components/InstallHint";
 import { Navigation } from "./components/Navigation";
 import { APP_NAME } from "./components/PageTitle";
+import { offersInstallHint, useInstallWay } from "./install";
 import { DonePage } from "./pages/DonePage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { SetupPage } from "./pages/SetupPage";
@@ -83,6 +85,11 @@ function editedTask(
   return task === undefined ? { missing: true } : { task };
 }
 
+/** After something on the page vanished with the focus in it: back to the top of the page. */
+function focusPageHeading() {
+  document.querySelector<HTMLElement>("main h1")?.focus();
+}
+
 function useLocation(): PageLocation {
   const [pageLocation, setPageLocation] = useState(() => parseLocation(location.hash));
   useEffect(() => {
@@ -99,6 +106,7 @@ export function App({ storage, demo }: AppProps) {
   const [notice, setNotice] = useState<string>();
   const { route, taskId } = useLocation();
   const today = useToday();
+  const install = useInstallWay();
 
   async function load() {
     setState({ status: "loading" });
@@ -235,6 +243,27 @@ export function App({ storage, demo }: AppProps) {
     return result.task;
   }
 
+  /** "Putzplan als App" closed: it stays closed on this device (if that can be saved). */
+  async function dismissInstallHint() {
+    if (state.status !== "ready") {
+      return;
+    }
+    const device: DeviceSettings = { ...state.device, installHintDismissed: true };
+    setState({ ...state, device });
+    focusPageHeading();
+    try {
+      await storage.saveDevice(device);
+    } catch {
+      // Closed for now; it shows again after the next start. Not worth an error message.
+    }
+  }
+
+  /** The browser's install question from the hint; the hint is gone afterwards either way. */
+  async function installFromHint() {
+    await install.install();
+    focusPageHeading();
+  }
+
   async function discard() {
     await storage.discard();
     await load();
@@ -301,6 +330,8 @@ export function App({ storage, demo }: AppProps) {
               onSubmit={saveNamesAndPerson}
               onColorScheme={saveColorScheme}
               onImport={saveData}
+              installWay={install.way}
+              onInstall={install.install}
             />
           )}
           {inApp && route === "tasks" && (
@@ -345,6 +376,17 @@ export function App({ storage, demo }: AppProps) {
               onChecklistItem={setChecklistItem}
             />
           )}
+          {/* Below the tiles: seen when looking for it, never in the way (N3). */}
+          {inApp &&
+            route === "week" &&
+            !state.device.installHintDismissed &&
+            offersInstallHint(install.way) && (
+              <InstallHint
+                way={install.way}
+                onInstall={() => void installFromHint()}
+                onDismiss={() => void dismissInstallHint()}
+              />
+            )}
           {inApp && route === "done" && (
             <DonePage
               tasks={state.data.tasks}

@@ -83,6 +83,8 @@ const NON_TEXT_PAIRS: readonly [string, string][] = [
   ...SYMBOL_TONES.map((tone): [string, string] => [`--tone-${tone}-fg`, "--surface-2"]),
   // ... and the frame of the chosen symbol in the form, against the tile and the page.
   ...SYMBOL_TONES.map((tone): [string, string] => ["--accent", `--tone-${tone}-bg`]),
+  // The QR code (N3, "Auf anderem Gerät öffnen").
+  ["--qr-dark", "--qr-light"],
 ];
 
 describe.each([

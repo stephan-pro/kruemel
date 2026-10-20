@@ -11,8 +11,15 @@ Gerät: ______________ (z. B. iPhone 14, iOS 17.5) · Datum: ____________ · Get
 
 ## 1. Installation auf dem Home-Bildschirm
 
-**iPhone (Safari):** Adresse öffnen → unten auf **Teilen** (Quadrat mit Pfeil) → **Zum Home-Bildschirm** → **Hinzufügen**.
+Die App hilft selbst dabei (seit Paket 13): unten auf der Seite „Woche“ steht der Hinweis **„Putzplan als App“**, und unter **Einstellungen → Als App installieren** steht dieselbe Anleitung für den jeweiligen Browser (in Chrome und Edge ein Knopf **App installieren**). Den Hinweis in der Woche schließt das **×**; er kommt auf diesem Gerät nicht wieder.
+
+**iPhone (Safari):** Adresse öffnen → unten auf **Teilen** (Quadrat mit Pfeil; bei neueren iOS-Versionen erst **•••**) → **Zum Home-Bildschirm** → **Hinzufügen**.
 **Android (Chrome):** Adresse öffnen → Menü **⋮** → **App installieren** (oder **Zum Startbildschirm hinzufügen**) → bestätigen.
+**Android (Firefox):** Adresse öffnen → Menü **⋮** → **Zum Startbildschirm hinzufügen** (heißt je nach Version auch **App installieren**) → **Hinzufügen**.
+
+> **Xiaomi, Redmi, POCO (gefunden im Gerätetest am 20.10.2026):** Passiert beim Hinzufügen **nichts, ohne Fehlermeldung**, fehlt dem Browser eine Erlaubnis. In den Einstellungen des Handys: **Apps → Apps verwalten → Firefox** (bzw. der benutzte Browser) **→ Weitere Berechtigungen → Startbildschirm-Verknüpfungen** erlauben. Danach klappt das Hinzufügen.
+
+Die Adresse muss man nicht abtippen: Am PC unter **Einstellungen → Auf anderem Gerät öffnen → QR-Code zeigen** und den Code mit der Handykamera scannen.
 
 - [ ] Auf dem Home-Bildschirm erscheint ein Symbol: **blaue Kachel mit weißem Haus**, darunter „Putzplan“.
 - [ ] Ein Tipp auf das Symbol öffnet die App **ohne Adressleiste** (wie eine normale App).
@@ -52,7 +59,9 @@ Einstellungen → Kachel **Sicherung**.
 - [ ] **Wichtig:** Hat das Handy zusätzlich eine Datei `putzplan-vor-import-…json` heruntergeladen (die automatische Kopie der Daten von vorher)? *Auf dem iPhone kann es sein, dass diese zweite Datei nicht ankommt oder nachgefragt wird („Mehrere Downloads erlauben?“). Bitte genau notieren, was passiert.*
 - [ ] Eine **falsche Datei** wählen (z. B. ein Foto): Es erscheint eine rote Meldung, die Daten bleiben unverändert.
 
-## 5. Mit Screenreader
+## 5. Mit Screenreader (optional)
+
+*Optional:* Die Barrierefreiheit ist über die automatischen Prüfungen abgesichert (axe auf jeder Seite und jedem Fenster in hell und dunkel, Tastatur- und Fokus-Tests, Windows-Kontrastmodus; siehe `npm run check`). Dieser Teil ist für eine zusätzliche Prüfung von Hand gedacht und wurde für den Abschluss von Etappe 1 bewusst nicht durchgeführt.
 
 **iPhone: VoiceOver** – Einstellungen → Bedienungshilfen → VoiceOver (ein-/ausschalten geht auch mit dreimal schnell auf die Seitentaste, wenn eingerichtet). Wischen nach rechts = nächstes Element, Doppeltipp = auslösen.
 **Android: TalkBack** – Einstellungen → Bedienungshilfen → TalkBack. Gleiche Bedienung.
@@ -72,5 +81,15 @@ Einstellungen → Kachel **Sicherung**.
 - **iPhone: Downloads aus der installierten App.** Wie die Datei ankommt (Vorschau mit Teilen-Symbol, Download-Anzeige oder gleich in „Dateien“), hängt von der iOS-Version ab; das ließ sich nicht automatisch prüfen und ist Teil dieses Tests. Die zweite, automatische Datei beim Einspielen kann von iOS unterdrückt werden. **Deshalb auf dem iPhone vor dem Einspielen immer zuerst selbst „Sicherung herunterladen“ drücken.**
 - **iPhone: Dateiwahl.** Die Auswahl von `.json`-Dateien funktioniert über die App „Dateien“; Dateien aus anderen Apps (Mail, iCloud) müssen vorher dort liegen.
 - **Startbild:** Android zeigt beim Start kurz hellen Hintergrund, auch wenn das Handy dunkel ist (das Manifest kennt nur eine Farbe). Auf dem iPhone gibt es kein eigenes Startbild; im Dark Mode kann kurz Weiß erscheinen.
-- **Erster Start braucht Internet.** Danach läuft die App ohne. Neue Versionen der App kommen, wenn das Handy beim Öffnen online ist; sie gelten dann nach dem nächsten Öffnen.
+- **Erster Start braucht Internet.** Danach läuft die App ohne.
+- **Neue Versionen** kommen von selbst, wenn die App **mit Internet neu gestartet** wird. Welche Version läuft, steht unter **Einstellungen → Version** („Stand: Datum, Uhrzeit (Kennung)“). Läuft die App noch im Hintergrund (nur zur Seite gewischt, nicht geschlossen), bleibt sie bei der alten Version. **Update erzwingen:** Einstellungen → Version → **Neu laden** (mit Internet). Hilft das nicht, die App ganz schließen (aus der Liste der offenen Apps wischen) und neu öffnen. GitHub darf die Startseite bis zu 10 Minuten zwischenspeichern; direkt nach dem Hochladen kann es so lange dauern.
 - **Keine Synchronisierung** zwischen Geräten (kommt in Etappe 2).
+
+## Ergebnis des Gerätetests (20.10.2026, Abschluss Etappe 1)
+
+| Gerät | Abschnitte 1–4 | Abschnitt 5 (Screenreader) | Funde |
+|---|---|---|---|
+| Android, Redmi, Firefox | wie beschrieben | nicht durchgeführt (optional) | Installation erst nach der Erlaubnis „Startbildschirm-Verknüpfungen“ für Firefox (siehe Hinweis in Abschnitt 1; jetzt auch in der App erklärt). Download und Einspielen der Sicherung funktionieren in der installierten App. |
+| iPhone, Safari, installierte App | wie beschrieben | nicht durchgeführt (optional) | keine |
+
+Abschnitt 5 wurde bewusst nicht von Hand getestet; die Barrierefreiheit ist über die automatischen Prüfungen abgesichert.

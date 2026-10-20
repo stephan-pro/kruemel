@@ -701,6 +701,129 @@ main:focus {
   font-weight: 800;
 }
 
+/* "Als App installieren" (N3): numbered steps, each with a picture of what to tap. */
+.install-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: install-step;
+}
+
+.install-steps__step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  counter-increment: install-step;
+}
+
+.install-steps__step p::before {
+  content: counter(install-step) ". ";
+  font-weight: 800;
+}
+
+.install-steps__picture {
+  display: grid;
+  place-items: center;
+  flex: none;
+  min-width: 44px;
+  height: 44px;
+  padding: 0 8px;
+  border: 2px solid var(--control-border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--accent);
+}
+
+.install-steps__word {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.install-note {
+  padding: 12px 14px;
+  border-radius: var(--radius-control);
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+/* The hint at the end of the week view: quiet, with a cross to close it for good. */
+.install-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  max-width: 40rem;
+  margin-top: var(--tile-gap);
+  padding: var(--tile-padding);
+  border-radius: var(--radius-tile);
+  background: var(--surface);
+}
+
+.install-hint__icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-control);
+  background: var(--tone-blue-bg);
+  color: var(--tone-blue-fg);
+}
+
+.install-hint__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.install-hint__title {
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.install-hint__close {
+  background: var(--surface-2);
+}
+
+/* "Auf anderem Gerät öffnen": the QR code stays dark on light in both themes and in Windows
+   contrast themes, or cameras might not read it. */
+.qr {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.qr[hidden] {
+  display: none;
+}
+
+.qr__code {
+  width: min(100%, 220px);
+  height: auto;
+  border-radius: var(--radius-chip);
+  forced-color-adjust: none;
+  shape-rendering: crispEdges;
+}
+
+.qr__light {
+  fill: var(--qr-light);
+}
+
+.qr__dark {
+  fill: var(--qr-dark);
+}
+
+.qr__address {
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+
 /* ---------- Messages ---------- */
 
 .alert {
@@ -1715,6 +1838,47 @@ main:focus {
   from {
     opacity: 0;
     transform: translateY(6px);
+  }
+}
+
+/* ---------- Windows contrast themes ---------- */
+
+/* The browser replaces backgrounds and shadows by its own colours, so everything that is told
+   apart only by them gets a border in a system colour: buttons, tiles, dialogs and the chosen
+   states (filter, day, page in the navigation, today). Checked in the device test of Paket 13. */
+@media (forced-colors: active) {
+  .btn,
+  .icon-btn,
+  .segmented__option,
+  .day-button {
+    border: 1px solid ButtonText;
+  }
+
+  .tile,
+  .dialog,
+  .snackbar,
+  .install-hint,
+  .install-note,
+  .demo-hint {
+    border: 1px solid CanvasText;
+  }
+
+  .segmented__option[aria-pressed="true"],
+  .day-button[aria-pressed="true"] {
+    forced-color-adjust: none;
+    border-color: Highlight;
+    background: Highlight;
+    color: HighlightText;
+  }
+
+  .day-button--today {
+    border: 3px double ButtonText;
+  }
+
+  .main-nav__link[aria-current] {
+    text-decoration: underline;
+    text-decoration-thickness: 3px;
+    text-underline-offset: 4px;
   }
 }
 

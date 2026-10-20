@@ -6,6 +6,7 @@ import { render } from "preact";
 import { registerServiceWorker } from "./registerServiceWorker";
 import { createLocalStorage, type KeyValueStore } from "./storage/localStorage";
 import { App } from "./ui/App";
+import { watchInstallPrompt } from "./ui/install";
 
 /**
  * The browser's storage. With blocked site data even reading `localStorage` throws; the app then
@@ -21,6 +22,9 @@ function browserStore(): KeyValueStore {
     return { getItem: blocked, setItem: blocked, removeItem: blocked };
   }
 }
+
+// Before anything else: the browser may offer to install right after loading (App installieren).
+watchInstallPrompt();
 
 const root = document.getElementById("app");
 if (!root) {
