@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "preact/hooks";
 
-export const APP_NAME = "Putzplan";
+export const APP_NAME = "Krümel";
 
 /**
  * Whether a page heading was shown before. The first one needs no focus: the browser starts at the

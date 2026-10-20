@@ -20,7 +20,7 @@ export function formatBuild(build: BuildInfo, timeZone?: string): string {
   return `${date}, ${clock} Uhr (${build.commit ?? "lokal gebaut"})`;
 }
 
-/** The address of the app, e.g. "https://stephan-pro.github.io/putzplan/": what the QR code holds. */
+/** The address of the app, e.g. "https://stephan-pro.github.io/kruemel/": what the QR code holds. */
 export function appAddress(
   origin: string = location.origin,
   base: string = import.meta.env.BASE_URL,

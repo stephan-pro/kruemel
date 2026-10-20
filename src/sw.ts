@@ -17,9 +17,11 @@ interface BuildInfo {
 
 const build: BuildInfo = JSON.parse("__BUILD_INFO__");
 
-const CACHE_PREFIX = "putzplan-";
+const CACHE_PREFIX = "kruemel-";
+/** Prefix of the caches before the rename to Krümel; they are dropped like old versions. */
+const OLD_CACHE_PREFIX = "putzplan-";
 const CACHE = `${CACHE_PREFIX}${build.version}`;
-/** The app's address, e.g. "https://example.org/putzplan/"; the page itself is kept under it. */
+/** The app's address, e.g. "https://example.org/kruemel/"; the page itself is kept under it. */
 const SCOPE = sw.registration.scope;
 /** How long a page may take online before the kept copy is used (a bad connection is not offline). */
 const NAVIGATION_TIMEOUT_MS = 4000;
@@ -45,7 +47,10 @@ async function dropOldCaches(): Promise<void> {
   const names = await caches.keys();
   await Promise.all(
     names
-      .filter((name) => name.startsWith(CACHE_PREFIX) && name !== CACHE)
+      .filter(
+        (name) =>
+          (name.startsWith(CACHE_PREFIX) && name !== CACHE) || name.startsWith(OLD_CACHE_PREFIX),
+      )
       .map((name) => caches.delete(name)),
   );
 }

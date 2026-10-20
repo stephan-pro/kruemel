@@ -58,7 +58,7 @@ test.describe("Ersteinrichtung (F5 Namen)", () => {
     await page.getByRole("radio", { name: "Robin" }).check();
     await page.getByRole("button", { name: "Los geht’s" }).click();
 
-    await expect(page).toHaveTitle("Wochenübersicht – Putzplan");
+    await expect(page).toHaveTitle("Wochenübersicht – Krümel");
     await expect(page.getByRole("heading", { level: 1, name: "Diese Woche" })).toBeFocused();
     await expect(page.getByText("Ich bin:")).toContainText("Robin");
 
@@ -107,7 +107,7 @@ test.describe("„Ich bin“ auf einem Gerät ohne Auswahl (F5)", () => {
     const data = demoData(dayFromDate(new Date()));
     await store(page, { [dataKey]: JSON.stringify(data) });
 
-    await expect(page).toHaveTitle("Wer benutzt dieses Gerät? – Putzplan");
+    await expect(page).toHaveTitle("Wer benutzt dieses Gerät? – Krümel");
     await expect(page.getByRole("radio", { name: DEMO_NAMES.personA })).toBeVisible();
     await expectNoAccessibilityViolations(page);
 
@@ -133,7 +133,7 @@ test.describe("Rahmen und Navigation", () => {
   test("beginnt ohne Adresszusatz mit der Wochenübersicht", async ({ page }) => {
     await startConfigured(page);
 
-    await expect(page).toHaveTitle("Wochenübersicht – Putzplan");
+    await expect(page).toHaveTitle("Wochenübersicht – Krümel");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Diese Woche");
     await expect(page.getByRole("link", { name: "Woche" })).toHaveAttribute("aria-current", "page");
   });
@@ -148,7 +148,7 @@ test.describe("Rahmen und Navigation", () => {
 
       await page.getByRole("link", { name: link, exact: true }).click();
 
-      await expect(page).toHaveTitle(`${title} – Putzplan`);
+      await expect(page).toHaveTitle(`${title} – Krümel`);
       await expect(page.getByRole("heading", { level: 1, name: heading })).toBeFocused();
       await expect(page.getByRole("link", { name: link, exact: true })).toHaveAttribute(
         "aria-current",
@@ -173,7 +173,7 @@ test.describe("Rahmen und Navigation", () => {
     await page.keyboard.press("Enter");
 
     await expect(page.locator("main")).toBeFocused();
-    await expect(page).toHaveURL(/\/putzplan\/$/);
+    await expect(page).toHaveURL(/\/kruemel\/$/);
   });
 
   test("Tastatur: Die Navigation ist mit Tab und Enter bedienbar", async ({
@@ -217,7 +217,7 @@ test.describe("Rahmen und Navigation", () => {
     await opened.goto("./#/erledigt");
 
     await expect(opened.getByRole("heading", { level: 1, name: "Erledigt" })).toBeVisible();
-    await expect(opened).toHaveTitle("Erledigt – Putzplan");
+    await expect(opened).toHaveTitle("Erledigt – Krümel");
   });
 
   test("passt auf die Breite des Geräts, ohne seitlich zu scrollen", async ({ page }) => {
@@ -282,7 +282,7 @@ test.describe("Unlesbare Daten (Speicher)", () => {
   }) => {
     await startBroken(page);
 
-    await expect(page).toHaveTitle("Gespeicherte Daten nicht lesbar – Putzplan");
+    await expect(page).toHaveTitle("Gespeicherte Daten nicht lesbar – Krümel");
     await expect(page.getByRole("alert")).toContainText("beschädigt");
     await expect(page.getByRole("link", { name: "Woche" })).toHaveCount(0);
     expect(await page.evaluate((k) => localStorage.getItem(k), dataKey)).toBe(broken);
@@ -305,7 +305,7 @@ test.describe("Unlesbare Daten (Speicher)", () => {
       page.getByRole("button", { name: "Rohdaten herunterladen" }).click(),
     ]);
 
-    expect(download.suggestedFilename()).toMatch(/^putzplan-rohdaten-\d{4}-\d{2}-\d{2}\.json$/);
+    expect(download.suggestedFilename()).toMatch(/^kruemel-rohdaten-\d{4}-\d{2}-\d{2}\.json$/);
     // The file is a blob of the page; reading it there avoids needing Node types for one line.
     const content = await page.evaluate((url) => fetch(url).then((r) => r.text()), download.url());
     expect(content).toBe(broken);

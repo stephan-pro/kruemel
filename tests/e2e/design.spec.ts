@@ -154,7 +154,7 @@ test.describe("N1 Eigenes Design", () => {
     });
 
     expect(loaded).toBe(true);
-    expect(requests.some((url) => /\/putzplan\/assets\/archivo-.*\.woff2$/.test(url))).toBe(true);
+    expect(requests.some((url) => /\/kruemel\/assets\/archivo-.*\.woff2$/.test(url))).toBe(true);
     expect(requests.filter((url) => !url.startsWith("http://localhost:"))).toEqual([]);
   });
 

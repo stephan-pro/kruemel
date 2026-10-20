@@ -2,11 +2,11 @@ import { expect, test } from "@playwright/test";
 import { expectNoAccessibilityViolations } from "./axe";
 import { goToPage, startConfigured } from "./helpers";
 
-test("Erster Start zeigt die Ersteinrichtung unter dem Titel „Putzplan“", async ({ page }) => {
+test("Erster Start zeigt die Ersteinrichtung unter dem Titel „Krümel“", async ({ page }) => {
   await page.goto("./");
-  await expect(page).toHaveTitle("Ersteinrichtung – Putzplan");
+  await expect(page).toHaveTitle("Ersteinrichtung – Krümel");
   await expect(page.getByRole("heading", { level: 1, name: "Ersteinrichtung" })).toBeVisible();
-  await expect(page.getByText("Putzplan", { exact: true })).toBeVisible();
+  await expect(page.getByText("Krümel", { exact: true })).toBeVisible();
 });
 
 test("Erster Start hat keine Barrierefreiheitsverstöße (axe, hell und dunkel)", async ({

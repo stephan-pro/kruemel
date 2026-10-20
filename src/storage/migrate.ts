@@ -40,7 +40,7 @@ export function migrateAppData(raw: unknown): MigrationResult {
   if (typeof version !== "number" || !Number.isInteger(version) || version < 1) {
     return {
       ok: false,
-      errors: ["schemaVersion fehlt oder ist ungültig – das ist keine Putzplan-Sicherung."],
+      errors: ["schemaVersion fehlt oder ist ungültig – das ist keine Krümel-Sicherung."],
     };
   }
   if (version > SCHEMA_VERSION) {

@@ -65,11 +65,11 @@ describe("N3 App auf dem Home-Bildschirm: Farben", () => {
 
 describe("N3 App auf dem Home-Bildschirm: Manifest und Seite", () => {
   it("N3 Das Manifest macht aus der Seite eine eigenständige App unter ihrer Adresse", () => {
-    expect(manifest.name).toBe("Putzplan");
-    expect(manifest.short_name).toBe("Putzplan");
+    expect(manifest.name).toBe("Krümel");
+    expect(manifest.short_name).toBe("Krümel");
     expect(manifest.lang).toBe("de");
     expect(manifest.display).toBe("standalone");
-    // Relativ zum Manifest, damit es unter /putzplan/ genauso geht wie unter einer anderen Adresse.
+    // Relativ zum Manifest, damit es unter /kruemel/ genauso geht wie unter einer anderen Adresse.
     expect(manifest.start_url).toBe("./");
     expect(manifest.scope).toBe("./");
   });

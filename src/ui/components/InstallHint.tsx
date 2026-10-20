@@ -14,7 +14,7 @@ interface InstallHintProps {
 }
 
 /**
- * A quiet hint at the end of the week view: Putzplan can live on the home screen. One button
+ * A quiet hint at the end of the week view: Krümel can live on the home screen. One button
  * installs (where the browser can) or shows how; the cross closes it for good. Never in the way:
  * it stands below the tiles and does not take the focus.
  */
@@ -43,11 +43,10 @@ export function InstallHint({ way, onInstall, onDismiss }: InstallHintProps) {
       </span>
       <div class="install-hint__body">
         <h2 class="install-hint__title" id={titleId}>
-          Putzplan als App
+          Krümel als App
         </h2>
         <p>
-          Vom Home-Bildschirm startet Putzplan wie eine App: ohne Adressleiste und auch ohne
-          Internet.
+          Vom Home-Bildschirm startet Krümel wie eine App: ohne Adressleiste und auch ohne Internet.
         </p>
         <div class="button-row">
           {way === "prompt" ? (
@@ -78,7 +77,7 @@ export function InstallHint({ way, onInstall, onDismiss }: InstallHintProps) {
         <X size={22} />
       </button>
       {(way === "ios" || way === "firefoxAndroid") && (
-        <Modal open={guideOpen} title="Putzplan installieren" onCancel={closeGuide} focusTitle>
+        <Modal open={guideOpen} title="Krümel installieren" onCancel={closeGuide} focusTitle>
           <div class="dialog__body">
             <InstallSteps way={way} />
           </div>

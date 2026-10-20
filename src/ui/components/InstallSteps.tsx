@@ -8,7 +8,7 @@ interface InstallStepsProps {
 }
 
 /**
- * How to put Putzplan on the home screen by hand, step by step. Each step shows a picture of what
+ * How to put Krümel on the home screen by hand, step by step. Each step shows a picture of what
  * to tap, drawn like the browser shows it (decoration: the text says the same).
  */
 export function InstallSteps({ way }: InstallStepsProps) {
@@ -25,7 +25,7 @@ export function InstallSteps({ way }: InstallStepsProps) {
             wischen oder auf <strong>Mehr</strong> tippen).
           </Step>
           <Step picture={<span class="install-steps__word">Hinzufügen</span>}>
-            Oben rechts auf <strong>Hinzufügen</strong> tippen. Putzplan liegt jetzt auf dem
+            Oben rechts auf <strong>Hinzufügen</strong> tippen. Krümel liegt jetzt auf dem
             Home-Bildschirm.
           </Step>
         </ol>

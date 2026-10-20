@@ -23,7 +23,7 @@ export interface DeviceSettings {
   readonly currentPerson?: Person;
   /** Missing means `DEFAULT_COLOR_SCHEME`. */
   readonly colorScheme?: ColorScheme;
-  /** The hint "Putzplan als App" in the week view was closed; missing means it may show. */
+  /** The hint "Krümel als App" in the week view was closed; missing means it may show. */
   readonly installHintDismissed?: boolean;
 }
 

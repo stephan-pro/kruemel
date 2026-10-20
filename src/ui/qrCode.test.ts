@@ -2,7 +2,7 @@ import { encode } from "uqr";
 import { describe, expect, it } from "vitest";
 import { qrPicture } from "./qrCode";
 
-const ADDRESS = "https://stephan-pro.github.io/putzplan/";
+const ADDRESS = "https://stephan-pro.github.io/kruemel/";
 
 /** The modules a path paints, as "x,y" (the path is made of `M x y h w v1 h-w z` rows). */
 function painted(path: string): Set<string> {

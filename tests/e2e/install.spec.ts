@@ -12,8 +12,8 @@ const FIREFOX_ANDROID = "Mozilla/5.0 (Android 15; Mobile; rv:144.0) Gecko/144.0 
 const FIREFOX_WINDOWS =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:144.0) Gecko/20100101 Firefox/144.0";
 
-const hint = (page: Page) => page.getByRole("region", { name: "Putzplan als App" });
-const guide = (page: Page) => page.getByRole("dialog", { name: "Putzplan installieren" });
+const hint = (page: Page) => page.getByRole("region", { name: "Krümel als App" });
+const guide = (page: Page) => page.getByRole("dialog", { name: "Krümel installieren" });
 const installTile = (page: Page) => page.getByRole("region", { name: "Als App installieren" });
 
 /**
@@ -148,7 +148,7 @@ test.describe("N3 Als installierte App", () => {
     });
   });
 
-  test("N3 Läuft Putzplan schon installiert, gibt es keinen Hinweis und keinen Knopf", async ({
+  test("N3 Läuft Krümel schon installiert, gibt es keinen Hinweis und keinen Knopf", async ({
     page,
   }) => {
     await openWeek(page);
@@ -158,7 +158,7 @@ test.describe("N3 Als installierte App", () => {
     await expect(hint(page)).toHaveCount(0);
     await goToPage(page, "Einstellungen");
     await expect(installTile(page)).toContainText(
-      "Putzplan ist auf diesem Gerät als App installiert.",
+      "Krümel ist auf diesem Gerät als App installiert.",
     );
     await expect(installTile(page).getByRole("button")).toHaveCount(0);
   });
@@ -176,7 +176,7 @@ test.describe("N3 iPhone: bebilderte Anleitung", () => {
     await opener.click();
 
     await expect(guide(page)).toBeVisible();
-    await expect(guide(page).getByRole("heading", { name: "Putzplan installieren" })).toBeFocused();
+    await expect(guide(page).getByRole("heading", { name: "Krümel installieren" })).toBeFocused();
     const steps = guide(page).getByRole("listitem");
     await expect(steps).toHaveCount(3);
     await expect(steps.nth(0)).toContainText("Teilen");

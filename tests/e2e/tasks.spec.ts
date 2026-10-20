@@ -55,7 +55,7 @@ test.describe("F1 Aufgabenliste", () => {
   }) => {
     await openTasks(page);
 
-    await expect(page).toHaveTitle("Aufgaben – Putzplan");
+    await expect(page).toHaveTitle("Aufgaben – Krümel");
     await expect(page.getByRole("heading", { level: 2 })).toHaveText([
       "Wiederkehrende Aufgaben",
       "Einmalige Aufgaben",
@@ -105,7 +105,7 @@ test.describe("F1 Wiederkehrende Aufgabe anlegen", () => {
   }) => {
     await openNewTask(page);
 
-    await expect(page).toHaveTitle("Neue Aufgabe – Putzplan");
+    await expect(page).toHaveTitle("Neue Aufgabe – Krümel");
     await expect(page.getByRole("heading", { level: 1, name: "Neue Aufgabe" })).toBeFocused();
     await expect(page.getByRole("link", { name: "Aufgaben", exact: true })).toHaveAttribute(
       "aria-current",
@@ -385,7 +385,7 @@ test.describe("F1 Aufgabe bearbeiten", () => {
   }) => {
     await openEdit(page, "Bad putzen");
 
-    await expect(page).toHaveTitle("Aufgabe bearbeiten – Putzplan");
+    await expect(page).toHaveTitle("Aufgabe bearbeiten – Krümel");
     await expect(page.getByRole("heading", { level: 1 })).toBeFocused();
     await expect(page.getByLabel("Titel")).toHaveValue("Bad putzen");
     await expect(page.getByLabel("Abstand (Anzahl)")).toHaveValue("1");
@@ -497,7 +497,7 @@ test.describe("F1 Aufgabe bearbeiten", () => {
     await expect(
       opened.getByRole("heading", { level: 1, name: "Aufgabe nicht gefunden" }),
     ).toBeVisible();
-    await expect(opened).toHaveTitle("Aufgabe nicht gefunden – Putzplan");
+    await expect(opened).toHaveTitle("Aufgabe nicht gefunden – Krümel");
     await expectNoAccessibilityViolations(opened);
 
     await opened.getByRole("link", { name: "Zurück zu den Aufgaben" }).click();

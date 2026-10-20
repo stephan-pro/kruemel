@@ -9,8 +9,8 @@ import { dataKey, FROZEN_TODAY, goToPage, openWeek, storedData, textFile } from 
 // 21.10.2026 (see `week.spec.ts`), so the file names carry that day.
 
 const demo = () => demoData(FROZEN_TODAY);
-const EXPORT_NAME = "putzplan-2026-10-21.json";
-const AUTO_BACKUP_NAME = "putzplan-vor-import-2026-10-21.json";
+const EXPORT_NAME = "kruemel-2026-10-21.json";
+const AUTO_BACKUP_NAME = "kruemel-vor-import-2026-10-21.json";
 
 /** A smaller backup with other names: 2 tasks (one with a history), 2 completions. */
 function smallBackup(): AppData {
@@ -83,7 +83,7 @@ test.describe("F7 Export", () => {
     await expectNoAccessibilityViolations(page);
   });
 
-  test("F7 Der Export lädt eine Datei „putzplan-JJJJ-MM-TT.json“ mit allen Daten und schemaVersion 3 herunter", async ({
+  test("F7 Der Export lädt eine Datei „kruemel-JJJJ-MM-TT.json“ mit allen Daten und schemaVersion 3 herunter", async ({
     page,
   }) => {
     await openSettings(page);

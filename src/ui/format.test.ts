@@ -182,16 +182,16 @@ describe("Anzeige von „Erledigt“ und „Sicherung“ (F3, F7)", () => {
   });
 
   it("F7 Nach dem Herunterladen steht der Dateiname da", () => {
-    expect(exportNotice("putzplan-2026-10-21.json")).toBe(
-      "Die Sicherung „putzplan-2026-10-21.json“ wurde heruntergeladen. Bewahren Sie die Datei sicher auf.",
+    expect(exportNotice("kruemel-2026-10-21.json")).toBe(
+      "Die Sicherung „kruemel-2026-10-21.json“ wurde heruntergeladen. Bewahren Sie die Datei sicher auf.",
     );
   });
 
   it("F7 Nach dem Einspielen steht, was die Sicherung enthielt und wo die bisherigen Daten liegen", () => {
     expect(
-      importNotice("2 Aufgaben und 3 Erledigungen", "putzplan-vor-import-2026-10-21.json"),
+      importNotice("2 Aufgaben und 3 Erledigungen", "kruemel-vor-import-2026-10-21.json"),
     ).toBe(
-      "Sicherung eingespielt: 2 Aufgaben und 3 Erledigungen. Die bisherigen Daten wurden vorher als „putzplan-vor-import-2026-10-21.json“ heruntergeladen.",
+      "Sicherung eingespielt: 2 Aufgaben und 3 Erledigungen. Die bisherigen Daten wurden vorher als „kruemel-vor-import-2026-10-21.json“ heruntergeladen.",
     );
   });
 });

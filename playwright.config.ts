@@ -23,7 +23,7 @@ export default defineConfig({
     ? [["./scripts/short-reporter.mjs"], ["html", { open: "never" }]]
     : [["./scripts/short-reporter.mjs"]],
   use: {
-    baseURL: `http://localhost:${port}/putzplan/`,
+    baseURL: `http://localhost:${port}/kruemel/`,
     locale: "de-DE",
     trace: "on-first-retry",
   },
@@ -31,13 +31,13 @@ export default defineConfig({
   webServer: [
     {
       command: `npx vite preview --port ${port} --strictPort`,
-      url: `http://localhost:${port}/putzplan/`,
+      url: `http://localhost:${port}/kruemel/`,
       reuseExistingServer: !process.env.CI,
     },
     {
       // The same server as `npm run demo` (without opening a browser window).
       command: `npx vite --mode demo --port ${demoPort} --strictPort`,
-      url: `http://localhost:${demoPort}/putzplan/`,
+      url: `http://localhost:${demoPort}/kruemel/`,
       reuseExistingServer: !process.env.CI,
     },
     {
@@ -50,7 +50,7 @@ export default defineConfig({
     {
       // The app in the mode `e2e`, built by `npm run build:e2e` into dist-e2e.
       command: `npx vite preview --outDir dist-e2e --port ${e2ePort} --strictPort`,
-      url: `http://localhost:${e2ePort}/putzplan/`,
+      url: `http://localhost:${e2ePort}/kruemel/`,
       reuseExistingServer: !process.env.CI,
     },
   ],

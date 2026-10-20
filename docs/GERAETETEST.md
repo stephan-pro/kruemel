@@ -1,8 +1,8 @@
-# Putzplan – Gerätetest zum Durchklicken
+# Krümel – Gerätetest zum Durchklicken
 
 Für ein echtes **iPhone** und ein echtes **Android-Handy**. Dauer: etwa 30 Minuten je Gerät. Du brauchst nichts zu installieren außer der App selbst. Haken setzen, wenn es klappt; wenn nicht, den Schritt und kurz „was passiert ist“ notieren (am besten mit Bildschirmfoto).
 
-Die App: **https://stephan-pro.github.io/putzplan/**
+Die App: **https://stephan-pro.github.io/kruemel/**
 
 > **Wichtig vorab (iPhone):** Safari und die App auf dem Home-Bildschirm haben **getrennte Daten**. Alles, was du vorher in Safari eingetragen hast, ist in der installierten App nicht da. Richte die App deshalb erst **nach** der Installation ein, oder nimm die Daten über „Sicherung“ mit (Teil 4).
 > Auch sonst gilt: Die Daten liegen nur auf dem jeweiligen Gerät. PC und Handy teilen sich nichts.
@@ -11,7 +11,7 @@ Gerät: ______________ (z. B. iPhone 14, iOS 17.5) · Datum: ____________ · Get
 
 ## 1. Installation auf dem Home-Bildschirm
 
-Die App hilft selbst dabei (seit Paket 13): unten auf der Seite „Woche“ steht der Hinweis **„Putzplan als App“**, und unter **Einstellungen → Als App installieren** steht dieselbe Anleitung für den jeweiligen Browser (in Chrome und Edge ein Knopf **App installieren**). Den Hinweis in der Woche schließt das **×**; er kommt auf diesem Gerät nicht wieder.
+Die App hilft selbst dabei (seit Paket 13): unten auf der Seite „Woche“ steht der Hinweis **„Krümel als App“**, und unter **Einstellungen → Als App installieren** steht dieselbe Anleitung für den jeweiligen Browser (in Chrome und Edge ein Knopf **App installieren**). Den Hinweis in der Woche schließt das **×**; er kommt auf diesem Gerät nicht wieder.
 
 **iPhone (Safari):** Adresse öffnen → unten auf **Teilen** (Quadrat mit Pfeil; bei neueren iOS-Versionen erst **•••**) → **Zum Home-Bildschirm** → **Hinzufügen**.
 **Android (Chrome):** Adresse öffnen → Menü **⋮** → **App installieren** (oder **Zum Startbildschirm hinzufügen**) → bestätigen.
@@ -21,7 +21,7 @@ Die App hilft selbst dabei (seit Paket 13): unten auf der Seite „Woche“ steh
 
 Die Adresse muss man nicht abtippen: Am PC unter **Einstellungen → Auf anderem Gerät öffnen → QR-Code zeigen** und den Code mit der Handykamera scannen.
 
-- [ ] Auf dem Home-Bildschirm erscheint ein Symbol: **blaue Kachel mit weißem Haus**, darunter „Putzplan“.
+- [ ] Auf dem Home-Bildschirm erscheint ein Symbol: **blaue Kachel mit weißem Haus**, darunter „Krümel“ (das Symbol selbst wechselt erst mit E2-4).
 - [ ] Ein Tipp auf das Symbol öffnet die App **ohne Adressleiste** (wie eine normale App).
 - [ ] Beim ersten Start erscheint die **Ersteinrichtung** (Namen eintragen, „Ich bin“ wählen). Einrichten und eine Aufgabe anlegen.
 - [ ] Oben (Uhrzeit, Akku) und unten (Leiste Woche · Aufgaben · Erledigt · Einstellungen) wird **nichts abgeschnitten oder verdeckt**, auch nicht vom schwarzen Balken unten am iPhone.
@@ -41,7 +41,7 @@ Einmal mit Internet geöffnet haben (Teil 1 reicht).
 
 ## 3. Dark Mode
 
-- [ ] Handy auf **dunkles Erscheinungsbild** stellen (Einstellungen des Handys). Putzplan öffnen: Die App ist dunkel, ohne dass beim Start kurz Weiß aufblitzt (ein ganz kurzes Weiß beim allerersten Öffnen nach der Installation ist bekannt).
+- [ ] Handy auf **dunkles Erscheinungsbild** stellen (Einstellungen des Handys). Krümel öffnen: Die App ist dunkel, ohne dass beim Start kurz Weiß aufblitzt (ein ganz kurzes Weiß beim allerersten Öffnen nach der Installation ist bekannt).
 - [ ] Die Leiste oben (Uhrzeit, Akku) passt zur Farbe der App.
 - [ ] In der App: **Einstellungen → Darstellung → Hell**: Die App wird hell, auch wenn das Handy dunkel ist. Dann **Dunkel** und **Automatisch (wie das Gerät)**.
 - [ ] Alle Texte sind in beiden Farbschemata gut lesbar, auch auf der orangen Kachel „Überfällig“ und in der blauen Kachel „Stand“.
@@ -50,13 +50,13 @@ Einmal mit Internet geöffnet haben (Teil 1 reicht).
 
 Einstellungen → Kachel **Sicherung**.
 
-- [ ] **Sicherung herunterladen** antippen. Es erscheint eine Meldung mit dem Dateinamen (`putzplan-JJJJ-MM-TT.json`).
+- [ ] **Sicherung herunterladen** antippen. Es erscheint eine Meldung mit dem Dateinamen (`kruemel-JJJJ-MM-TT.json`).
 - [ ] Die Datei ist auffindbar: iPhone: App **Dateien** → Downloads (oder das System bietet „In Dateien sichern“ an). Android: **Downloads**. *Notieren, wo sie gelandet ist und wie viele Schritte es waren.*
 - [ ] Aufgabe anlegen oder löschen, damit sich etwas ändert.
 - [ ] **Sicherung einspielen …** → die Datei aus dem ersten Schritt wählen. *Notieren, ob die Datei im Auswahlfenster wählbar (nicht ausgegraut) ist.*
 - [ ] Es erscheint die Frage „Sicherung einspielen?“ mit Zahlen. **Abbrechen** ändert nichts.
 - [ ] Noch einmal wählen und **Ja, Daten ersetzen**: Die Meldung „Sicherung eingespielt …“ erscheint, die Aufgaben sind wie in der Sicherung.
-- [ ] **Wichtig:** Hat das Handy zusätzlich eine Datei `putzplan-vor-import-…json` heruntergeladen (die automatische Kopie der Daten von vorher)? *Auf dem iPhone kann es sein, dass diese zweite Datei nicht ankommt oder nachgefragt wird („Mehrere Downloads erlauben?“). Bitte genau notieren, was passiert.*
+- [ ] **Wichtig:** Hat das Handy zusätzlich eine Datei `kruemel-vor-import-…json` heruntergeladen (die automatische Kopie der Daten von vorher)? *Auf dem iPhone kann es sein, dass diese zweite Datei nicht ankommt oder nachgefragt wird („Mehrere Downloads erlauben?“). Bitte genau notieren, was passiert.*
 - [ ] Eine **falsche Datei** wählen (z. B. ein Foto): Es erscheint eine rote Meldung, die Daten bleiben unverändert.
 
 ## 5. Mit Screenreader (optional)

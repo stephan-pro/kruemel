@@ -266,7 +266,7 @@ describe("N8 Farbschema (Darstellung) auf diesem Gerät", () => {
   });
 });
 
-describe("N3 Hinweis „Putzplan als App“ auf diesem Gerät", () => {
+describe("N3 Hinweis „Krümel als App“ auf diesem Gerät", () => {
   it("N3 Ein geschlossener Hinweis bleibt geschlossen, zusammen mit den übrigen Werten", async () => {
     const store = new FakeStore();
     await createLocalStorage({ store }).saveDevice({

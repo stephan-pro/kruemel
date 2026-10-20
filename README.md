@@ -1,12 +1,12 @@
 # Krümel
 
-[![check](https://github.com/stephan-pro/putzplan/actions/workflows/check.yml/badge.svg)](https://github.com/stephan-pro/putzplan/actions/workflows/check.yml)
+[![check](https://github.com/stephan-pro/kruemel/actions/workflows/check.yml/badge.svg)](https://github.com/stephan-pro/kruemel/actions/workflows/check.yml)
 
 Eine kleine App, mit der zwei Personen ihre Aufgaben im Haushalt planen: wiederkehrende Aufgaben wie „Bad putzen“ und kurzfristige wie „Einkaufen“.
 
-**Online:** https://stephan-pro.github.io/putzplan/ (wird nach jedem grünen `check` auf `main` automatisch aktualisiert)
+**Online:** https://stephan-pro.github.io/kruemel/ (wird nach jedem grünen `check` auf `main` automatisch aktualisiert)
 
-**Name:** Die App heißt ab sofort **Krümel** (im Code und in Dateinamen `kruemel`). Bis zur Umbenennung in Etappe 2 zeigt sie selbst, die Adresse und der Projektordner noch „Putzplan“; die Adresse wird mit Paket E2-3 zu `https://stephan-pro.github.io/kruemel/` (das Repository wird dann umbenannt). Wer die App auf dem Home-Bildschirm hat, installiert sie dann neu (`docs/ETAPPE2-PLAN.md`).
+**Name:** Die App heißt **Krümel** (im Code und in Dateinamen `kruemel`). Repository und Adresse sind umbenannt (Paket E2-0b); das neue Symbol folgt mit E2-4. Wer die App früher unter `…/putzplan/` auf den Home-Bildschirm gelegt hat, entfernt sie und installiert sie von der neuen Adresse neu. Die Daten im Browser bleiben erhalten (derselbe Speicher `stephan-pro.github.io`, die Schlüssel `putzplan:*` bleiben bewusst).
 
 **Stand:** Etappe 1 ist abgeschlossen (20.10.2026). Alle Funktionen sind da; die Daten liegen nur im Browser des jeweiligen Geräts. Gemeinsame Daten für beide Personen kommen mit Etappe 2 (Prüfliste: [`docs/ETAPPE2.md`](docs/ETAPPE2.md)).
 
@@ -32,7 +32,7 @@ Wichtig zu wissen:
 Am einfachsten: am PC **Einstellungen → Auf anderem Gerät öffnen → QR-Code zeigen** und den Code mit der Handykamera scannen. Dann:
 
 - **iPhone (Safari):** Teilen (Quadrat mit Pfeil; bei neueren iOS erst •••) → **Zum Home-Bildschirm** → **Hinzufügen**.
-- **Android (Chrome):** Hinweis „Putzplan als App“ unten auf der Seite Woche → **App installieren**, oder Menü ⋮ → **App installieren**.
+- **Android (Chrome):** Hinweis „Krümel als App“ unten auf der Seite Woche → **App installieren**, oder Menü ⋮ → **App installieren**.
 - **Android (Firefox):** Menü ⋮ → **Zum Startbildschirm hinzufügen**.
 - **Xiaomi, Redmi, POCO:** Passiert beim Hinzufügen nichts, braucht der Browser eine Erlaubnis: Handy-Einstellungen → Apps → Apps verwalten → Firefox (bzw. Chrome) → Weitere Berechtigungen → **Startbildschirm-Verknüpfungen**.
 
@@ -76,7 +76,7 @@ Die End-to-End-Tests laufen in Chromium und WebKit (Safari), je am PC und in Han
 npm run demo
 ```
 
-Startet die App mit erfundenen Beispieldaten (zwei Personen, wiederkehrende und einmalige Aufgaben, Checklisten, Erledigtes), die sich nach dem heutigen Tag richten, und öffnet sie im Browser (`http://localhost:5173/putzplan/`). Beenden mit Strg+C.
+Startet die App mit erfundenen Beispieldaten (zwei Personen, wiederkehrende und einmalige Aufgaben, Checklisten, Erledigtes), die sich nach dem heutigen Tag richten, und öffnet sie im Browser (`http://localhost:5173/kruemel/`). Beenden mit Strg+C.
 
 - Die Daten liegen in einem eigenen Speicherbereich (`putzplan-demo`); echte Daten im selben Browser bleiben unberührt.
 - Eigene Änderungen bleiben beim Neuladen erhalten. Frische Beispieldaten gibt es über den Link „Beispieldaten neu laden“ oder mit `?demo=neu` an der Adresse.

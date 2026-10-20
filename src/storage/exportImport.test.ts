@@ -58,15 +58,15 @@ describe("F7 Export", () => {
   });
 
   it("F7 Die Sicherungsdatei heißt nach dem Tag des Exports", () => {
-    expect(exportFileName(d("2026-10-19"))).toBe("putzplan-2026-10-19.json");
+    expect(exportFileName(d("2026-10-19"))).toBe("kruemel-2026-10-19.json");
   });
 
   it("Die Datei mit unlesbaren Rohdaten ist am Namen von einer Sicherung zu unterscheiden", () => {
-    expect(rawDataFileName(d("2026-10-19"))).toBe("putzplan-rohdaten-2026-10-19.json");
+    expect(rawDataFileName(d("2026-10-19"))).toBe("kruemel-rohdaten-2026-10-19.json");
   });
 
   it("F7 Die automatische Sicherung vor dem Import heißt anders als eine eigene Sicherung desselben Tages", () => {
-    expect(autoBackupFileName(d("2026-10-19"))).toBe("putzplan-vor-import-2026-10-19.json");
+    expect(autoBackupFileName(d("2026-10-19"))).toBe("kruemel-vor-import-2026-10-19.json");
     expect(autoBackupFileName(d("2026-10-19"))).not.toBe(exportFileName(d("2026-10-19")));
   });
 

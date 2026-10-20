@@ -2,7 +2,7 @@
 
 Stand: 20.10.2026 · Grundlage: CLAUDE.md, PLAN.md, ANFORDERUNGEN.md (inkl. „Sicherheit (Etappe 2)“), ETAPPE2.md, design/DESIGN.md (Version 2) und die Entscheidungen des PO vom 20.10.2026. Kein Code in dieser Sitzung; der PO arbeitet den Plan danach selbst in die Dokumente ein.
 
-**App-Name (Entscheidung des PO, 20.10.2026):** Die App heißt ab sofort **Krümel**; im Code und in Dateinamen `kruemel`. Wo dieser Plan noch „Putzplan“ nennt, meint er den heutigen Stand von Etappe 1 (Adresse `/putzplan/`, Texte, Manifest, Dateinamen). Wann sich was ändert: das Repository und damit die Adresse in E2-3 (erster Schritt, Liste dort), die sichtbaren Texte, das Manifest, der Seitentitel, die Dateinamen und das App-Symbol in E2-4. Neue Namen (Supabase-Projekt, Gmail-Konto, Variablen) bekommen schon in E2-1 den neuen Namen.
+**App-Name (Entscheidung des PO, 20.10.2026):** Die App heißt ab sofort **Krümel**; im Code und in Dateinamen `kruemel`. Wo dieser Plan noch „Putzplan“ nennt, meint er den heutigen Stand von Etappe 1 (Adresse `/putzplan/`, Texte, Manifest, Dateinamen). **Status: Repository, Adresse (`/kruemel/`), sichtbare Texte, Manifest, Seitentitel und Dateinamen sind seit E2-0b (20.10.2026) umgestellt; nur das App-Symbol folgt in E2-4.** Neue Namen (Supabase-Projekt, Gmail-Konto, Variablen) bekommen schon in E2-1 den neuen Namen.
 
 ## Kontext
 
@@ -159,23 +159,7 @@ Inhalt:
 
 ### E2-3 Gemeinsamer Speicher
 Inhalt:
-- **Schritt 0, zuerst: Repository in „kruemel“ umbenennen** (vor dem Umstellen auf Supabase). Warum jetzt: Mit der Umstellung müssen ohnehin alle die App neu installieren und sich anmelden; so passiert das nur einmal. Claude nennt dem PO zu Beginn von E2-3 die Schritte und wartet auf sein „umbenannt“, bevor er Code ändert (nach der Umbenennung liefert die alte Adresse nichts mehr aus, deshalb gehören Umbenennung und Code-Änderung zeitlich zusammen).
-  - **Was sich mit der Adresse ändert:**
-    - **GitHub Pages:** Die Seite liegt dann unter `https://stephan-pro.github.io/kruemel/`. Die alte Adresse `…/putzplan/` zeigt danach „404“, GitHub leitet Pages-Adressen nicht weiter (die Repository-Adresse und `git push` auf die alte Adresse werden weitergeleitet). Der Workflow `pages` braucht keine Änderung (er nimmt die Adresse von GitHub); die Einstellung Pages → Source „GitHub Actions“ bleibt, wird aber nach der Umbenennung geprüft.
-    - **Code:** `base` in `vite.config.ts` wird `/kruemel/`; ebenso die Adressen in `playwright.config.ts` und in allen Tests, die `/putzplan/` fest schreiben (`pwa.spec.ts`, `app.spec.ts`, `design.spec.ts`, `demo.spec.ts`, `appInfo.test.ts`, `qrCode.test.ts`). Zum Schluss darf die Suche nach `/putzplan/` im Code nichts mehr finden. Die Entwicklungsadresse wird `http://localhost:5173/kruemel/`.
-    - **Manifest:** `start_url`, `scope` und `id` sind relativ (`./`) und brauchen keine Änderung; `pwa.test.ts` prüft das schon so. Der Name im Manifest bleibt bis E2-4 „Putzplan“.
-    - **Service Worker:** Er leitet seine Adresse aus seinem Standort ab und fasst weiter nur eigene Adressen an; nichts zu ändern. Die alte App unter `/putzplan/` bleibt auf Geräten, die sie installiert haben, als toter Zwischenspeicher zurück (sie zeigt den Stand von Etappe 1 oder eine Fehlerseite). Deshalb vor dem Löschen der Daten auf eine Sicherung achten und die alte App deinstallieren (unten). Der neue Service Worker löscht beim Aktivieren auch alte `putzplan-…`-Zwischenspeicher derselben Herkunft.
-    - **Supabase:** Site URL und Redirect-URLs (Dashboard → Authentication → URL Configuration) auf `https://stephan-pro.github.io/kruemel/` und `http://localhost:5173/kruemel/`; der Eintrag mit `putzplan` aus E2-1 wird gelöscht. Die CSP ändert sich nicht (`connect-src` nennt nur Supabase und die eigene Herkunft). Supabase braucht keine CORS-Einstellung.
-    - **Passkey-Herkunft (WebAuthn):** Maßgeblich ist die Herkunft `https://stephan-pro.github.io` (Domain `stephan-pro.github.io` als RP-ID), nicht der Pfad. Ein Passkey, der vor der Umbenennung eingerichtet wurde, gilt danach weiter. Verlangt Supabase oder `supabase-js` eine Angabe zur erlaubten Herkunft/RP-ID, wird dort nur die Domain eingetragen, kein Pfad (im Spike in E2-2 prüfen und in `PLAN.md` festhalten). Zieht die App später auf eine eigene Domain um, sind Passkeys neu einzurichten.
-    - **Browser-Speicher:** Er gehört zur Herkunft, nicht zum Pfad. Im Browser sieht die neue Adresse die Etappe-1-Daten der alten daher noch; installierte Apps (vor allem auf dem iPhone, Safari und Home-Bildschirm getrennt) haben eigenen Speicher. Vor dem Umzug deshalb auf jedem Gerät „Sicherung herunterladen“.
-    - **Dokumentation und Hilfen:** `README.md` (Abzeichen, Online-Adresse, Entwicklungsadresse), `CLAUDE.md`, `docs/GERAETETEST.md`, `docs/PLAN.md`, `ANFORDERUNGEN.md` und `.claude/skills/paket/SKILL.md` (Adresse in Schritt 3.4) nennen die neue Adresse; die Hinweise „bis zur Umbenennung“ in diesen Dokumenten fallen weg. Lokale Git-Adresse: `git remote set-url origin https://github.com/stephan-pro/kruemel.git`.
-  - **Was der PO dafür tut** (in dieser Reihenfolge):
-    1. Auf allen Geräten in der App „Sicherung herunterladen“ (Einstellungen), besonders auf dem iPhone.
-    2. Auf GitHub: Repository → Settings → General → „Repository name“ auf `kruemel` ändern → „Rename“. Oder im eigenen Terminal `gh repo rename kruemel`. Dann Claude „umbenannt“ sagen.
-    3. Im eigenen Terminal im Projektordner `git remote set-url origin https://github.com/stephan-pro/kruemel.git`. Den Projektordner `C:\Users\Anwender\Projekte\putzplan` kann der PO danach in `kruemel` umbenennen; er öffnet das Projekt dann in Claude Code neu (der Ordnername gehört zu den Sitzungsdaten, offene Sitzungen enden).
-    4. Im Supabase-Dashboard die URL-Konfiguration anpassen (siehe oben).
-    5. Nach dem Veröffentlichen auf jedem Gerät die alte App vom Home-Bildschirm entfernen und `https://stephan-pro.github.io/kruemel/` öffnen, anmelden und neu installieren. Hinweis: Auf dem iPhone ändern sich Name und Symbol einer schon angelegten App nicht von selbst. Weil E2-4 beides ändert, ist es am bequemsten, die Handys erst nach E2-4 neu zu installieren; bis dahin genügt der Browser.
-    6. Optional: Ein kleines neues Repository `putzplan` mit einer Seite „Die App heißt jetzt Krümel“ und einem Link auf die neue Adresse, damit alte Lesezeichen nicht ins Leere führen.
+- **Umbenennung in „kruemel“: erledigt in E2-0b (20.10.2026)** (Repository, Adresse, Texte, Manifest). Offen für E2-3 nur noch: im Supabase-Dashboard (Authentication → URL Configuration) Site URL `https://stephan-pro.github.io/kruemel/` und `http://localhost:5173/kruemel/` eintragen, den Eintrag mit `putzplan` löschen. Passkey-Herkunft: maßgeblich ist die Domain `stephan-pro.github.io`, nicht der Pfad.
 - **Verbindung zu Supabase:**
   - `SupabaseRemote`: Abruf per PostgREST mit Überlappung, Änderungen über die RPCs, Realtime als Anstoß.
   - Vertragstests gegen die lokale Instanz.
@@ -215,10 +199,7 @@ Inhalt, in zwei Commits:
   - Startseite „Heute“: Kopf mit Avatar, Begrüßung nach Tageszeit, Satz zur Zusammenfassung, „Deine Woche“ mit 7 Tagesfeldern, Kacheln „Deine Woche“/„Gemeinsam“ mit Ring, „Heute für dich“ mit Filter. Überfälliges zuerst und **bei 360 × 640 ohne Scrollen sichtbar**; Erledigtes mit Uhrzeit (`completedAt`).
   - Die Seite „Woche“ übernimmt die bisherige Wochenübersicht im neuen Stil.
   - Leistenfarben, Manifest und `pwa.test.ts` anpassen.
-  - **Umbenennung in „Krümel“ (sichtbar):**
-    - Seitentitel (`index.html`, `PageTitle`: „Seite – Krümel“), Name und Kurzname im Manifest, Installationshinweis „Krümel als App“ und Fenster „Krümel installieren“, alle weiteren Texte mit dem alten Namen (Suche nach „Putzplan“ in `src/` und `tests/`).
-    - Dateinamen der Sicherung: `kruemel-JJJJ-MM-TT.json`, `kruemel-vor-import-…`, `kruemel-rohdaten-…`; Sicherungen mit den alten Namen bleiben einspielbar.
-    - Technische Namen auf `kruemel`: `package.json`, Zwischenspeicher-Präfix des Service Workers (alte `putzplan-…`-Speicher werden dabei gelöscht), Speicherbereich der Demo (`kruemel-demo`), Plugin-Name in `vite.config.ts`. Die Geräteeinstellungen unter dem Schlüssel `putzplan:device` werden einmal gelesen und unter dem neuen Schlüssel gespeichert; ein Test mit alten Daten sichert das ab (Muster `asVersion1`). Die Adresse selbst ist schon in E2-3 geändert.
+  - **Umbenennung in „Krümel“:** erledigt in E2-0b (20.10.2026): Texte, Titel, Manifest, Dateinamen der Sicherung, Service Worker, Adresse. Bewusst unverändert: die Speicherschlüssel `putzplan:data`, `putzplan:device` und `putzplan-demo` (sonst fänden Geräte ihre Daten nicht mehr); nur das Symbol bleibt hier.
   - **App-Symbol** (Frage 12, entschieden): Vorlage `docs/design/kruemel-icon.svg` (Keks-Krümel mit Gesicht und Besen auf violetter Kachel).
     - `public/icon.svg` wird die Vorlage; `npm run icons` erzeugt daraus wie bisher alle PNG-Größen, auch das maskierbare Symbol und das Apple-Touch-Symbol.
     - Prüfen: Gesicht und Besen liegen in der sicheren Zone maskierbarer Symbole (Kreis mit 80 % des Durchmessers, mittig). Wenn nicht, wird der Abstand angepasst (Motiv kleiner in die Kachel), das Motiv bleibt unverändert. Ein Test oder Hilfsskript hält das Ergebnis fest.
@@ -234,7 +215,7 @@ Inhalt, in zwei Commits:
 - Unit-Tests für Statistik, Begrüßung und Zusammenfassungssatz sind grün (benannt nach den DESIGN-Regeln).
 - Alle E2E-Tests sind auf die neue Navigation umgestellt und grün, `phone.spec.ts` prüft „Heute“ bei 360 × 640 und 390 × 844.
 - axe hell und dunkel auf jeder Seite, Kontrasttests für alle neuen Paare, Kontrastmodus-Tests grün.
-- In der App und im Manifest steht kein „Putzplan“ mehr; die Symbolgrößen stammen aus der Krümel-Vorlage und die sichere Zone maskierbarer Symbole ist geprüft.
+- Die Symbolgrößen stammen aus der Krümel-Vorlage und die sichere Zone maskierbarer Symbole ist geprüft.
 
 ### E2-5 Gerätetest und Abschluss
 Inhalt:

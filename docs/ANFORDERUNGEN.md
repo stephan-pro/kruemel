@@ -2,7 +2,7 @@
 
 Stand: 20.10.2026 · Product Owner: Stephan Prommer
 
-**App-Name:** Die App heißt ab sofort **Krümel** (Entscheidung des PO, 20.10.2026; im Code und in Dateinamen ohne Umlaut: `kruemel`). Bis zur Umbenennung in E2-4 zeigt die App selbst noch „Putzplan“ (Seitentitel, Manifest, Installationshinweis, Dateinamen der Sicherung); die Etappe-1-Einträge in Abschnitt 9 beschreiben diesen Stand. Siehe „Etappe 2 (Entscheidungen des PO)“ in Abschnitt 9.
+**App-Name:** Die App heißt ab sofort **Krümel** (Entscheidung des PO, 20.10.2026; im Code und in Dateinamen ohne Umlaut: `kruemel`). Die Umbenennung (Texte, Manifest, Adresse, Dateinamen) ist seit E2-0b umgesetzt, nur das Symbol folgt in E2-4; die Etappe-1-Einträge in Abschnitt 9 nennen noch den alten Namen. Siehe „Etappe 2 (Entscheidungen des PO)“ in Abschnitt 9.
 
 ## 1. Ziel
 

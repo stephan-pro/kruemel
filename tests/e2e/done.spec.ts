@@ -72,7 +72,7 @@ test.describe("F3 Erledigt-Liste", () => {
   }) => {
     await openDone(page);
 
-    await expect(page).toHaveTitle("Erledigt – Putzplan");
+    await expect(page).toHaveTitle("Erledigt – Krümel");
     await expect(page.getByRole("heading", { level: 1, name: "Erledigt" })).toBeFocused();
     await expect(page.getByRole("heading", { level: 2, name: "Erledigte Aufgaben" })).toBeVisible();
     await expect(list(page).locator("ul.entries > li.entry")).toHaveCount(10);

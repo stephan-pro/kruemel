@@ -9,23 +9,23 @@ export function exportData(data: AppData): string {
   return `${JSON.stringify(data, null, 2)}\n`;
 }
 
-/** Name of the backup file, e.g. "putzplan-2026-10-19.json". */
+/** Name of the backup file, e.g. "kruemel-2026-10-19.json" (files "putzplan-….json" still import). */
 export function exportFileName(today: CalendarDay): string {
-  return `putzplan-${today}.json`;
+  return `kruemel-${today}.json`;
 }
 
 /**
  * Name of the copy the app downloads by itself before an import replaces the data, e.g.
- * "putzplan-vor-import-2026-10-19.json". Different from `exportFileName`, so it never hides
+ * "kruemel-vor-import-2026-10-19.json". Different from `exportFileName`, so it never hides
  * (or gets mistaken for) a backup the user made on purpose.
  */
 export function autoBackupFileName(today: CalendarDay): string {
-  return `putzplan-vor-import-${today}.json`;
+  return `kruemel-vor-import-${today}.json`;
 }
 
-/** Name of the file with unreadable stored data, e.g. "putzplan-rohdaten-2026-10-19.json". */
+/** Name of the file with unreadable stored data, e.g. "kruemel-rohdaten-2026-10-19.json". */
 export function rawDataFileName(today: CalendarDay): string {
-  return `putzplan-rohdaten-${today}.json`;
+  return `kruemel-rohdaten-${today}.json`;
 }
 
 /**

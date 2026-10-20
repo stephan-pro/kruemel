@@ -15,7 +15,7 @@ export function VersionTile() {
         Stand: <span data-build>{formatBuild(APP_BUILD)}</span>
       </p>
       <p class="muted">
-        Neue Versionen kommen von selbst, wenn Putzplan mit Internet geöffnet wird. Lief die App im
+        Neue Versionen kommen von selbst, wenn Krümel mit Internet geöffnet wird. Lief die App im
         Hintergrund weiter, bleibt sie bei der alten Version, bis man sie neu lädt oder ganz
         schließt und wieder öffnet.
       </p>

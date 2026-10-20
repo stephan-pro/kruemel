@@ -18,9 +18,9 @@ describe("Version und Adresse der App", () => {
     expect(Number.isNaN(Date.parse(APP_BUILD.time))).toBe(false);
   });
 
-  it("N3 Die Adresse der App ist die Startseite unter /putzplan/, ohne Unterseite", () => {
-    expect(appAddress("https://stephan-pro.github.io", "/putzplan/")).toBe(
-      "https://stephan-pro.github.io/putzplan/",
+  it("N3 Die Adresse der App ist die Startseite unter /kruemel/, ohne Unterseite", () => {
+    expect(appAddress("https://stephan-pro.github.io", "/kruemel/")).toBe(
+      "https://stephan-pro.github.io/kruemel/",
     );
   });
 });

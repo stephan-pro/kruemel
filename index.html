@@ -16,15 +16,17 @@
     <!-- iPhone: opens from the home screen like an app (also set by the manifest in newer iOS). -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-title" content="Putzplan" />
+    <meta name="apple-mobile-web-app-title" content="Krümel" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <title>Putzplan</title>
+    <title>Krümel</title>
     <script>
       // N8: applies the colour scheme chosen on this device before anything is drawn, so the
       // wrong theme never flashes up. Same rule as src/ui/colorScheme.ts; "Automatisch" (or
       // nothing stored) leaves it to the device. %MODE% is filled in by Vite ("demo" for
       // `npm run demo`, which has its own storage).
       try {
+        // The storage keys keep the old name "putzplan" on purpose: the address stays on the same
+        // origin (github.io), so the data already on the device is still found.
         const mode = "%MODE%";
         const key = `${mode === "demo" ? "putzplan-demo" : "putzplan"}:device`;
         const scheme = JSON.parse(localStorage.getItem(key) || "{}").colorScheme;

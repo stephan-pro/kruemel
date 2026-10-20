@@ -25,11 +25,11 @@ export function InstallTile({ way, onInstall }: InstallTileProps) {
         Als App installieren
       </h2>
       {way === "installed" ? (
-        <p>Putzplan ist auf diesem Gerät als App installiert.</p>
+        <p>Krümel ist auf diesem Gerät als App installiert.</p>
       ) : (
         <>
           <p class="muted">
-            Vom Home-Bildschirm startet Putzplan wie eine App: ohne Adressleiste und auch ohne
+            Vom Home-Bildschirm startet Krümel wie eine App: ohne Adressleiste und auch ohne
             Internet.
           </p>
           {way === "prompt" ? (

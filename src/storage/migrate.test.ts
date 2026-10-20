@@ -175,7 +175,7 @@ describe("F8 Migration lehnt unbekannte Versionen ab", () => {
     ["ist keine ganze Zahl", 1.5],
   ])("F8 Eine schemaVersion, die %s, wird abgelehnt", (_name, schemaVersion) => {
     expect(errorsOf({ ...sampleData(), schemaVersion })).toEqual([
-      "schemaVersion fehlt oder ist ungültig – das ist keine Putzplan-Sicherung.",
+      "schemaVersion fehlt oder ist ungültig – das ist keine Krümel-Sicherung.",
     ]);
   });
 

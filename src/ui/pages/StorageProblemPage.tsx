@@ -71,7 +71,7 @@ export function StorageProblemPage({
         {canRescue ? (
           <>
             <p>
-              Die Putzplan-App hat nichts verändert und überschreibt die Daten nicht von selbst.
+              Die Krümel-App hat nichts verändert und überschreibt die Daten nicht von selbst.
               Sichern Sie sie zuerst als Datei, damit sich der Fehler später reparieren lässt.
               Danach können Sie neu beginnen.
             </p>

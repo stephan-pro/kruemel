@@ -17,7 +17,7 @@ function traits(userAgent: string, changes: Partial<BrowserTraits> = {}): Browse
 }
 
 describe("N3 Weg zur Installation je Browser", () => {
-  it("N3 Läuft Putzplan schon als installierte App, wird nichts angeboten", () => {
+  it("N3 Läuft Krümel schon als installierte App, wird nichts angeboten", () => {
     expect(installWay(traits(IPHONE_SAFARI, { standalone: true }))).toBe("installed");
     expect(installWay(traits(CHROME_ANDROID, { standalone: true, canPrompt: true }))).toBe(
       "installed",

@@ -5,7 +5,7 @@
 export const FAKE_SERVER = "http://localhost:4180";
 
 /** The app in the mode `e2e`: the shared storage against the fake server, no sign-in yet. */
-export const E2E_APP = "http://localhost:4175/putzplan/";
+export const E2E_APP = "http://localhost:4175/kruemel/";
 
 /** Where the app looks for the secret of the person who uses this device. */
 export const FAKE_SESSION_KEY = "kruemel-fake:session";

@@ -284,7 +284,7 @@ export function App({ storage, demo }: AppProps) {
     return result.task;
   }
 
-  /** "Putzplan als App" closed: it stays closed on this device (if that can be saved). */
+  /** "Krümel als App" closed: it stays closed on this device (if that can be saved). */
   async function dismissInstallHint() {
     const state = latest.current;
     if (state.status !== "ready") {

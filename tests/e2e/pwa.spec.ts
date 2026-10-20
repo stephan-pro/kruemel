@@ -18,7 +18,7 @@ import {
 // cannot do is install an app; it checks everything an installation relies on: manifest, icons, bar
 // colours, the service worker and the kept files, and then works with the network switched off.
 
-const demoUrl = "http://localhost:4174/putzplan/";
+const demoUrl = "http://localhost:4174/kruemel/";
 
 /** Waits until the service worker has installed and kept all files. */
 async function waitForServiceWorker(page: Page) {
@@ -66,14 +66,14 @@ test.describe("N3 Manifest und Symbole", () => {
     await page.goto("./");
 
     const href = await page.locator('link[rel="manifest"]').getAttribute("href");
-    expect(href).toBe("/putzplan/manifest.webmanifest");
+    expect(href).toBe("/kruemel/manifest.webmanifest");
     const manifest = await page.evaluate(
       (address) => fetch(address).then((r) => r.json()),
       href as string,
     );
     expect(manifest).toMatchObject({
-      name: "Putzplan",
-      short_name: "Putzplan",
+      name: "Krümel",
+      short_name: "Krümel",
       lang: "de",
       display: "standalone",
       start_url: "./",
@@ -86,16 +86,16 @@ test.describe("N3 Manifest und Symbole", () => {
   test("N3 Alle Symbole des Manifests gibt es, in der angegebenen Größe", async ({ page }) => {
     await page.goto("./");
     const manifest = await page.evaluate(() =>
-      fetch("/putzplan/manifest.webmanifest").then((response) => response.json()),
+      fetch("/kruemel/manifest.webmanifest").then((response) => response.json()),
     );
 
     const pngs = manifest.icons.filter((icon: { type: string }) => icon.type === "image/png");
     expect(pngs).toHaveLength(3);
     for (const icon of pngs) {
       const [width, height] = icon.sizes.split("x").map(Number);
-      expect(await imageSize(page, `/putzplan/${icon.src}`), icon.src).toEqual([width, height]);
+      expect(await imageSize(page, `/kruemel/${icon.src}`), icon.src).toEqual([width, height]);
     }
-    const svg = await page.request.get("/putzplan/icon.svg");
+    const svg = await page.request.get("/kruemel/icon.svg");
     expect(svg.headers()["content-type"]).toContain("image/svg+xml");
   });
 
@@ -105,7 +105,7 @@ test.describe("N3 Manifest und Symbole", () => {
     await page.goto("./");
 
     const href = await page.locator('link[rel="apple-touch-icon"]').getAttribute("href");
-    expect(href).toBe("/putzplan/apple-touch-icon.png");
+    expect(href).toBe("/kruemel/apple-touch-icon.png");
     expect(await imageSize(page, href as string)).toEqual([180, 180]);
     await expect(page.locator('meta[name="apple-mobile-web-app-capable"]')).toHaveAttribute(
       "content",
@@ -113,7 +113,7 @@ test.describe("N3 Manifest und Symbole", () => {
     );
     await expect(page.locator('meta[name="apple-mobile-web-app-title"]')).toHaveAttribute(
       "content",
-      "Putzplan",
+      "Krümel",
     );
   });
 
@@ -202,8 +202,8 @@ test.describe("N3 Service Worker und Nutzung ohne Internet", () => {
     });
 
     expect(kept.names).toHaveLength(1);
-    expect(kept.names[0]).toMatch(/^putzplan-/);
-    expect(kept.urls).toContain("/putzplan/");
+    expect(kept.names[0]).toMatch(/^kruemel-/);
+    expect(kept.urls).toContain("/kruemel/");
     expect(kept.urls.filter((url) => /\/assets\/index-.*\.js$/.test(url))).toHaveLength(1);
     expect(kept.urls.filter((url) => /\/assets\/index-.*\.css$/.test(url))).toHaveLength(1);
     // Die Schrift: alle drei Schriftsysteme, damit auch Namen mit Sonderzeichen ohne Netz stimmen.
@@ -216,7 +216,7 @@ test.describe("N3 Service Worker und Nutzung ohne Internet", () => {
       "icon-maskable-512.png",
       "apple-touch-icon.png",
     ]) {
-      expect(kept.urls).toContain(`/putzplan/${file}`);
+      expect(kept.urls).toContain(`/kruemel/${file}`);
     }
   });
 
@@ -277,7 +277,7 @@ test.describe("N3 Service Worker und Nutzung ohne Internet", () => {
       page.waitForEvent("download"),
       page.getByRole("button", { name: "Sicherung herunterladen", exact: true }).click(),
     ]);
-    expect(download.suggestedFilename()).toBe("putzplan-2026-10-21.json");
+    expect(download.suggestedFilename()).toBe("kruemel-2026-10-21.json");
     const saved = JSON.parse(
       await page.evaluate((url) => fetch(url).then((response) => response.text()), download.url()),
     );
@@ -333,7 +333,7 @@ test.describe("N3 Service Worker und Nutzung ohne Internet", () => {
       const cache = await caches.open(names[0] as string);
       return (await cache.keys()).map((request) => request.url);
     });
-    expect(urls.every((url) => url.startsWith("http://localhost:4173/putzplan/"))).toBe(true);
+    expect(urls.every((url) => url.startsWith("http://localhost:4173/kruemel/"))).toBe(true);
   });
 
   test("N3 Der Demo-Modus (npm run demo) arbeitet ohne Service Worker", async ({ page }) => {

@@ -4,7 +4,7 @@ import { dayFromDate } from "../../src/domain/date";
 import { expectNoAccessibilityViolations } from "./axe";
 
 // `npm run demo` serves the app in mode "demo" (see `webServer` in playwright.config.ts).
-const demoUrl = "http://localhost:4174/putzplan/";
+const demoUrl = "http://localhost:4174/kruemel/";
 const dataKey = "putzplan-demo:data";
 
 // The same example data the app seeds, computed for the same day.

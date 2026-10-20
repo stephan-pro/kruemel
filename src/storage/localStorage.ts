@@ -25,6 +25,8 @@ export interface LocalStorageOptions {
   readonly namespace?: string;
 }
 
+// Stays "putzplan" after the rename to Krümel: the app's address is still on the same origin
+// (github.io), so data already on the device is found under these keys. Renaming would hide it.
 const DEFAULT_NAMESPACE = "putzplan";
 
 export function readKey(store: KeyValueStore, key: string): string | null {

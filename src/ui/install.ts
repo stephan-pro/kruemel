@@ -1,4 +1,4 @@
-// "App installieren": which way this browser offers to put Putzplan on the home screen, and the
+// "App installieren": which way this browser offers to put Krümel on the home screen, and the
 // browser's own install question (`beforeinstallprompt`, Chromium only), caught early so the app
 // can ask it from its own button later.
 

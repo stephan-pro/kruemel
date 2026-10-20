@@ -47,7 +47,7 @@ function hash(text: string): string {
  */
 function serviceWorker(): Plugin {
   return {
-    name: "putzplan-service-worker",
+    name: "kruemel-service-worker",
     // Not for the fake server (an SSR build without a page).
     apply: (config, { command }) => command === "build" && !config.build?.ssr,
     buildStart() {
@@ -86,7 +86,7 @@ const FAKE_SERVER = process.env.FAKE_SERVER_URL ?? "http://localhost:4180";
 
 export default defineConfig(({ mode }) => ({
   // GitHub Pages serves the app under /<repo-name>/.
-  base: "/putzplan/",
+  base: "/kruemel/",
   plugins: [serviceWorker()],
   define: {
     __APP_BUILD__: JSON.stringify(BUILD),

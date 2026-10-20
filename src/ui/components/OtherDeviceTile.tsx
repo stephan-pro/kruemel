@@ -54,7 +54,7 @@ export function OtherDeviceTile({ address }: OtherDeviceTileProps) {
         Auf anderem Gerät öffnen
       </h2>
       <p class="muted">
-        Den Code mit der Kamera eines Handys scannen, um Putzplan dort zu öffnen. Die Daten kommen
+        Den Code mit der Kamera eines Handys scannen, um Krümel dort zu öffnen. Die Daten kommen
         nicht mit: Jedes Gerät hat seine eigenen. Übertragen lassen sie sich mit „Sicherung“.
       </p>
       <div class="button-row">

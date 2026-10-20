@@ -72,7 +72,7 @@ test.describe("F6 Wochenübersicht", () => {
   }) => {
     await openWeek(page);
 
-    await expect(page).toHaveTitle("Wochenübersicht – Putzplan");
+    await expect(page).toHaveTitle("Wochenübersicht – Krümel");
     await expect(weekLabel(page)).toHaveText("KW 43 · 19.–25. Oktober");
     const days = page.getByRole("region", { name: "Woche im Überblick" }).locator(".day-button");
     const expected = [
@@ -245,7 +245,7 @@ test.describe("F6 Wochenübersicht", () => {
     await expect(weekLabel(page)).toHaveText("KW 44 · 26. Oktober – 1. November");
     await expect(page.getByRole("button", { name: "Nächste Woche" })).toBeFocused();
     // Der Seitentitel bleibt; die Überschrift nimmt beim Blättern nicht den Fokus.
-    await expect(page).toHaveTitle("Wochenübersicht – Putzplan");
+    await expect(page).toHaveTitle("Wochenübersicht – Krümel");
   });
 
   test("F6 Vergangene Wochen zeigen Erledigtes ausgegraut mit „erledigt von“", async ({ page }) => {
