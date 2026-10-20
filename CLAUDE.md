@@ -1,6 +1,6 @@
-# Putzplan – Hinweise für Claude
+# Krümel – Hinweise für Claude
 
-Haushalts-App für zwei Personen. Preact + TypeScript (strict), Vite, läuft rein im Browser.
+Haushalts-App für zwei Personen. **Name:** Der Anzeigename ist ab sofort „Krümel“ (Entscheidung des PO, 20.10.2026), im Code und in Dateinamen `kruemel`. Noch nicht umgesetzt: Bis E2-3 heißen Repository, Ordner und Adresse weiter `putzplan` (E2-3 benennt das Repository als ersten Schritt um, Liste in `docs/ETAPPE2-PLAN.md`), bis E2-4 zeigt die App selbst noch „Putzplan“ (Texte, Manifest, Seitentitel, Dateinamen der Sicherung, Symbol; E2-4 stellt auf „Krümel“ und das Symbol aus `docs/design/kruemel-icon.svg` um). Neue Texte und Dokumente schreiben schon „Krümel“; bestehende Bezeichner, Schlüssel und Tests mit `putzplan` nicht vorab ändern. Der Krümel (Figur) bleibt goldbraun und rund, nie blau oder zottelig. Preact + TypeScript (strict), Vite, läuft rein im Browser.
 Anforderungen: `docs/ANFORDERUNGEN.md` · Plan und Arbeitspakete: `docs/PLAN.md` · Etappe 2 (gemeinsam, Supabase; Pakete `E2-0` bis `E2-5`): `docs/ETAPPE2-PLAN.md` und `docs/ETAPPE2.md` · Design: `docs/design/DESIGN.md` (die `entwurf-*.html` dort sind nur Referenz, nicht lauffähig).
 
 ## Befehle
@@ -80,6 +80,7 @@ Anforderungen: `docs/ANFORDERUNGEN.md` · Plan und Arbeitspakete: `docs/PLAN.md`
 | App installieren / Hinweis „Putzplan als App“ | install (`installWay`), installHint (`installHintDismissed`) |
 | Auf anderem Gerät öffnen (QR-Code) | otherDevice (`OtherDeviceTile`, `qrPicture`, `appAddress`) |
 | Version (Stand) | build (`APP_BUILD`, `formatBuild`) |
+| Krümel (App-Name und Figur, ab E2-3/E2-4) | kruemel |
 | Haushalt (Etappe 2) | household |
 | Einladung | invite |
 | Anmeldung / Abmelden | signIn / signOut |

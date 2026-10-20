@@ -1,6 +1,8 @@
-# Putzplan – Anforderungen
+# Krümel – Anforderungen
 
 Stand: 20.10.2026 · Product Owner: Stephan Prommer
+
+**App-Name:** Die App heißt ab sofort **Krümel** (Entscheidung des PO, 20.10.2026; im Code und in Dateinamen ohne Umlaut: `kruemel`). Bis zur Umbenennung in E2-4 zeigt die App selbst noch „Putzplan“ (Seitentitel, Manifest, Installationshinweis, Dateinamen der Sicherung); die Etappe-1-Einträge in Abschnitt 9 beschreiben diesen Stand. Siehe „Etappe 2 (Entscheidungen des PO)“ in Abschnitt 9.
 
 ## 1. Ziel
 
@@ -197,10 +199,11 @@ Geplantes Verhalten; es gilt ab dem jeweils genannten Paket (`ETAPPE2-PLAN.md`, 
 - **Neue Version nötig:** Hat ein anderes Gerät die Daten schon in einem neueren Format gespeichert, schreibt die App nichts mehr und zeigt „Neue Version verfügbar – Neu laden“.
 - **Pausierung (Supabase, kostenloser Tarif):** Das Projekt pausiert nach 7 Tagen ohne Nutzung; nach rund 90 Tagen Pause lässt es sich nicht mehr per Klick wiederherstellen. Die App läuft dann offline weiter und reicht Änderungen nach, sobald der PO das Projekt im Dashboard wiederhergestellt hat. Damit das nie passiert, ruft ein täglicher Workflow auf GitHub das Projekt ab (nur mit dem öffentlichen Schlüssel, ohne Geheimnisse; E2-1).
 - **Keine Sicherungen im kostenlosen Tarif:** Der Tarif bietet keine herunterladbaren Backups. Deshalb regelmäßig „Sicherung herunterladen“ (README).
-- **E-Mail-Versand:** Die Einmalcodes kommen von einem eigenen Gmail-Konto nur für Putzplan (SMTP mit App-Passwort), nicht von einem privaten Postfach. Ein Dienst wie Brevo kommt nicht in Frage, weil er eine eigene Domain verlangt.
+- **E-Mail-Versand:** Die Einmalcodes kommen von einem eigenen Gmail-Konto nur für Krümel (SMTP mit App-Passwort), nicht von einem privaten Postfach. Ein Dienst wie Brevo kommt nicht in Frage, weil er eine eigene Domain verlangt.
 - **Neuanmeldungen:** Sobald beide Konten bestehen, schaltet der PO Neuanmeldungen im Dashboard ab (E2-5), damit niemand sonst einen Haushalt anlegen kann.
 - **Konto löschen und Haushalt verlassen:** Beides macht der PO bei Bedarf von Hand im Dashboard; die Schritte stehen in der README (E2-5). Die App hat dafür keine Funktion.
-- **Datenschutzhinweis:** Die Einstellungen bekommen einen kurzen Datenschutzhinweis (was gespeichert wird, bei wem: Supabase für Anmeldung und Daten, Google für den Versand der Codes; E2-5). Ein Impressum ist noch nicht entschieden (`ETAPPE2.md`, Abschnitt 1).
+- **Datenschutzhinweis:** Die Einstellungen bekommen einen kurzen Datenschutzhinweis (was gespeichert wird, bei wem: Supabase für Anmeldung und Daten, Google für den Versand der Codes; E2-5). Dazu kommt ein einfaches Impressum (To-do in E2-5, Entscheidung des PO vom 20.10.2026; Wortlaut und Ort, z. B. eine Seite unter den Einstellungen, legt E2-5 fest).
 - **Prüfung ohne Screenreader von Hand:** Wie in Etappe 1 wird die Anmeldung nicht von Hand mit einem Screenreader geprüft; die automatischen Prüfungen (axe, Tastatur, Fokus, Kontrastmodus) sichern N2.
 - **Prüfung der Datenbank (Q1):** `npm run check` läuft weiter ohne Docker, Internet und Zugangsdaten. Die Prüfung gegen eine lokale Supabase-Instanz (`npm run check:db`) läuft nur auf GitHub, nicht auf dem Rechner des PO.
-- **App-Symbol:** Mit dem neuen Design (E2-4) wird das Symbol im Violett des Designs neu gezeichnet.
+- **App-Name „Krümel“ (20.10.2026):** Der Anzeigename ist „Krümel“, in Code und Dateinamen `kruemel`. Das GitHub-Repository wird in `kruemel` umbenannt, die Adresse wird damit https://stephan-pro.github.io/kruemel/. Das geschieht als erster Schritt von E2-3, vor dem Umstellen der Online-Version auf Supabase (Liste und Schritte des PO: `ETAPPE2-PLAN.md`, Paket E2-3). Die sichtbaren Texte (Seitentitel, Installationshinweis „Krümel als App“, Name im Manifest und auf dem Home-Bildschirm) und die Dateinamen der Sicherung (`kruemel-JJJJ-MM-TT.json`, `kruemel-vor-import-…`) ändern sich in E2-4. Sicherungen mit dem alten Dateinamen bleiben einspielbar (der Name zählt nicht, der Inhalt).
+- **App-Symbol (20.10.2026):** Vorlage ist `docs/design/kruemel-icon.svg`: ein goldbrauner, runder Keks-Krümel mit Gesicht und Besen auf einer violetten Kachel. Daraus entstehen in E2-4 alle Symbolgrößen (auch maskierbar und für den Apple-Home-Bildschirm); Gesicht und Besen müssen in der sicheren Zone maskierbarer Symbole liegen, das Motiv bleibt dabei unverändert. Der Krümel bleibt in allen Varianten goldbraun und rund, nie blau oder zottelig (Abstand zu geschützten Figuren). Der Satz „blaue Kachel mit weißem Haus“ (N3, App auf dem Home-Bildschirm) gilt bis dahin und wird in E2-4a ersetzt. Optional darf der Krümel in der App auftauchen (z. B. bei „Alles erledigt“ oder auf leeren Seiten), als Bild mit Alternativtext oder als Schmuck mit `aria-hidden`.

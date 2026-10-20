@@ -1,7 +1,8 @@
-# Putzplan – Design
+# Krümel – Design
 
 Stand: 20.10.2026 · Version 2 „Persönlich“ · Ersetzt Version 1 „Kachel-Board“.
 Barrierefreiheit (N2) gilt unverändert. Umsetzung als Teil von Etappe 2 (Paket E2-4).
+Die App heißt **Krümel** (Entscheidung des PO, 20.10.2026). In den Entwürfen und in der App steht bis E2-4 noch „Putzplan“; Abschnitt 9 beschreibt App-Symbol und Figur.
 
 Visuelle Vorlagen in diesem Ordner (Quelltext eines Design-Tools, nicht lauffähig – nur als Referenz für Aufbau, Farben und Größen lesen):
 
@@ -85,3 +86,10 @@ Die bisherige Überfällig-Regel aus F6 bleibt erfüllt: Überfällige Aufgaben 
 
 - Abhaken: kurzer Übergang des Kreises (unter 200 ms); Ring und Zahlen zählen sanft hoch.
 - Bei `prefers-reduced-motion: reduce` keine Animationen.
+
+## 9. App-Symbol und Figur „Krümel“
+
+- **Vorlage:** `kruemel-icon.svg` in diesem Ordner: ein goldbrauner, runder Keks-Krümel mit Gesicht und Besen auf einer violetten Kachel (Hintergrund #5530D9, Scheibe dahinter #6A4DF4, Krümel #F2B661 mit Sprenkeln #C98A3A, Kontur und Besenstiel #15131F, Besenborsten #FFD166). Die Farben passen zum Violett der Tokens.
+- **Symbolgrößen (E2-4):** Aus der Vorlage entstehen alle Größen mit `npm run icons` wie bisher, auch das maskierbare Symbol (`maskable`) und das Symbol für den Apple-Home-Bildschirm. Bei maskierbaren Symbolen schneidet das Gerät außen zu; Gesicht und Besen müssen in der sicheren Zone liegen (Kreis mit 80 % des Durchmessers, mittig). Passt das nicht, wird der Abstand angepasst (Motiv kleiner in die Kachel setzen), das Motiv selbst bleibt unverändert.
+- **Figur in der App (optional, E2-4):** Der Krümel darf auftauchen, z. B. bei „Alles erledigt“ oder auf leeren Seiten. Entweder als Bild mit passendem Alternativtext oder als reiner Schmuck mit `aria-hidden="true"`; nie als einziger Träger einer Information. Keine Bewegung über das Maß aus Abschnitt 8 hinaus.
+- **Leitplanke für alle Varianten:** Der Krümel bleibt goldbraun und rund, nie blau und nie zottelig (Abstand zu geschützten Figuren). Neue Posen und Gesichter sind erlaubt, solange diese Gestalt erkennbar bleibt.

@@ -1,10 +1,12 @@
-# Putzplan
+# Krümel
 
 [![check](https://github.com/stephan-pro/putzplan/actions/workflows/check.yml/badge.svg)](https://github.com/stephan-pro/putzplan/actions/workflows/check.yml)
 
 Eine kleine App, mit der zwei Personen ihre Aufgaben im Haushalt planen: wiederkehrende Aufgaben wie „Bad putzen“ und kurzfristige wie „Einkaufen“.
 
 **Online:** https://stephan-pro.github.io/putzplan/ (wird nach jedem grünen `check` auf `main` automatisch aktualisiert)
+
+**Name:** Die App heißt ab sofort **Krümel** (im Code und in Dateinamen `kruemel`). Bis zur Umbenennung in Etappe 2 zeigt sie selbst, die Adresse und der Projektordner noch „Putzplan“; die Adresse wird mit Paket E2-3 zu `https://stephan-pro.github.io/kruemel/` (das Repository wird dann umbenannt). Wer die App auf dem Home-Bildschirm hat, installiert sie dann neu (`docs/ETAPPE2-PLAN.md`).
 
 **Stand:** Etappe 1 ist abgeschlossen (20.10.2026). Alle Funktionen sind da; die Daten liegen nur im Browser des jeweiligen Geräts. Gemeinsame Daten für beide Personen kommen mit Etappe 2 (Prüfliste: [`docs/ETAPPE2.md`](docs/ETAPPE2.md)).
 
