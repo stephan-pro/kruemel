@@ -275,7 +275,7 @@ test.describe("F8 Alte Daten (schemaVersion 1)", () => {
     expect(await shownSymbol(card(page, "Bad putzen"))).toBe("standard");
   });
 
-  test("F8 Nach dem nächsten Speichern liegen die alten Daten als Version 2 mit Standardsymbol vor", async ({
+  test("F8 Nach dem nächsten Speichern liegen die alten Daten in der aktuellen Version (3) mit Standardsymbol vor", async ({
     page,
   }) => {
     await start(page, version1(demo()));
@@ -284,7 +284,7 @@ test.describe("F8 Alte Daten (schemaVersion 1)", () => {
     await expect(page.getByRole("region", { name: "Hinweis" })).toBeVisible();
 
     const data = await storedData(page);
-    expect(data.schemaVersion).toBe(2);
+    expect(data.schemaVersion).toBe(3);
     expect(data.tasks.every((task) => task.symbol === "standard")).toBe(true);
     expect(data.tasks).toHaveLength(demo().tasks.length);
     expect(data.completions).toHaveLength(demo().completions.length + 1);

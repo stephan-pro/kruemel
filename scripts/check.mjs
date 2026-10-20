@@ -25,6 +25,15 @@ const steps = [
   { name: "Typprüfung (TypeScript)", cmd: "tsc --noEmit" },
   { name: "Unit-Tests mit Abdeckung (Vitest)", cmd: "vitest run --coverage" },
   { name: "Build (Vite)", cmd: "vite build" },
+  // For the end-to-end tests of the shared storage: the app in the mode `e2e` and the fake server.
+  {
+    name: "Build für die E2E-Tests (Vite, Modus e2e)",
+    cmd: "vite build --mode e2e --outDir dist-e2e",
+  },
+  {
+    name: "Fake-Server bauen (Vite)",
+    cmd: "vite build --ssr scripts/fake-server.ts --outDir dist-fake",
+  },
   { name: "End-to-End-Tests mit axe (Playwright)", cmd: "playwright test" },
 ];
 

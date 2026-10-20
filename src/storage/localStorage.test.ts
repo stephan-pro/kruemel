@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { emptyAppData } from "./appData";
 import { createLocalStorage, requestPersistentStorage } from "./localStorage";
 import { COLOR_SCHEMES, DEFAULT_COLOR_SCHEME, isColorScheme, StorageError } from "./storage";
-import { asVersion1, FakeStore, sampleData } from "./storage.fixtures";
+import { asVersion1, FakeStore, sampleData, withoutVersion3Fields } from "./storage.fixtures";
 
 describe("F7 Speicher (localStorage)", () => {
   it("F7 Ohne gespeicherte Daten liefert der Speicher leere Daten", async () => {
@@ -34,7 +34,7 @@ describe("F7 Speicher (localStorage)", () => {
 
     await createLocalStorage({ store }).save(sampleData());
 
-    expect(JSON.parse(store.items.get("putzplan:data") as string).schemaVersion).toBe(2);
+    expect(JSON.parse(store.items.get("putzplan:data") as string).schemaVersion).toBe(3);
   });
 
   it("F8 Daten der Version 1 im Speicher werden beim Laden migriert: Standardsymbol, sonst gleich", async () => {
@@ -44,14 +44,14 @@ describe("F7 Speicher (localStorage)", () => {
 
     const loaded = await createLocalStorage({ store }).load();
 
-    const expected = sampleData();
+    const expected = withoutVersion3Fields(sampleData());
     expect(loaded).toEqual({
       ...expected,
       tasks: expected.tasks.map((task) => ({ ...task, symbol: "standard" })),
     });
   });
 
-  it("F8 Die Rohdaten der Version 1 bleiben bis zum nächsten Speichern unverändert, dann Version 2", async () => {
+  it("F8 Die Rohdaten der Version 1 bleiben bis zum nächsten Speichern unverändert, dann die aktuelle Version", async () => {
     const store = new FakeStore();
     const old = JSON.stringify(asVersion1(sampleData()));
     store.items.set("putzplan:data", old);
@@ -62,7 +62,7 @@ describe("F7 Speicher (localStorage)", () => {
 
     await storage.save(loaded);
     const saved = JSON.parse(store.items.get("putzplan:data") as string);
-    expect(saved.schemaVersion).toBe(2);
+    expect(saved.schemaVersion).toBe(3);
     expect(saved.tasks.every((task: { symbol?: string }) => task.symbol === "standard")).toBe(true);
   });
 
@@ -305,6 +305,25 @@ describe("N3 Hinweis „Putzplan als App“ auf diesem Gerät", () => {
     await storage.save(sampleData());
 
     expect(store.items.get("putzplan:data")).not.toContain("installHint");
+  });
+});
+
+describe("Lokaler Speicher im Modus local (Etappe 2)", () => {
+  it("save gibt die gespeicherten Daten zurück", async () => {
+    const data = sampleData();
+
+    expect(await createLocalStorage({ store: new FakeStore() }).save(data)).toBe(data);
+  });
+
+  it("Der lokale Speicher meldet nichts von selbst und ist immer „Alles übertragen“", () => {
+    const storage = createLocalStorage({ store: new FakeStore() });
+    const updates: unknown[] = [];
+
+    const stop = storage.subscribe((update) => updates.push(update));
+    stop();
+
+    expect(updates).toEqual([]);
+    expect(storage.syncStatus()).toEqual({ state: "synced" });
   });
 });
 

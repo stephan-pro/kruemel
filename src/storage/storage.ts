@@ -27,11 +27,52 @@ export interface DeviceSettings {
   readonly installHintDismissed?: boolean;
 }
 
+/**
+ * Where the data stands compared with the server (stage 2): "Alles übertragen", "Offline – N
+ * Änderungen warten", "Server nicht erreichbar". The local storage never waits for anything.
+ */
+export type SyncStatus =
+  | { readonly state: "synced" }
+  /** Changes are waiting or being sent. */
+  | { readonly state: "syncing"; readonly pending: number }
+  /** The device has no connection. */
+  | { readonly state: "offline"; readonly pending: number }
+  /** The device is online but the server did not answer. */
+  | { readonly state: "unreachable"; readonly pending: number };
+
+/** Why the server did not take a change over (the server's state counts then). */
+export type ConflictReason =
+  /** The same pass of the task was already ticked off; `by` did it. */
+  | "alreadyDone"
+  /** The task was deleted meanwhile. */
+  | "taskGone"
+  /** The completion is not the last one of its task any more. */
+  | "notLast"
+  /** The completion does not exist any more. */
+  | "completionGone";
+
+/** What a storage reports on its own, after `subscribe`. */
+export type StorageUpdate =
+  /** The data changed, e.g. through the other device; these are the data to show now. */
+  | { readonly type: "data"; readonly data: AppData }
+  | { readonly type: "status"; readonly status: SyncStatus }
+  /** A change of this device was not taken over by the server. */
+  | {
+      readonly type: "conflict";
+      readonly reason: ConflictReason;
+      readonly taskId?: string;
+      readonly by?: Person;
+    };
+
 export interface AppStorage {
   /** The stored data, or empty data if nothing was stored yet. Throws `StorageError` if unreadable. */
   load(): Promise<AppData>;
-  /** Replaces all stored data. Throws `StorageError` if it could not be saved. */
-  save(data: AppData): Promise<void>;
+  /**
+   * Replaces all stored data. Throws `StorageError` if it could not be saved. Returns the data to
+   * show now: `data` itself, or in the shared storage `data` plus whatever arrived from the other
+   * device meanwhile.
+   */
+  save(data: AppData): Promise<AppData>;
   /**
    * The stored data exactly as it is kept, or `null` if nothing is stored. Does not check it, so it
    * also works when `load()` fails; the app offers it as a download for a later repair.
@@ -45,6 +86,10 @@ export interface AppStorage {
   discard(): Promise<void>;
   loadDevice(): Promise<DeviceSettings>;
   saveDevice(settings: DeviceSettings): Promise<void>;
+  /** Reports changes that did not come from this app (the other device) and the sync state. */
+  subscribe(listener: (update: StorageUpdate) => void): () => void;
+  /** The state of the sync right now; the local storage is always "synced". */
+  syncStatus(): SyncStatus;
 }
 
 /** Something went wrong while reading or writing; `details` lists what exactly, if known. */

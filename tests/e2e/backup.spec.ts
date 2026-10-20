@@ -83,7 +83,7 @@ test.describe("F7 Export", () => {
     await expectNoAccessibilityViolations(page);
   });
 
-  test("F7 Der Export lädt eine Datei „putzplan-JJJJ-MM-TT.json“ mit allen Daten und schemaVersion 2 herunter", async ({
+  test("F7 Der Export lädt eine Datei „putzplan-JJJJ-MM-TT.json“ mit allen Daten und schemaVersion 3 herunter", async ({
     page,
   }) => {
     await openSettings(page);
@@ -97,7 +97,7 @@ test.describe("F7 Export", () => {
     expect(download.suggestedFilename()).toBe(EXPORT_NAME);
     const text = await contentOf(page, download);
     const file = JSON.parse(text);
-    expect(file.schemaVersion).toBe(2);
+    expect(file.schemaVersion).toBe(3);
     expect(file.settings.personNames).toEqual({ personA: "Alex", personB: "Robin" });
     expect(file.tasks).toHaveLength(11);
     expect(file.completions).toHaveLength(10);
@@ -291,7 +291,7 @@ test.describe("F7 Import mit Rückfrage und automatischer Sicherung", () => {
 
     await expect.poll(async () => (await storedData(page)).tasks.length).toBe(2);
     const data = await storedData(page);
-    expect(data.schemaVersion).toBe(2);
+    expect(data.schemaVersion).toBe(3);
     expect(data.tasks.map((task) => task.symbol)).toEqual(["standard", "standard"]);
     expect(data.completions).toHaveLength(2);
   });
@@ -336,7 +336,7 @@ test.describe("F7 Import mit Rückfrage und automatischer Sicherung", () => {
 test.describe("F7 Fehlerhafte Dateien", () => {
   const broken = JSON.parse(JSON.stringify(smallBackup()));
   broken.tasks[0].assignee = "personC";
-  const newer = { ...smallBackup(), schemaVersion: 3 };
+  const newer = { ...smallBackup(), schemaVersion: 4 };
 
   const cases = [
     {

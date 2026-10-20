@@ -133,8 +133,47 @@ describe("Abhaken hält fest, wer es wann erledigt hat", () => {
         previousDueDate: "2026-10-19",
         nextDueDate: "2026-10-28",
         checkedItemIds: [],
+        assigneeAtCompletion: "personA",
       },
     ]);
+  });
+
+  it("Datenmodell v3: Abhaken hält den Zeitpunkt fest, wenn ihn der Aufrufer nennt", () => {
+    const result = completeTask(stateOf({ unit: "week", interval: 1 }, "2026-10-19"), {
+      completionId: "c-1",
+      completedOn: d("2026-10-21"),
+      completedBy: "personB",
+      completedAt: "2026-10-21T08:30:00.000Z",
+    });
+
+    expect(result.completions[0]?.completedAt).toBe("2026-10-21T08:30:00.000Z");
+  });
+
+  it("Datenmodell v3: Abhaken ohne Zeitpunkt lässt completedAt weg", () => {
+    const result = tickOff(stateOf({ unit: "week", interval: 1 }, "2026-10-19"), "2026-10-21");
+
+    expect(result.completions[0]).not.toHaveProperty("completedAt");
+  });
+
+  it("Datenmodell v3: Die Zuständigkeit beim Abhaken ist die feste, nicht die einmalige Übernahme", () => {
+    const state = stateOf({ unit: "week", interval: 1 }, "2026-10-19");
+    const taken = { ...state, task: { ...state.task, takenOverBy: "personB" as const } };
+
+    const result = completeTask(taken, {
+      completionId: "c-1",
+      completedOn: d("2026-10-21"),
+      completedBy: "personB",
+    });
+
+    expect(result.completions[0]?.assigneeAtCompletion).toBe("personA");
+    expect(result.completions[0]?.completedBy).toBe("personB");
+  });
+
+  it("Datenmodell v3: Bei einer Aufgabe für beide steht 'beide' als Zuständigkeit", () => {
+    const state = stateOf({ unit: "week", interval: 1 }, "2026-10-19");
+    const both = { ...state, task: { ...state.task, assignee: "both" as const } };
+
+    expect(tickOff(both, "2026-10-21").completions[0]?.assigneeAtCompletion).toBe("both");
   });
 
   it("verändert den übergebenen Zustand nicht", () => {

@@ -65,7 +65,7 @@ npm run check
 Der Befehl prüft Formatierung, Code-Regeln, Typen, Tests und Build und endet mit „✅ bestanden“ oder „❌ nicht bestanden in Schritt …“. Er schlägt auch fehl, wenn
 
 - keine Unit-Tests gefunden werden,
-- die Testabdeckung der Fachlogik (`src/domain/`, `src/storage/`, `src/demo/`) unter 90 % liegt oder
+- die Testabdeckung der Fachlogik (`src/domain/`, `src/storage/`, `src/demo/`, `src/sync/`, `src/auth/`) unter 90 % liegt oder
 - die Playwright-Browser fehlen (dann mit dem Hinweis, `npm run setup` auszuführen).
 
 Die End-to-End-Tests laufen in Chromium und WebKit (Safari), je am PC und in Handygröße, und prüfen jede Seite und jedes Fenster mit axe im hellen und im dunklen Farbschema.

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import type { DemoInfo } from "../demo/start";
 import type { TakeOverMode } from "../domain/assignment";
 import type { PersonNameInput } from "../domain/personNames";
@@ -101,7 +101,19 @@ function useLocation(): PageLocation {
 }
 
 export function App({ storage, demo }: AppProps) {
-  const [state, setState] = useState<LoadState>({ status: "loading" });
+  const [state, setStateValue] = useState<LoadState>({ status: "loading" });
+  /**
+   * The newest state, also between two drawings. With the shared storage the other device's data
+   * can arrive at any moment; an action must start from them and not from what the last drawing
+   * saw, or it would undo the other device's change. Every action below begins with
+   * `const state = latest.current`.
+   */
+  const latest = useRef(state);
+  function setState(next: LoadState | ((current: LoadState) => LoadState)) {
+    const value = typeof next === "function" ? next(latest.current) : next;
+    latest.current = value;
+    setStateValue(value);
+  }
   /** What just happened to a task; the task list shows and announces it, then forgets it. */
   const [notice, setNotice] = useState<string>();
   const { route, taskId } = useLocation();
@@ -122,8 +134,23 @@ export function App({ storage, demo }: AppProps) {
     void load();
   }, []);
 
+  // Data that arrive from the other device (shared storage): show them without a reload. The
+  // sync state and conflicts are shown from E2-3 on.
+  useEffect(
+    () =>
+      storage.subscribe((update) => {
+        if (update.type === "data") {
+          setState((current) =>
+            current.status === "ready" ? { ...current, data: update.data } : current,
+          );
+        }
+      }),
+    [storage],
+  );
+
   /** Setup and settings: the names (stored with the data) and "Ich bin" (stored on the device). */
   async function saveNamesAndPerson(names: PersonNameInput, person: Person) {
+    const state = latest.current;
     if (state.status !== "ready") {
       return;
     }
@@ -132,43 +159,51 @@ export function App({ storage, demo }: AppProps) {
       settings: { ...state.data.settings, personNames: names },
     };
     const device: DeviceSettings = { ...state.device, currentPerson: person };
-    await storage.save(data);
+    const saved = await storage.save(data);
     await storage.saveDevice(device);
-    setState({ status: "ready", data, device });
+    setState({ status: "ready", data: saved, device });
     void requestPersistentStorage();
+  }
+
+  /** Replaces the shown device settings, keeping whatever data are shown by then. */
+  function showDevice(device: DeviceSettings) {
+    setState((current) => (current.status === "ready" ? { ...current, device } : current));
   }
 
   /** "Darstellung" (N8): saved on the device, then shown. Nothing changes if saving fails. */
   async function saveColorScheme(colorScheme: ColorScheme) {
+    const state = latest.current;
     if (state.status !== "ready") {
       return;
     }
     const device: DeviceSettings = { ...state.device, colorScheme };
     await storage.saveDevice(device);
     applyColorScheme(colorScheme);
-    setState({ ...state, device });
+    showDevice(device);
   }
 
   async function savePerson(person: Person) {
+    const state = latest.current;
     if (state.status !== "ready") {
       return;
     }
     const device: DeviceSettings = { ...state.device, currentPerson: person };
     await storage.saveDevice(device);
-    setState({ ...state, device });
+    showDevice(device);
   }
 
   /** Keeps the new data. Nothing changes on screen if saving fails; the caller shows the error. */
   async function saveData(data: AppData) {
-    if (state.status !== "ready") {
+    if (latest.current.status !== "ready") {
       return;
     }
-    await storage.save(data);
-    setState({ status: "ready", data, device: state.device });
+    const saved = await storage.save(data);
+    setState((current) => (current.status === "ready" ? { ...current, data: saved } : current));
   }
 
   /** Creates a task, or replaces `existing` by the changed one, then goes back to the list. */
   async function saveTask(kind: TaskKind, values: TaskFormValues, existing: Task | undefined) {
+    const state = latest.current;
     if (state.status !== "ready") {
       return;
     }
@@ -188,6 +223,7 @@ export function App({ storage, demo }: AppProps) {
 
   /** Deletes a task together with its completions. */
   async function removeTask(taskId: string) {
+    const state = latest.current;
     if (state.status !== "ready") {
       return;
     }
@@ -199,6 +235,7 @@ export function App({ storage, demo }: AppProps) {
 
   /** Ticks a task off today, noted for the person this device belongs to ("Ich bin"). */
   async function completeTask(taskId: string): Promise<{ task: Task; completion: Completion }> {
+    const state = latest.current;
     const completedBy = state.status === "ready" ? state.device.currentPerson : undefined;
     if (state.status !== "ready" || completedBy === undefined) {
       throw new Error("Die App ist noch nicht bereit.");
@@ -207,6 +244,7 @@ export function App({ storage, demo }: AppProps) {
       completionId: crypto.randomUUID(),
       completedOn: today,
       completedBy,
+      completedAt: new Date().toISOString(),
     });
     await saveData(result.data);
     return { task: result.task, completion: result.completion };
@@ -214,6 +252,7 @@ export function App({ storage, demo }: AppProps) {
 
   /** Takes back the last completion of a task; returns the task as it is then. */
   async function undoCompletion(completionId: string): Promise<Task> {
+    const state = latest.current;
     if (state.status !== "ready") {
       throw new Error("Die App ist noch nicht bereit.");
     }
@@ -224,6 +263,7 @@ export function App({ storage, demo }: AppProps) {
 
   /** "Übernehmen": the person of this device takes the task over, once or permanently (F5). */
   async function takeOverTask(taskId: string, mode: TakeOverMode): Promise<Task> {
+    const state = latest.current;
     const person = state.status === "ready" ? state.device.currentPerson : undefined;
     if (state.status !== "ready" || person === undefined) {
       throw new Error("Die App ist noch nicht bereit.");
@@ -235,6 +275,7 @@ export function App({ storage, demo }: AppProps) {
 
   /** Ticks or unticks one item of a task's checklist (F4). */
   async function setChecklistItem(taskId: string, itemId: string, checked: boolean): Promise<Task> {
+    const state = latest.current;
     if (state.status !== "ready") {
       throw new Error("Die App ist noch nicht bereit.");
     }
@@ -245,11 +286,12 @@ export function App({ storage, demo }: AppProps) {
 
   /** "Putzplan als App" closed: it stays closed on this device (if that can be saved). */
   async function dismissInstallHint() {
+    const state = latest.current;
     if (state.status !== "ready") {
       return;
     }
     const device: DeviceSettings = { ...state.device, installHintDismissed: true };
-    setState({ ...state, device });
+    showDevice(device);
     focusPageHeading();
     try {
       await storage.saveDevice(device);

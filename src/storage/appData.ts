@@ -5,9 +5,10 @@ import type { Completion, Task } from "../domain/task";
 
 /**
  * Bumped whenever the stored shape changes in a way old files cannot be read as-is; `migrate.ts`
- * brings older data up to this version. Version 2 (F8): every task has a `symbol`.
+ * brings older data up to this version. Version 2 (F8): every task has a `symbol`. Version 3
+ * (stage 2): a completion may have `completedAt` and `assigneeAtCompletion` (for the statistics).
  */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 /** The names of the two people, chosen once on first start (F5). */
 export interface PersonNames {

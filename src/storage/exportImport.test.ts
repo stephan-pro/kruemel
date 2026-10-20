@@ -11,7 +11,7 @@ import {
   MAX_IMPORT_BYTES,
   rawDataFileName,
 } from "./exportImport";
-import { asVersion1, sampleData } from "./storage.fixtures";
+import { asVersion1, asVersion2, sampleData, withoutVersion3Fields } from "./storage.fixtures";
 
 /** Runs the sample export through a change and imports the result. */
 function importChanged(change: (file: any) => void) {
@@ -41,14 +41,14 @@ describe("F7 Export", () => {
     const text = exportData(emptyAppData());
 
     expect(text).toBe(
-      '{\n  "schemaVersion": 2,\n  "settings": {},\n  "tasks": [],\n  "completions": []\n}\n',
+      '{\n  "schemaVersion": 3,\n  "settings": {},\n  "tasks": [],\n  "completions": []\n}\n',
     );
   });
 
-  it("F8 Der Export schreibt schemaVersion 2 und das Symbol jeder Aufgabe", () => {
+  it("F8 Der Export schreibt die aktuelle schemaVersion und das Symbol jeder Aufgabe", () => {
     const file = JSON.parse(exportData(sampleData()));
 
-    expect(file.schemaVersion).toBe(2);
+    expect(file.schemaVersion).toBe(3);
     expect(file.tasks.map((task: any) => task.symbol)).toEqual([
       "bath",
       "standard",
@@ -140,14 +140,27 @@ describe("F7 Import", () => {
 
 describe("F8 Import alter Sicherungen (schemaVersion 1)", () => {
   it("F8 Eine Sicherung der Version 1 wird importiert: Standardsymbol für jede Aufgabe, sonst alles gleich", () => {
-    const data = sampleData();
+    const data = withoutVersion3Fields(sampleData());
 
-    const result = importData(JSON.stringify(asVersion1(data)));
+    const result = importData(JSON.stringify(asVersion1(sampleData())));
 
     expect(result).toEqual({
       ok: true,
       data: { ...data, tasks: data.tasks.map((task) => ({ ...task, symbol: "standard" })) },
     });
+  });
+
+  it("Datenmodell v3: Eine Sicherung der Version 2 wird importiert, ohne Uhrzeit und Zuständigkeit der Erledigungen", () => {
+    const result = importData(JSON.stringify(asVersion2(sampleData())));
+
+    expect(result).toEqual({ ok: true, data: withoutVersion3Fields(sampleData()) });
+  });
+
+  it("Datenmodell v3: Eine Sicherung der Version 3 behält Uhrzeit und Zuständigkeit der Erledigungen", () => {
+    const data = sampleData();
+
+    expect(importData(exportData(data))).toEqual({ ok: true, data });
+    expect(data.completions.some((completion) => completion.completedAt !== undefined)).toBe(true);
   });
 
   it("F8 Eine fehlerhafte Sicherung der Version 1 bekommt die üblichen Meldungen", () => {

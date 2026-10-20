@@ -52,6 +52,15 @@ function isBoolean(value: unknown): value is boolean {
   return typeof value === "boolean";
 }
 
+/** An ISO 8601 moment in UTC as `Date.prototype.toISOString` writes it ("2026-10-21T08:30:00.000Z"). */
+function isTimestamp(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$/.test(value) &&
+    !Number.isNaN(Date.parse(value))
+  );
+}
+
 function readRecord(
   value: unknown,
   path: string,
@@ -290,6 +299,22 @@ function parseCompletion(value: unknown, path: string, context: Context): Comple
     isPerson,
     "personA oder personB",
   );
+  const completedAt = optional(
+    record,
+    "completedAt",
+    path,
+    context,
+    isTimestamp,
+    "einen Zeitpunkt JJJJ-MM-TTThh:mm:ssZ",
+  );
+  const assigneeAtCompletion = optional(
+    record,
+    "assigneeAtCompletion",
+    path,
+    context,
+    isAssignee,
+    "personA, personB oder both",
+  );
   if (
     id === undefined ||
     taskId === undefined ||
@@ -309,6 +334,8 @@ function parseCompletion(value: unknown, path: string, context: Context): Comple
     checkedItemIds: [...checkedItemIds],
     ...(nextDueDate === undefined ? {} : { nextDueDate }),
     ...(previousTakenOverBy === undefined ? {} : { previousTakenOverBy }),
+    ...(completedAt === undefined ? {} : { completedAt }),
+    ...(assigneeAtCompletion === undefined ? {} : { assigneeAtCompletion }),
   };
 }
 

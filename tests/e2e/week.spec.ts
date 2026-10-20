@@ -473,6 +473,28 @@ test.describe("F2 Abhaken mit Hinweis „Rückgängig“", () => {
     expect(added?.id).toBeTruthy();
   });
 
+  test("Datenmodell v3: Beim Abhaken werden Zeitpunkt und Zuständigkeit festgehalten", async ({
+    page,
+  }) => {
+    await openWeek(page);
+    await chooseDay(page, "Do 22.", "Do, 22.10.");
+
+    // „Paket abholen“ gehört Robin; Alex hakt es ab. Die Uhr steht auf Mi 21.10.2026, 12:00 Uhr.
+    await tickButton(page, "Paket abholen").click();
+
+    await expect(notice(page)).toBeVisible();
+    const data = await storedData(page);
+    const added = data.completions[data.completions.length - 1];
+    expect(added).toMatchObject({
+      taskId: "demo-paket",
+      completedBy: "personA",
+      assigneeAtCompletion: "personB",
+    });
+    expect(new Date(added?.completedAt ?? "").getTime()).toBe(
+      new Date(2026, 9, 21, 12, 0, 0).getTime(),
+    );
+  });
+
   test("F5 Auch die Aufgabe der anderen Person lässt sich abhaken; vermerkt wird, wer es getan hat", async ({
     page,
   }) => {

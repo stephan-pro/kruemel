@@ -45,6 +45,15 @@ if (import.meta.env.MODE === "demo") {
   }
   const storage = createLocalStorage({ store, namespace: DEMO_NAMESPACE });
   render(<App storage={storage} demo={demo} />, root);
+} else if (__BACKEND__ === "fake") {
+  // The end-to-end tests: shared storage against the fake server (build mode `e2e`), no service
+  // worker. `__BACKEND__` is fixed at build time, so none of this is in the real app.
+  const { createFakeBackendStorage } = await import("./sync/browserFake");
+  const storage = createFakeBackendStorage(store, createLocalStorage({ store }));
+  render(<App storage={storage} />, root);
+  storage.start();
+} else if (__BACKEND__ === "supabase") {
+  throw new Error("Der Modus supabase ist noch nicht umgesetzt (kommt mit E2-1 bis E2-3).");
 } else {
   render(<App storage={createLocalStorage({ store })} />, root);
   registerServiceWorker();

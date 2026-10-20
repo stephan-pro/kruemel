@@ -3,7 +3,13 @@
 
 import { isPerson } from "../domain/task";
 import { type AppData, emptyAppData } from "./appData";
-import { type AppStorage, type DeviceSettings, isColorScheme, StorageError } from "./storage";
+import {
+  type AppStorage,
+  type DeviceSettings,
+  isColorScheme,
+  StorageError,
+  type SyncStatus,
+} from "./storage";
 import { parseAppData } from "./validate";
 
 /** The part of the browser's `Storage` that is used. */
@@ -21,7 +27,7 @@ export interface LocalStorageOptions {
 
 const DEFAULT_NAMESPACE = "putzplan";
 
-function read(store: KeyValueStore, key: string): string | null {
+export function readKey(store: KeyValueStore, key: string): string | null {
   try {
     return store.getItem(key);
   } catch (error) {
@@ -29,7 +35,7 @@ function read(store: KeyValueStore, key: string): string | null {
   }
 }
 
-function write(store: KeyValueStore, key: string, value: string): void {
+export function writeKey(store: KeyValueStore, key: string, value: string): void {
   try {
     store.setItem(key, value);
   } catch (error) {
@@ -40,7 +46,7 @@ function write(store: KeyValueStore, key: string, value: string): void {
   }
 }
 
-function remove(store: KeyValueStore, key: string): void {
+export function removeKey(store: KeyValueStore, key: string): void {
   try {
     store.removeItem(key);
   } catch (error) {
@@ -58,7 +64,7 @@ export function createLocalStorage(options: LocalStorageOptions): AppStorage {
 
   return {
     async load(): Promise<AppData> {
-      const text = read(store, dataKey);
+      const text = readKey(store, dataKey);
       if (text === null) {
         return emptyAppData();
       }
@@ -80,20 +86,21 @@ export function createLocalStorage(options: LocalStorageOptions): AppStorage {
       return result.data;
     },
 
-    async save(data: AppData): Promise<void> {
-      write(store, dataKey, JSON.stringify(data));
+    async save(data: AppData): Promise<AppData> {
+      writeKey(store, dataKey, JSON.stringify(data));
+      return data;
     },
 
     async loadRaw(): Promise<string | null> {
-      return read(store, dataKey);
+      return readKey(store, dataKey);
     },
 
     async discard(): Promise<void> {
-      remove(store, dataKey);
+      removeKey(store, dataKey);
     },
 
     async loadDevice(): Promise<DeviceSettings> {
-      const text = read(store, deviceKey);
+      const text = readKey(store, deviceKey);
       if (text === null) {
         return {};
       }
@@ -119,7 +126,16 @@ export function createLocalStorage(options: LocalStorageOptions): AppStorage {
     },
 
     async saveDevice(settings: DeviceSettings): Promise<void> {
-      write(store, deviceKey, JSON.stringify(settings));
+      writeKey(store, deviceKey, JSON.stringify(settings));
+    },
+
+    // Nothing else changes the browser storage of this app, and there is nothing to send.
+    subscribe(): () => void {
+      return () => undefined;
+    },
+
+    syncStatus(): SyncStatus {
+      return { state: "synced" };
     },
   };
 }

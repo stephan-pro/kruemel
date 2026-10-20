@@ -1,5 +1,6 @@
-import type { Plugin } from "vite";
+import { loadEnv, type Plugin } from "vite";
 import { defineConfig } from "vitest/config";
+import { backendMode } from "./src/backend.ts";
 
 // Minimal Node typing instead of @types/node (N7), as in playwright.config.ts.
 declare const process: { env: Record<string, string | undefined> };
@@ -47,7 +48,8 @@ function hash(text: string): string {
 function serviceWorker(): Plugin {
   return {
     name: "putzplan-service-worker",
-    apply: "build",
+    // Not for the fake server (an SSR build without a page).
+    apply: (config, { command }) => command === "build" && !config.build?.ssr,
     buildStart() {
       this.emitFile({ type: "chunk", id: "./src/sw.ts", fileName: "sw.js" });
     },
@@ -79,11 +81,20 @@ function serviceWorker(): Plugin {
   };
 }
 
-export default defineConfig({
+/** Where the app finds the fake server in the mode `e2e` (`scripts/fake-server.ts`). */
+const FAKE_SERVER = process.env.FAKE_SERVER_URL ?? "http://localhost:4180";
+
+export default defineConfig(({ mode }) => ({
   // GitHub Pages serves the app under /<repo-name>/.
   base: "/putzplan/",
   plugins: [serviceWorker()],
-  define: { __APP_BUILD__: JSON.stringify(BUILD) },
+  define: {
+    __APP_BUILD__: JSON.stringify(BUILD),
+    // Which storage the app uses (stage 2), fixed at build time so the code of the other
+    // storages is left out of the build. `VITE_BACKEND` from the environment or an .env file.
+    __BACKEND__: JSON.stringify(backendMode(mode, loadEnv(mode, ".", "VITE_").VITE_BACKEND)),
+    __FAKE_SERVER__: JSON.stringify(FAKE_SERVER),
+  },
   test: {
     include: ["src/**/*.test.ts"],
     // `tokens.test.ts` reads the design tokens; other CSS stays empty in unit tests.
@@ -91,8 +102,21 @@ export default defineConfig({
     // No `passWithNoTests`: `npm run check` must fail if no unit tests are found.
     coverage: {
       provider: "v8",
-      include: ["src/domain/**/*.ts", "src/storage/**/*.ts", "src/demo/**/*.ts"],
-      exclude: ["src/**/*.test.ts", "src/**/*.fixtures.ts"],
+      include: [
+        "src/domain/**/*.ts",
+        "src/storage/**/*.ts",
+        "src/demo/**/*.ts",
+        "src/sync/**/*.ts",
+        "src/auth/**/*.ts",
+        "src/backend.ts",
+      ],
+      // `browserFake.ts` only connects parts that have their own tests (and needs the browser).
+      exclude: [
+        "src/**/*.test.ts",
+        "src/**/*.fixtures.ts",
+        "src/**/*.contract.ts",
+        "src/sync/browserFake.ts",
+      ],
       thresholds: {
         lines: 90,
         functions: 90,
@@ -101,4 +125,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));

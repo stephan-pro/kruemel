@@ -93,9 +93,9 @@ describe("Beispieldaten (Q8)", () => {
     expect(items.some((item) => !item.checked)).toBe(true);
   });
 
-  it("F8 haben schemaVersion 2 und passende Symbole in allen drei Tönen, eine Aufgabe mit Standardsymbol", () => {
+  it("F8 haben die aktuelle schemaVersion und passende Symbole in allen drei Tönen, eine Aufgabe mit Standardsymbol", () => {
     const data = demoData(today);
-    expect(data.schemaVersion).toBe(2);
+    expect(data.schemaVersion).toBe(3);
     const symbols = data.tasks.map((task) => task.symbol);
     expect(symbols).toContain("standard");
     expect(new Set(symbols).size).toBeGreaterThan(data.tasks.length / 2);

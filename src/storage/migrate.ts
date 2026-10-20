@@ -23,6 +23,11 @@ function toVersion2(root: Record<string, unknown>): Record<string, unknown> {
   return { ...root, schemaVersion: 2, tasks };
 }
 
+/** Version 2 → 3: the two new completion fields are optional and stay missing ("unknown"). */
+function toVersion3(root: Record<string, unknown>): Record<string, unknown> {
+  return { ...root, schemaVersion: 3 };
+}
+
 /**
  * The data in the current version. Data in the current version comes back as it is; a missing or
  * invalid version and one newer than this app are refused with a message for the user.
@@ -46,5 +51,13 @@ export function migrateAppData(raw: unknown): MigrationResult {
       ],
     };
   }
-  return { ok: true, value: version === 1 ? toVersion2(raw) : raw };
+  // One step after the other, so a version 1 file passes through every migration.
+  let value: Record<string, unknown> = raw;
+  if (version === 1) {
+    value = toVersion2(value);
+  }
+  if (version <= 2) {
+    value = toVersion3(value);
+  }
+  return { ok: true, value };
 }

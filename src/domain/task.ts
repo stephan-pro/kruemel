@@ -66,6 +66,17 @@ export interface Completion {
   readonly checkedItemIds: readonly string[];
   /** The one-time takeover that was active when the task was completed (restored by undo). */
   readonly previousTakenOverBy?: Person;
+  /**
+   * When it was ticked off (ISO 8601, UTC), for the time of day in "Heute". Missing for
+   * completions from before version 3 and when the caller gave none.
+   */
+  readonly completedAt?: string;
+  /**
+   * Who was responsible for the task when it was completed: its fixed assignee, not a one-time
+   * takeover, so that "füreinander übernommen" can be counted (`completedBy` differs from it).
+   * Missing for completions from before version 3 ("unknown" is not counted).
+   */
+  readonly assigneeAtCompletion?: Assignee;
 }
 
 export interface CompleteInput {
@@ -73,6 +84,8 @@ export interface CompleteInput {
   readonly completionId: string;
   readonly completedOn: CalendarDay;
   readonly completedBy: Person;
+  /** The moment of ticking off (ISO 8601, UTC); the domain has no clock, so the caller passes it. */
+  readonly completedAt?: string;
 }
 
 export interface TaskState {
@@ -218,6 +231,8 @@ export function completeTask(state: TaskState, input: CompleteInput): TaskState 
     completedBy: input.completedBy,
     previousDueDate: task.dueDate,
     checkedItemIds: checkedItemIds(task),
+    assigneeAtCompletion: task.assignee,
+    ...(input.completedAt === undefined ? {} : { completedAt: input.completedAt }),
   };
   if (task.kind === "oneOff") {
     if (task.done) {

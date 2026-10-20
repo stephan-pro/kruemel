@@ -65,14 +65,43 @@ export function sampleData(): AppData {
     schemaVersion: SCHEMA_VERSION,
     settings: { personNames: { personA: "Alex", personB: "Robin" } },
     tasks: [again.task, windows, parcel.task, open],
-    completions: [...again.completions, ...parcel.completions],
+    // The first completion also knows the moment of ticking off (the others only who was
+    // responsible), so both shapes of version 3 are in the sample.
+    completions: [...again.completions, ...parcel.completions].map((completion, index) =>
+      index === 0 ? { ...completion, completedAt: "2026-10-21T08:30:00.000Z" } : completion,
+    ),
   };
+}
+
+/** The data without what only version 3 knows: what loading an older file comes out as. */
+export function withoutVersion3Fields(data: AppData): AppData {
+  return {
+    ...data,
+    completions: data.completions.map(
+      ({ completedAt: _at, assigneeAtCompletion: _assignee, ...rest }) => rest,
+    ),
+  };
+}
+
+/**
+ * The data as version 2 stored or exported it (before stage 2): completions without `completedAt`
+ * and `assigneeAtCompletion`. Plain JSON values.
+ */
+// biome-ignore lint/suspicious/noExplicitAny: old files are plain JSON of their own shape
+export function asVersion2(data: AppData): any {
+  const copy = JSON.parse(JSON.stringify(data));
+  copy.schemaVersion = 2;
+  for (const completion of copy.completions) {
+    delete completion.completedAt;
+    delete completion.assigneeAtCompletion;
+  }
+  return copy;
 }
 
 /** The data as version 1 stored or exported it (before F8): no symbols. Plain JSON values. */
 // biome-ignore lint/suspicious/noExplicitAny: old files are plain JSON of their own shape
 export function asVersion1(data: AppData): any {
-  const copy = JSON.parse(JSON.stringify(data));
+  const copy = asVersion2(data);
   copy.schemaVersion = 1;
   for (const task of copy.tasks) {
     delete task.symbol;
