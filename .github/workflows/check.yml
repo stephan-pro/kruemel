@@ -45,3 +45,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check:db
+      - if: failure()
+        name: Protokolle der lokalen Instanz (Echtzeit, Datenbank)
+        run: |
+          docker logs supabase_realtime_kruemel --tail 80 2>&1 || true
+          docker logs supabase_db_kruemel --tail 40 2>&1 || true

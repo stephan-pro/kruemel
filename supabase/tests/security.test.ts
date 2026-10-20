@@ -229,24 +229,30 @@ describe("S5 Fremder Haushalt", () => {
     const listen = async (client: SupabaseClient, who: keyof typeof seen) => {
       const { data } = await client.auth.getSession();
       await client.realtime.setAuth(data.session?.access_token ?? null);
+      // Ready once the server confirms the database subscription (a "system" message), not
+      // already when the channel is joined: before that, changes are not delivered yet.
       return new Promise<() => void>((resolve, reject) => {
         const channel = client
           .channel(`tasks-${who}-${crypto.randomUUID()}`)
           .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, () => {
             seen[who]++;
           })
-          .subscribe((status) => {
-            if (status === "SUBSCRIBED") {
+          .on("system", {}, (message: { extension?: string; status?: string }) => {
+            console.info(`Echtzeit ${who}:`, JSON.stringify(message));
+            if (message.extension === "postgres_changes" && message.status === "ok") {
               resolve(() => void client.removeChannel(channel));
-            } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-              reject(new Error(`Echtzeit: ${status}`));
+            } else if (message.extension === "postgres_changes") {
+              reject(new Error(`Echtzeit: ${JSON.stringify(message)}`));
+            }
+          })
+          .subscribe((status, error) => {
+            if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+              reject(new Error(`Echtzeit: ${status} ${error?.message ?? ""}`));
             }
           });
       });
     };
     const stops = [await listen(b.client, "member"), await listen(other.client, "stranger")];
-    // Realtime needs a moment after joining before it delivers changes.
-    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     await call(a, "save_task", {
       p_change_id: crypto.randomUUID(),
