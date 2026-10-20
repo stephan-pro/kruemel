@@ -15,7 +15,10 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
-  reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : "list",
+  // Short console output (see scripts/short-reporter.mjs); the HTML report only goes to disk.
+  reporter: process.env.CI
+    ? [["./scripts/short-reporter.mjs"], ["html", { open: "never" }]]
+    : [["./scripts/short-reporter.mjs"]],
   use: {
     baseURL: `http://localhost:${port}/putzplan/`,
     locale: "de-DE",

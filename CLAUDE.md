@@ -5,6 +5,7 @@ Anforderungen: `docs/ANFORDERUNGEN.md` · Plan und Arbeitspakete: `docs/PLAN.md`
 
 ## Befehle
 
+- **Nach Änderungen `npm run check` ausführen und nur die Kurzausgabe lesen** (bei Erfolg eine Zeile, bei Fehlern nur die fehlgeschlagenen Tests mit Datei, Zeile und Meldung). Testdateien und Reports nicht komplett lesen; Traces und Berichte liegen nur auf der Platte (`test-results/`, `playwright-report/`).
 - `npm run check` – alles prüfen (Biome → tsc → Vitest mit Abdeckung → Build → Playwright). Muss grün sein.
 - `npm run dev` – Entwicklungsserver.
 - `npm run demo` – App mit Beispieldaten (eigener Speicherbereich `putzplan-demo`) im Browser.
