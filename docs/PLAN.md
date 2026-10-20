@@ -23,7 +23,8 @@ Grundsatz (N7): Jede Bibliothek muss begründet sein. Was sich mit wenig eigenem
 | Unit-Tests | Vitest + `@vitest/coverage-v8` | Schwelle 90 % für `src/domain/` (Q5). |
 | E2E-Tests | `@playwright/test` + `@axe-core/playwright` | Chromium und WebKit, je Desktop und Handy (Q6); axe auf jeder Seite (Q7). |
 | Pre-Commit | Eigener Git-Hook in `.githooks/`, aktiviert per `"prepare": "git config core.hooksPath .githooks"` | Keine Abhängigkeit (Q10). |
-| `npm run check` | `scripts/check.mjs` | Läuft nacheinander, bricht beim ersten Fehler ab, meldet „✅ bestanden“ oder „❌ nicht bestanden in Schritt X“ (Q1). |
+| `npm run check` | `scripts/check.mjs` | Läuft nacheinander, bricht beim ersten Fehler ab (Q1). Ausgabe: bei Erfolg eine Zeile (Anzahl Unit-Tests und E2E-Läufe, Dauer), bei Fehlern nur die fehlgeschlagenen Tests mit Datei, Zeile und Meldung. E2E nur in Chromium/Desktop. Test-Diät 20.10.2026. |
+| `npm run check:full` | `scripts/check.mjs --full` | Wie `check`, E2E in der vollen Matrix (WebKit, Handy-Größen: Smoke mit axe, Layout, PWA, Installation, Design). CI: `check-full.yml` nachts und von Hand. |
 | CI | GitHub Actions, Dependabot (npm + github-actions, wöchentlich, gruppiert) | Q9, Q11. |
 | Hosting | GitHub Pages über GitHub Actions | Kostenlos (N6), https für PWA. Vite-`base` = `/<repo-name>/`. |
 | PWA | Eigenes `manifest.webmanifest` + eigener Service Worker | Spart das PWA-Plugin mit vielen Unterpaketen. |

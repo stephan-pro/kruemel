@@ -50,7 +50,8 @@ Anforderungen: `docs/ANFORDERUNGEN.md` · Plan und Arbeitspakete: `docs/PLAN.md`
   - Ausstehend: `supabase/` (`config.toml`, `migrations/`), `check:db`, die Anmeldeseiten.
   - `npm run check` braucht weder Docker noch Internet noch Zugangsdaten; die Datenbank-Tests laufen nur in CI (`check:db`). Der Service-Role-Key, das App-Passwort des Gmail-Kontos und der Zugang zum Projekt kommen nie ins Repo; öffentlich sind nur `VITE_SUPABASE_URL` und `VITE_SUPABASE_PUBLISHABLE_KEY`. Die Online-Version bleibt bis zum Ende von E2-3 bei Etappe 1 (`VITE_BACKEND=local`).
 - `scripts/check.mjs` – Ablauf von `npm run check`.
-- `.githooks/pre-commit` – Biome auf gestagte Dateien.
+- `.githooks/pre-commit` – Geheimnis-Suche (`scripts/scan-secrets.mjs`, nur die gestagten Änderungen, Bruchteil einer Sekunde; nie über den Verlauf) und Biome auf gestagte Dateien.
+- **Doku-Aufwand:** Ein Paket ändert in `docs/PLAN.md` nur eine Zeile (Status + Datum). `docs/ETAPPE2.md`, `docs/ANFORDERUNGEN.md` und die „Umsetzung Paket“-Abschnitte werden nur am Ende einer Etappe ausführlich nachgeführt (Ausnahmen im `/paket`-Skill, Abschnitt 4).
 
 ## Regeln
 
