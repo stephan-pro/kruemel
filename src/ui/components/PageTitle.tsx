@@ -25,12 +25,17 @@ interface PageTitleProps {
  */
 export function PageTitle({ title, heading }: PageTitleProps) {
   const element = useRef<HTMLHeadingElement>(null);
+  // Decided while drawing, not in the effect: a page that is replaced before its effect ran (the
+  // address changes right after loading) drops that effect, and the next page would wrongly take
+  // itself for the first one and keep the focus away.
+  const first = useRef(!headingShown);
+  headingShown = true;
   useEffect(() => {
     document.title = `${title} – ${APP_NAME}`;
-    if (headingShown) {
+    if (!first.current) {
       element.current?.focus();
     }
-    headingShown = true;
+    first.current = false;
   }, [title]);
   return (
     <h1 class="page-title" ref={element} tabIndex={-1}>

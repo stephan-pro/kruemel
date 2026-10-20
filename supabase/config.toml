@@ -28,7 +28,7 @@ enabled = true
 [studio]
 enabled = false
 
-# Catches the mails with the codes (Mailpit); the tests of E2-2 read them there.
+# Catches the mails with the codes (Mailpit); `supabase/tests/auth.test.ts` reads them there.
 [local_smtp]
 enabled = true
 port = 54324
@@ -56,8 +56,8 @@ enable_manual_linking = false
 [auth.rate_limit]
 # Higher than in the real project, so a test run is not throttled.
 email_sent = 100
-sign_in_sign_ups = 100
-token_verifications = 100
+sign_in_sign_ups = 1000
+token_verifications = 1000
 
 [auth.email]
 enable_signup = true

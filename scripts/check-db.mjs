@@ -3,7 +3,8 @@
 //
 // 1. start the local instance (`supabase start`; the first time it downloads the images),
 // 2. apply the migrations from scratch (`supabase db reset`; a fresh CI instance has them already),
-// 3. run the tests in `supabase/tests/` (S5 security, contract with the fake) with its addresses.
+// 3. run the tests in `supabase/tests/` (S5 security, contract with the fake, sign-in with the code
+//    from the mail catcher) with its addresses.
 import { spawnSync } from "node:child_process";
 
 const isCi = Boolean(process.env.CI);
@@ -59,6 +60,9 @@ step("Datenbank-Tests (Vitest)", "npx vitest run --config vitest.db.config.ts", 
     SUPABASE_URL: values.API_URL,
     SUPABASE_ANON_KEY: values.ANON_KEY,
     SUPABASE_SERVICE_ROLE_KEY: values.SERVICE_ROLE_KEY,
+    // Sign-in tests (E2-2a): the mail catcher with the codes, and the database to let codes expire.
+    SUPABASE_MAIL_URL: values.MAILPIT_URL ?? values.INBUCKET_URL ?? "",
+    SUPABASE_DB_URL: values.DB_URL ?? "",
   },
 });
 console.log("\n✅ check:db bestanden");

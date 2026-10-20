@@ -13,8 +13,9 @@ function setting(name: string): string {
   return value;
 }
 
-const url = setting("SUPABASE_URL");
-const anonKey = setting("SUPABASE_ANON_KEY");
+/** The local instance's API and its public key (the app's `VITE_SUPABASE_*` there). */
+export const url = setting("SUPABASE_URL");
+export const anonKey = setting("SUPABASE_ANON_KEY");
 const serviceKey = setting("SUPABASE_SERVICE_ROLE_KEY");
 
 const noSession = { auth: { persistSession: false, autoRefreshToken: false } } as const;
@@ -33,7 +34,7 @@ export interface Person {
   readonly client: SupabaseClient;
 }
 
-/** A new person, signed in. (The app signs in with a code; the tests of E2-2 do that.) */
+/** A new person, signed in. (The app signs in with a code; `auth.test.ts` tests that way.) */
 export async function signedIn(): Promise<Person> {
   const email = `test-${crypto.randomUUID()}@example.com`;
   const password = crypto.randomUUID();

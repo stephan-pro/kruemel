@@ -10,8 +10,12 @@
 //   POST /push          one change
 //   GET  /events?token= server-sent events: "change" whenever the household data changed
 //   GET  /test/data     the household's data as the server has them
+//   POST /auth/code, POST /auth/verify, GET /auth/session, POST /auth/sign-out
+//                       sign-in with a code (`FakeAuth`; the app's side is `FakeHttpAuth`)
+//   GET  /test/code?email=  the last code "sent" to the address, instead of a mail
 //
-// Test-only: no sign-in, wide-open CORS, nothing is kept after the process ends.
+// Test-only: the households do not use the sign-in yet (E2-2b), wide-open CORS, nothing is kept
+// after the process ends.
 
 import { createServer, type IncomingMessage } from "node:http";
 import { FakeServer } from "../src/sync/fakeServer";
