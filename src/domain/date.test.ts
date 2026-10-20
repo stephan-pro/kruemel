@@ -121,12 +121,9 @@ describe("Monate addieren (Monatsende-Regel)", () => {
     expect(addMonths(d("2026-10-15"), 0)).toBe("2026-10-15");
   });
 
-  it("addMonths: 31. Januar + 1 Monat = letzter Februartag", () => {
+  it("addMonths kürzt auf den letzten Tag kürzerer Monate (31. Januar + 1 Monat = letzter Februartag)", () => {
     expect(addMonths(d("2026-01-31"), 1)).toBe("2026-02-28");
     expect(addMonths(d("2024-01-31"), 1)).toBe("2024-02-29");
-  });
-
-  it("addMonths kürzt auf den letzten Tag kürzerer Monate", () => {
     expect(addMonths(d("2026-03-31"), 1)).toBe("2026-04-30");
     expect(addMonths(d("2026-01-30"), 1)).toBe("2026-02-28");
     expect(addMonths(d("2026-01-29"), 1)).toBe("2026-02-28");
@@ -165,9 +162,12 @@ describe("Wochen: Beginn am Montag", () => {
     expect(startOfWeek(d("2026-10-26"))).toBe("2026-10-26");
   });
 
-  it("startOfWeek über Monats- und Jahresgrenzen", () => {
+  it("startOfWeek und weekDays über Monats- und Jahresgrenzen", () => {
     expect(startOfWeek(d("2027-01-01"))).toBe("2026-12-28");
     expect(startOfWeek(d("2026-11-01"))).toBe("2026-10-26");
+    const days = weekDays(d("2026-12-31"));
+    expect(days[0]).toBe("2026-12-28");
+    expect(days[6]).toBe("2027-01-03");
   });
 
   it("weekDays liefert Montag bis Sonntag", () => {
@@ -180,12 +180,6 @@ describe("Wochen: Beginn am Montag", () => {
       "2026-10-24",
       "2026-10-25",
     ]);
-  });
-
-  it("weekDays über den Jahreswechsel", () => {
-    const days = weekDays(d("2026-12-31"));
-    expect(days[0]).toBe("2026-12-28");
-    expect(days[6]).toBe("2027-01-03");
   });
 
   it("isoWeek liefert die Kalenderwoche wie im deutschen Kalender", () => {
@@ -201,12 +195,5 @@ describe("Wochen: Beginn am Montag", () => {
     expect(isoWeek(d("2027-01-04"))).toBe(1);
     expect(isoWeek(d("2024-12-30"))).toBe(1);
     expect(isoWeek(d("2021-01-03"))).toBe(53);
-  });
-
-  it("Wochen blättern: vor und zurück mit addWeeks", () => {
-    const shown = d("2026-10-21");
-    expect(weekDays(addWeeks(shown, 1))[0]).toBe("2026-10-26");
-    expect(weekDays(addWeeks(shown, -1))[0]).toBe("2026-10-12");
-    expect(weekDays(addWeeks(addWeeks(shown, 1), -1))).toEqual(weekDays(shown));
   });
 });

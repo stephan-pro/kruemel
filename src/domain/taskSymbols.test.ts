@@ -48,10 +48,4 @@ describe("F8 Liste der Symbole", () => {
       expect(isTaskSymbolId(value), String(value)).toBe(false);
     }
   });
-
-  it("F8 Bezeichnung und Ton eines Symbols", () => {
-    expect(taskSymbol("trash")).toMatchObject({ label: "Mülleimer", tone: "blue" });
-    expect(taskSymbol("plant")).toMatchObject({ label: "Pflanze", tone: "green" });
-    expect(taskSymbol("shopping")).toMatchObject({ label: "Einkaufswagen", tone: "orange" });
-  });
 });

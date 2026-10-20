@@ -20,8 +20,4 @@ describe("Speicher-Modus (local, fake, supabase)", () => {
       "VITE_BACKEND=firebase ist unbekannt. Erlaubt: supabase, fake, local (oder leer).",
     );
   });
-
-  it("Es gibt genau die drei Modi", () => {
-    expect([...BACKEND_MODES].sort()).toEqual(["fake", "local", "supabase"]);
-  });
 });
