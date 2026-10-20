@@ -40,6 +40,16 @@ function isStored(value: unknown): value is Stored {
   );
 }
 
+/** The secret of the session kept on the device, for the other calls to the fake server. */
+export function fakeAuthToken(store: KeyValueStore): string | undefined {
+  try {
+    const value: unknown = JSON.parse(store.getItem(FAKE_AUTH_KEY) ?? "null");
+    return isStored(value) ? value.token : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export class FakeHttpAuth implements Auth {
   private readonly baseUrl: string;
   private readonly store: KeyValueStore;

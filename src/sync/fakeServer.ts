@@ -4,14 +4,17 @@
 // HTTP server in front of it; unit tests call `handle` directly. It uses `FakeHousehold`, so it
 // follows the same rules as `FakeRemote`.
 //
-// Test-only: the households do not know the sign-in yet (E2-2b); their secrets are just random
-// text handed out by `/test/household`.
+// Test-only. A household is reached in two ways: with the secret of a signed-in person (their
+// household, created and joined through `/household/*`, E2-2b), or with one of the two random
+// secrets `/test/household` hands out for a ready-made household without sign-in.
 
 import { AuthError } from "../auth/auth";
 import { FakeAuth, type FakeAuthOptions } from "../auth/fakeAuth";
+import { HouseholdError, type HouseholdFailure } from "../auth/household";
 import type { Person } from "../domain/task";
-import type { AppData } from "../storage/appData";
+import type { AppData, PersonNames } from "../storage/appData";
 import type { Change } from "./changes";
+import { FakeAccounts } from "./fakeAccounts";
 import { FakeHousehold } from "./fakeHousehold";
 
 export interface ApiRequest {
@@ -58,9 +61,11 @@ export class FakeServer {
   private readonly members = new Map<string, Member>();
   /** The sign-in service; tests read the codes there (`auth.lastCode`). */
   readonly auth: FakeAuth;
+  private readonly accounts: FakeAccounts;
 
   constructor(options: FakeServerOptions = {}) {
     this.auth = new FakeAuth(options.auth);
+    this.accounts = new FakeAccounts(options.auth?.now);
   }
 
   /** A new household (optionally with data) and the secret of each of its two people. */
@@ -77,7 +82,13 @@ export class FakeServer {
 
   /** The household a secret belongs to; `undefined` for an unknown one. */
   householdFor(token: string | undefined): FakeHousehold | undefined {
-    return token === undefined ? undefined : this.members.get(token)?.household;
+    if (token === undefined) {
+      return undefined;
+    }
+    const session = this.auth.sessionFor(token);
+    return session === undefined
+      ? this.members.get(token)?.household
+      : this.accounts.householdOf(session.userId);
   }
 
   handle(request: ApiRequest): ApiResponse {
@@ -89,6 +100,9 @@ export class FakeServer {
     }
     if (path.startsWith("/auth/") || path === "/test/code") {
       return this.handleAuth(request);
+    }
+    if (path.startsWith("/household")) {
+      return this.handleHousehold(request);
     }
     const household = this.householdFor(request.token);
     if (household === undefined) {
@@ -109,7 +123,49 @@ export class FakeServer {
   }
 
   /**
-   *   POST /auth/code     {email}        a code "by mail" (read with /test/code)
+   *   GET  /household                 → {household}, the person's household or null
+   *   POST /household/create {personA, personB}  → {household}
+   *   POST /household/invite          → {token, expiresAt}
+   *   POST /household/accept {token}  → {household}
+   * Needs the secret of a signed-in person (401 otherwise). A refused step answers with
+   * `{failure}` (a `HouseholdFailure`), status 400.
+   */
+  private handleHousehold(request: ApiRequest): ApiResponse {
+    const { method, path, body } = request;
+    const session = this.auth.sessionFor(request.token);
+    if (session === undefined) {
+      return { status: 401, body: { failure: "notSignedIn" satisfies HouseholdFailure } };
+    }
+    const userId = session.userId;
+    try {
+      if (method === "GET" && path === "/household") {
+        return { status: 200, body: { household: this.accounts.info(userId) } };
+      }
+      if (method === "POST" && path === "/household/create") {
+        const names: PersonNames = {
+          personA: textOf(body, "personA"),
+          personB: textOf(body, "personB"),
+        };
+        return { status: 200, body: { household: this.accounts.create(userId, names) } };
+      }
+      if (method === "POST" && path === "/household/invite") {
+        return { status: 200, body: this.accounts.createInvite(userId) };
+      }
+      if (method === "POST" && path === "/household/accept") {
+        const household = this.accounts.acceptInvite(userId, textOf(body, "token"));
+        return { status: 200, body: { household } };
+      }
+    } catch (error) {
+      if (error instanceof HouseholdError) {
+        return { status: 400, body: { failure: error.failure } };
+      }
+      throw error;
+    }
+    return { status: 404, body: { error: "Unbekannte Adresse" } };
+  }
+
+  /**
+   *   POST /auth/code    {email}        a code "by mail" (read with /test/code)
    *   POST /auth/verify   {email, code}  → {token, session}
    *   GET  /auth/session                 the session of the secret, 401 if it ended
    *   POST /auth/sign-out                ends the session of the secret

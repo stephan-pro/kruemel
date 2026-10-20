@@ -14,8 +14,11 @@
 //                       sign-in with a code (`FakeAuth`; the app's side is `FakeHttpAuth`)
 //   GET  /test/code?email=  the last code "sent" to the address, instead of a mail
 //
-// Test-only: the households do not use the sign-in yet (E2-2b), wide-open CORS, nothing is kept
-// after the process ends.
+//   GET /household, POST /household/create, /household/invite, /household/accept
+//                       the household of a signed-in person (`FakeAccounts`; the app's side is
+//                       `FakeHttpHousehold`); their secret also opens /pull, /push and /events
+//
+// Test-only: wide-open CORS, nothing is kept after the process ends.
 
 import { createServer, type IncomingMessage } from "node:http";
 import { FakeServer } from "../src/sync/fakeServer";
