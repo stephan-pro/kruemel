@@ -20,7 +20,7 @@ Kein Geheimnis gehört ins Repository, in den Chat oder in GitHub Actions. Der H
 ## Einstellungen im Dashboard (Soll-Stand)
 
 - **Authentication → Sign In / Providers → Email:** E-Mail an, „Confirm email“ an, Email OTP Length 6, Email OTP Expiration 600 s (10 min).
-- **Authentication → Emails → Templates:** „Confirm signup“ und „Magic Link“ mit Betreff „Dein Anmeldecode für Krümel“ und dem Text aus `supabase/templates/code.html` (enthält `{{ .Token }}`, keinen Link).
+- **Authentication → Emails → Templates:** „Confirm signup“ und „Magic Link“ mit Betreff „Dein Anmeldecode für Krümel“ und dem Text aus `supabase/templates/code.html` (enthält `{{ .Token }}`, keinen Link). Erst nach der SMTP-Einrichtung bearbeitbar („Set up custom SMTP to edit templates“); bis dahin kommt die Standardmail mit Link.
 - **Authentication → Emails → SMTP Settings:** eigener SMTP an, Host `smtp.gmail.com`, Port 465, Benutzer = Adresse des Krümel-Gmail-Kontos, Passwort = App-Passwort, Absender = dieselbe Adresse, Absendername „Krümel“.
 - **Authentication → URL Configuration:** Site URL `https://stephan-pro.github.io/kruemel/`, Redirect URLs `https://stephan-pro.github.io/kruemel/` und `http://localhost:5173/kruemel/`. (Die Anmeldung läuft über den Code, Links in Mails gibt es nicht; die Adressen braucht Supabase trotzdem.)
 - **Authentication → Rate Limits:** nur ansehen; „emails sent“ reicht mit dem Standardwert für zwei Personen.
