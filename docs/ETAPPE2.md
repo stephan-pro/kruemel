@@ -6,7 +6,7 @@ Etappe 2 macht aus der lokalen App eine gemeinsame: eine Datenbank für beide Pe
 
 ## 1. Entscheidungen vorab (Product Owner)
 
-- [x] **Anbieter für Anmeldung und Datenbank** gewählt: Supabase, Region Frankfurt, Free Plan; Anmeldung per E-Mail-Einmalcode, Versand über ein eigenes Gmail-Konto nur für Krümel. Begründung in `PLAN.md` (Kapitel Etappe 2, neue Abhängigkeiten nur mit Begründung, N7). Der Nachweis der Region (S1) kommt in E2-1.
+- [x] **Anbieter für Anmeldung und Datenbank** gewählt: Supabase, Region West EU (Paris, eu-west-3; Entscheidung des PO vom 20.10.2026 statt Frankfurt), Free Plan; Anmeldung per E-Mail-Einmalcode, Versand über ein eigenes Gmail-Konto nur für Krümel. Begründung in `PLAN.md` (Kapitel Etappe 2, neue Abhängigkeiten nur mit Begründung, N7). Der Nachweis der Region (S1) kommt in E2-1.
 - [ ] **Vertrag zur Auftragsverarbeitung** (AVV) des Anbieters geprüft und abgeschlossen, soweit nötig (PO, E2-1).
 - [ ] **Datenschutz:** Entschieden ist ein kurzer **Datenschutzhinweis** in den Einstellungen (E2-5).
 - [ ] **Impressum (To-do, E2-5):** Entschieden ist ein einfaches **Impressum** (Entscheidung des PO, 20.10.2026), erreichbar aus den Einstellungen. Welche Angaben genau nötig sind (öffentliche Adresse, aber nur zwei Nutzer), klärt der PO; ob seine Anschrift im öffentlichen Repository stehen darf, entscheidet er ebenfalls. Nachweis: Seite in der App, E2E-Test mit axe.

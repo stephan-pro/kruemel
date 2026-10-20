@@ -94,7 +94,7 @@ Startet die App mit erfundenen Beispieldaten (zwei Personen, wiederkehrende und 
 
 ### Datenbank (Etappe 2)
 
-Die gemeinsamen Daten liegen ab E2-3 bei Supabase (Frankfurt, kostenloser Tarif). Tabellen, Zugriffsregeln und Funktionen stehen in `supabase/migrations/`. `npm run check:db` prüft sie gegen eine lokale Supabase-Instanz und braucht Docker; er läuft deshalb nur auf GitHub (Job `db`). Wichtig im kostenlosen Tarif: Ein Projekt pausiert nach 7 Tagen ohne Nutzung (ein täglicher Abruf per GitHub Actions verhindert das), und es gibt keine herunterladbaren Backups, also regelmäßig „Sicherung herunterladen“. Einzelheiten: [`docs/SUPABASE.md`](docs/SUPABASE.md).
+Die gemeinsamen Daten liegen ab E2-3 bei Supabase (Paris, kostenloser Tarif). Tabellen, Zugriffsregeln und Funktionen stehen in `supabase/migrations/`. `npm run check:db` prüft sie gegen eine lokale Supabase-Instanz und braucht Docker; er läuft deshalb nur auf GitHub (Job `db`). Wichtig im kostenlosen Tarif: Ein Projekt pausiert nach 7 Tagen ohne Nutzung (ein täglicher Abruf per GitHub Actions verhindert das), und es gibt keine herunterladbaren Backups, also regelmäßig „Sicherung herunterladen“. Einzelheiten: [`docs/SUPABASE.md`](docs/SUPABASE.md).
 
 ## Lizenz
 

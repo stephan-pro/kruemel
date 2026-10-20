@@ -1,6 +1,6 @@
 # The local Supabase instance of `npm run check:db` (CI only, job `db`). Only what the app uses is
 # switched on: database, API, sign-in, realtime and the mail catcher (Mailpit) for the codes.
-# The real project in Frankfurt is set up by hand in the dashboard (see docs/SUPABASE.md); the
+# The real project in Paris (eu-west-3) is set up by hand in the dashboard (see docs/SUPABASE.md); the
 # values that matter there (code instead of link, 10 minutes, addresses) are the same as here.
 project_id = "kruemel"
 

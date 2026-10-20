@@ -6,7 +6,7 @@ Stand: 20.10.2026 · Grundlage: CLAUDE.md, PLAN.md, ANFORDERUNGEN.md (inkl. „S
 
 ## Kontext
 
-Etappe 1 ist abgenommen: Die App läuft rein im Browser, die Daten liegen pro Gerät in `localStorage` hinter `AppStorage` (`src/storage/storage.ts`, asynchron, `load()`/`save(data)` ersetzen die ganzen Daten). Etappe 2 bringt dieselben Daten für zwei Personen auf alle Geräte: Supabase (Frankfurt, kostenlos), Anmeldung per E-Mail-Einmalcode, ein Haushalt mit Einladungslink, Echtzeit-Abgleich, offline weiter nutzbar. Danach kommt das Redesign „Persönlich“ mit Statistik. `npm run check` muss weiter ohne Claude, ohne Zugangsdaten und ohne Verbindung zu Supabase laufen.
+Etappe 1 ist abgenommen: Die App läuft rein im Browser, die Daten liegen pro Gerät in `localStorage` hinter `AppStorage` (`src/storage/storage.ts`, asynchron, `load()`/`save(data)` ersetzen die ganzen Daten). Etappe 2 bringt dieselben Daten für zwei Personen auf alle Geräte: Supabase (Paris, kostenlos; ursprünglich Frankfurt geplant, siehe E2-1), Anmeldung per E-Mail-Einmalcode, ein Haushalt mit Einladungslink, Echtzeit-Abgleich, offline weiter nutzbar. Danach kommt das Redesign „Persönlich“ mit Statistik. `npm run check` muss weiter ohne Claude, ohne Zugangsdaten und ohne Verbindung zu Supabase laufen.
 
 ## 1. Leitentscheidungen (Vorschlag)
 
@@ -114,7 +114,7 @@ Für Nutzer ändert sich nichts; online und in der Demo bleibt `local`.
 ### E2-1 Supabase einrichten
 Inhalt:
 - **PO:**
-  - Projekt „kruemel“ anlegen, Region Frankfurt (eu-central-1), Free Plan. Bildschirmfoto der Region für S1.
+  - Projekt „kruemel“ anlegen, Free Plan. Bildschirmfoto der Region für S1. **Entscheidung des PO (20.10.2026):** Region West EU (Paris), eu-west-3, statt Frankfurt, weil das Formular nur „Europe“ anbot; S1 (Standort EU) ist erfüllt. Projekt-URL `https://sedjrghhtopgewwkmvrw.supabase.co`.
   - AVV/DPA von Supabase prüfen und abschließen.
   - SMTP nach Frage 1 einrichten.
   - Auth: E-Mail-Anmeldung mit **Code statt Link** (Vorlage mit `{{ .Token }}`), Code-Gültigkeit 10 min, Rate-Limits ansehen.

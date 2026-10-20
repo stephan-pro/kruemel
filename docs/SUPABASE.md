@@ -6,7 +6,8 @@ Stand: 20.10.2026 (Paket E2-1). Für den Product Owner und spätere Sitzungen. D
 
 | Was | Wo | Öffentlich? |
 |---|---|---|
-| Projekt „kruemel“, Region Frankfurt (eu-central-1), Free Plan | supabase.com, Konto des PO | – |
+| Projekt „kruemel“ (`sedjrghhtopgewwkmvrw`), Region West EU (Paris, eu-west-3), Free Plan, Organisation „stephan-pro's Org“ | supabase.com, Konto des PO (GitHub-Login, ohne GitHub-Verbindung im Projekt) | – |
+| Absender der Codes | Gmail-Konto `kruemel.haushaltsapp@gmail.com` (2-Faktor an) | Adresse ja |
 | Projekt-URL `https://<ref>.supabase.co` und Publishable Key `sb_publishable_…` | GitHub-Repository-Variablen `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`; lokal `.env.local` (Vorlage `.env.example`) | ja (stehen später ohnehin in der App) |
 | Datenbank-Passwort | nur Passwortmanager des PO; wird bei `npx supabase link` im eigenen Terminal abgefragt | **nein** |
 | Secret Key / service_role | bleibt im Dashboard, wird nirgends gebraucht | **nein** |

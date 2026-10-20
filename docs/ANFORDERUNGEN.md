@@ -187,7 +187,7 @@ Präzisierungen zu Abschnitt 4 und 5. Bei Widerspruch gilt dieser Abschnitt. Tec
 
 Geplantes Verhalten; es gilt ab dem jeweils genannten Paket (`ETAPPE2-PLAN.md`, Abschnitt 3). Bis dahin bleibt die App wie in Etappe 1.
 
-- **Betrieb Etappe 2:** Ein Haushalt hat genau zwei Mitglieder (Person A, Person B) und liegt bei Supabase in Frankfurt (kostenloser Tarif). Die Anmeldung läuft per E-Mail-Einmalcode (S2), die Daten liegen auf jedem Gerät als Kopie, Änderungen werden abgeglichen (N3).
+- **Betrieb Etappe 2:** Ein Haushalt hat genau zwei Mitglieder (Person A, Person B) und liegt bei Supabase in Paris (Region eu-west-3, kostenloser Tarif; Entscheidung des PO vom 20.10.2026, ursprünglich Frankfurt). Die Anmeldung läuft per E-Mail-Einmalcode (S2), die Daten liegen auf jedem Gerät als Kopie, Änderungen werden abgeglichen (N3).
 - **Online-Version:** Die Online-Version bleibt bis zum Ende von E2-3 bei Etappe 1; erst dann wird sie auf die gemeinsame Version umgestellt.
 - **Haushalt startet leer:** Ein neuer Haushalt hat keine Aufgaben. Es gibt keine automatische Übernahme der Daten aus Etappe 1. Wer sie behalten will, lädt vorher „Sicherung herunterladen“ und spielt die Datei nach der Anmeldung ein (F7); die README beschreibt das mit einem Satz (E2-5).
 - **Haushalt anlegen und einladen (E2-2):** Wer ohne Haushalt angemeldet ist, legt einen an (eigener Name und Name der zweiten Person, die Ersteller-Person ist Person A) oder öffnet einen Einladungslink. Ein Einladungslink gilt 7 Tage und nur einmal; ein neuer Link macht den alten ungültig. Das Annehmen scheitert mit eigener Meldung bei abgelaufenem oder benutztem Link, vollem Haushalt und wenn die Person schon einen Haushalt hat.
