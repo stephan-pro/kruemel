@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Putzplan – Statistik</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#5530D9}a:hover{color:#3F1FB0}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F3F2F8; font-family: 'Archivo', system-ui, sans-serif; color: #15131F; display: flex; flex-direction: column; position: relative; overflow: hidden">
+
+  <div style="padding: 22px 16px 0; display: flex; flex-direction: column; gap: 12px">
+    <h1 style="margin: 0; font-size: 34px; line-height: 1; font-weight: 900; letter-spacing: -0.03em; text-transform: uppercase">Eure Bilanz</h1>
+    <div role="group" aria-label="Zeitraum" style="display: flex; background: #FFFFFF; border-radius: 999px; padding: 4px; align-self: flex-start">
+      <button type="button" aria-pressed="true" style="min-height: 36px; padding: 0 16px; border: 0; border-radius: 999px; background: #15131F; color: #FFFFFF; font: 700 13px 'Archivo', sans-serif; cursor: pointer">Woche</button>
+      <button type="button" aria-pressed="false" style="min-height: 36px; padding: 0 16px; border: 0; border-radius: 999px; background: transparent; color: #15131F; font: 700 13px 'Archivo', sans-serif; cursor: pointer">Monat</button>
+      <button type="button" aria-pressed="false" style="min-height: 36px; padding: 0 16px; border: 0; border-radius: 999px; background: transparent; color: #15131F; font: 700 13px 'Archivo', sans-serif; cursor: pointer">Jahr</button>
+    </div>
+
+    <section aria-labelledby="s-gesamt" style="background: #5530D9; color: #FFFFFF; border-radius: 24px; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start">
+        <div style="display: flex; flex-direction: column; gap: 2px">
+          <h2 id="s-gesamt" style="margin: 0; font-size: 13px; font-weight: 700">Gemeinsam erledigt · KW 43</h2>
+          <span style="font-size: 44px; font-weight: 900; letter-spacing: -0.03em; line-height: 1">38</span>
+          <span style="font-size: 13px">6 mehr als letzte Woche</span>
+        </div>
+        <span style="display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.18); border-radius: 999px; padding: 6px 10px; font-size: 12px; font-weight: 800">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2c1 4 5 6 5 11a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5 0 2 1 3 2 3 0-3-1-6 1-9.5z"></path></svg>4 Wochen in Folge</span>
+      </div>
+      <div role="img" aria-label="Erledigt pro Tag: Montag 7, Dienstag 5, Mittwoch 4, Donnerstag 6, Freitag 3, Samstag 9, Sonntag 4" style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; align-items: end; height: 92px">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 4px"><div style="width: 100%; height: 54px; border-radius: 8px; background: rgba(255,255,255,0.9)"></div><span style="font-size: 11px; font-weight: 700">Mo</span></div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 4px"><div style="width: 100%; height: 39px; border-radius: 8px; background: rgba(255,255,255,0.9)"></div><span style="font-size: 11px; font-weight: 700">Di</span></div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 4px"><div style="width: 100%; height: 31px; border-radius: 8px; background: rgba(255,255,255,0.9)"></div><span style="font-size: 11px; font-weight: 700">Mi</span></div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 4px"><div style="width: 100%; height: 47px; border-radius: 8px; background: rgba(255,255,255,0.9)"></div><span style="font-size: 11px; font-weight: 700">Do</span></div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 4px"><div style="width: 100%; height: 23px; border-radius: 8px; background: rgba(255,255,255,0.9)"></div><span style="font-size: 11px; font-weight: 700">Fr</span></div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 4px"><div style="width: 100%; height: 70px; border-radius: 8px; background: #FFFFFF"></div><span style="font-size: 11px; font-weight: 700">Sa</span></div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 4px"><div style="width: 100%; height: 31px; border-radius: 8px; background: rgba(255,255,255,0.9)"></div><span style="font-size: 11px; font-weight: 700">So</span></div>
+      </div>
+    </section>
+
+    <section aria-labelledby="s-team" style="background: #FFFFFF; border-radius: 24px; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+      <h2 id="s-team" style="margin: 0; font-size: 16px; font-weight: 800">Euer Teamwork</h2>
+      <div role="img" aria-label="Stephan 21 Aufgaben, Dilan 17 Aufgaben" style="display: flex; height: 14px; border-radius: 999px; overflow: hidden; gap: 3px">
+        <div style="flex: 21; background: #5530D9"></div>
+        <div style="flex: 17; background: #C2650A"></div>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-size: 14px">
+        <span style="display: flex; align-items: center; gap: 8px"><span aria-hidden="true" style="width: 10px; height: 10px; border-radius: 3px; background: #5530D9"></span><strong>Stephan</strong> 21</span>
+        <span style="display: flex; align-items: center; gap: 8px"><span aria-hidden="true" style="width: 10px; height: 10px; border-radius: 3px; background: #C2650A"></span><strong>Dilan</strong> 17</span>
+      </div>
+      <p style="margin: 0; font-size: 13px; color: #5A5670">5-mal habt ihr füreinander übernommen.</p>
+    </section>
+
+    <section aria-labelledby="s-top" style="background: #FFFFFF; border-radius: 24px; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+      <h2 id="s-top" style="margin: 0; font-size: 16px; font-weight: 800">Am häufigsten erledigt</h2>
+      <ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px">
+        <li style="display: flex; align-items: center; gap: 12px">
+          <span aria-hidden="true" style="width: 36px; height: 36px; flex: none; border-radius: 12px; background: #DDF3E4; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#17703A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21v-8"></path><path d="M12 13c0-4 3-7 8-7 0 4-3 7-8 7z"></path><path d="M12 15c0-3-2.5-5.5-7-5.5 0 3 2.5 5.5 7 5.5z"></path></svg></span>
+          <span style="flex: 1; font-size: 15px; font-weight: 600">Pflanzen gießen</span><span style="font-size: 15px; font-weight: 800">7×</span></li>
+        <li style="display: flex; align-items: center; gap: 12px">
+          <span aria-hidden="true" style="width: 36px; height: 36px; flex: none; border-radius: 12px; background: #E3E9FF; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F47D6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"></path><path d="M10 11v6M14 11v6"></path><path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12"></path></svg></span>
+          <span style="flex: 1; font-size: 15px; font-weight: 600">Müll rausbringen</span><span style="font-size: 15px; font-weight: 800">5×</span></li>
+        <li style="display: flex; align-items: center; gap: 12px">
+          <span aria-hidden="true" style="width: 36px; height: 36px; flex: none; border-radius: 12px; background: #FFE4D6; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A3A0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.5"></circle><circle cx="18" cy="20" r="1.5"></circle><path d="M2 3h3l2.5 12h11l2-8H6"></path></svg></span>
+          <span style="flex: 1; font-size: 15px; font-weight: 600">Einkaufen</span><span style="font-size: 15px; font-weight: 800">4×</span></li>
+      </ol>
+    </section>
+  </div>
+
+  <nav aria-label="Hauptnavigation" style="position: absolute; left: 16px; right: 16px; bottom: 18px; height: 68px; border-radius: 999px; background: #15131F; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; box-shadow: 0 12px 30px rgba(21,19,31,0.28)">
+    <a href="#" aria-label="Heute" style="width: 48px; height: 48px; border-radius: 999px; display: flex; align-items: center; justify-content: center; color: #FFFFFF">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"></path></svg></a>
+    <a href="#" aria-label="Woche" style="width: 48px; height: 48px; border-radius: 999px; display: flex; align-items: center; justify-content: center; color: #FFFFFF">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="3"></rect><path d="M3 9h18M8 2v4M16 2v4"></path></svg></a>
+    <button type="button" aria-label="Neue Aufgabe" style="width: 52px; height: 52px; border-radius: 999px; border: 0; background: #7B5CFF; display: flex; align-items: center; justify-content: center; cursor: pointer">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
+    <a href="#" aria-current="page" style="text-decoration: none; height: 48px; padding: 0 14px; border-radius: 999px; background: #FFFFFF; color: #15131F; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 800">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path></svg>Statistik</a>
+    <a href="#" aria-label="Einstellungen" style="width: 48px; height: 48px; border-radius: 999px; display: flex; align-items: center; justify-content: center; color: #FFFFFF">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"></path></svg></a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

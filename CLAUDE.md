@@ -1,7 +1,7 @@
 # Putzplan – Hinweise für Claude
 
 Haushalts-App für zwei Personen. Preact + TypeScript (strict), Vite, läuft rein im Browser.
-Anforderungen: `docs/ANFORDERUNGEN.md` · Plan und Arbeitspakete: `docs/PLAN.md` · Design: `docs/design/DESIGN.md` (die `entwurf-*.html` dort sind nur Referenz, nicht lauffähig).
+Anforderungen: `docs/ANFORDERUNGEN.md` · Plan und Arbeitspakete: `docs/PLAN.md` · Etappe 2 (gemeinsam, Supabase; Pakete `E2-0` bis `E2-5`): `docs/ETAPPE2-PLAN.md` und `docs/ETAPPE2.md` · Design: `docs/design/DESIGN.md` (die `entwurf-*.html` dort sind nur Referenz, nicht lauffähig).
 
 ## Befehle
 
@@ -13,7 +13,8 @@ Anforderungen: `docs/ANFORDERUNGEN.md` · Plan und Arbeitspakete: `docs/PLAN.md`
 - `npm run setup` – erstes Einrichten (Pakete + Playwright-Browser).
 - `npm run icons` – zeichnet die PNG-App-Symbole in `public/` neu (nur nach Änderung des Symbols).
 
-- `/paket <Nummer> [Hinweise]` – Projekt-Skill (`.claude/skills/paket/SKILL.md`): setzt ein Arbeitspaket aus `docs/PLAN.md` komplett um, bis `npm run check` lokal und auf GitHub grün und die Online-Version aktualisiert ist.
+- `npm run check:db` – (Etappe 2, ab E2-1) Datenbank-Regeln und Anmeldung gegen eine lokale Supabase-Instanz in Docker. **Läuft nur in CI** (Job `db`); der PO hat kein Docker, lokal meldet der Befehl das und bricht ab.
+- `/paket <Nummer oder E2-N> [Hinweise]` – Projekt-Skill (`.claude/skills/paket/SKILL.md`): setzt ein Arbeitspaket aus `docs/PLAN.md` (Pakete 1–13, R1, R2) bzw. `docs/ETAPPE2-PLAN.md` (E2-0 bis E2-5, E2-4a/E2-4b) komplett um, bis `npm run check` lokal und auf GitHub grün (ab E2-1 auch der Job `db`) und die Online-Version veröffentlicht ist.
 
 ## Aufbau
 
@@ -36,6 +37,7 @@ Anforderungen: `docs/ANFORDERUNGEN.md` · Plan und Arbeitspakete: `docs/PLAN.md`
 - `tests/e2e/pwa.spec.ts` (Manifest, Leistenfarbe, Service Worker, Betrieb ohne Netz mit `context.setOffline`; `startInstalled` wartet auf `navigator.serviceWorker.ready`, sonst verwirft WebKit die Installation) und `phone.spec.ts` (Wochenübersicht bei 360 × 640 und 390 × 844, Raster am PC). `docs/GERAETETEST.md` – Checkliste für echte Geräte (iPhone, Android) mit Ergebnis von Etappe 1. `docs/ETAPPE2.md` – Prüfliste für Etappe 2 (S1–S6).
 - `tests/e2e/install.spec.ts` (Installationshilfe, QR-Code, Version; spielt den Browser: `offerInstall` löst `beforeinstallprompt` aus, `test.use({ userAgent })` für iPhone/Firefox, `navigator.standalone` per Init-Skript) und `accessibility.spec.ts` (nur Chromium: Tastatur-Ablauf mit `tabTo`, Kontrastmodus über `emulateMedia({ forcedColors: "active" })`). Im Projekt webkit-mobile (iPhone-Kennung) steht der Installationshinweis unter jeder Woche.
 - `tests/e2e/demo.spec.ts` – prüft den Demo-Modus; Playwright startet dafür einen zweiten Server (`vite --mode demo`, Port 4174). Spätere E2E-Tests nehmen `demoData(heute)` als Ausgangslage.
+- **Etappe 2 (geplant, entsteht mit den Paketen E2-0 bis E2-5; bis dahin gibt es diese Ordner nicht):** `src/sync/` (Abgleich: `changes.ts`, `merge.ts`, `outbox.ts`, `syncedStorage.ts`, `remote.ts`, `fakeRemote.ts`, `supabaseRemote.ts`; Abdeckung ≥ 90 % wie `src/domain/`), `src/auth/` (Schnittstelle `Auth`, Umsetzungen Supabase und Fake), `src/backend.ts` (Modus `supabase | fake | local`; `VITE_BACKEND`), `supabase/` (`config.toml`, `migrations/`), `scripts/fake-server.ts` (Fake-Server für die E2E-Tests, Build-Modus `e2e`). `npm run check` braucht weder Docker noch Internet noch Zugangsdaten; die Datenbank-Tests laufen nur in CI (`check:db`). Der Service-Role-Key, das App-Passwort des Gmail-Kontos und der Zugang zum Projekt kommen nie ins Repo; öffentlich sind nur `VITE_SUPABASE_URL` und `VITE_SUPABASE_PUBLISHABLE_KEY`. Die Online-Version bleibt bis zum Ende von E2-3 bei Etappe 1 (`VITE_BACKEND=local`).
 - `scripts/check.mjs` – Ablauf von `npm run check`.
 - `.githooks/pre-commit` – Biome auf gestagte Dateien.
 
@@ -78,3 +80,11 @@ Anforderungen: `docs/ANFORDERUNGEN.md` · Plan und Arbeitspakete: `docs/PLAN.md`
 | App installieren / Hinweis „Putzplan als App“ | install (`installWay`), installHint (`installHintDismissed`) |
 | Auf anderem Gerät öffnen (QR-Code) | otherDevice (`OtherDeviceTile`, `qrPicture`, `appAddress`) |
 | Version (Stand) | build (`APP_BUILD`, `formatBuild`) |
+| Haushalt (Etappe 2) | household |
+| Einladung | invite |
+| Anmeldung / Abmelden | signIn / signOut |
+| Einmalcode (per E-Mail) | code (`otp` nur in Namen der Anmeldebibliothek) |
+| Abgleich | sync |
+| ausstehende Änderungen (Warteschlange) | outbox / pending |
+| Abgleichsstand (Alles übertragen / Offline …) | syncStatus |
+| Statistik (Seite, Berechnung) | statistics |

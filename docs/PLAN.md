@@ -2,7 +2,7 @@
 
 Stand: 19.10.2026 · Grundlage: `ANFORDERUNGEN.md` (inkl. Abschnitt 9 „Entscheidungen“) und für die Oberfläche `design/DESIGN.md`
 
-Spätere Sitzungen lesen nur diese Dateien und `CLAUDE.md`.
+Spätere Sitzungen lesen nur diese Dateien und `CLAUDE.md`. Für Etappe 2 (Pakete `E2-0` bis `E2-5`) gilt zusätzlich das Kapitel „Etappe 2“ am Ende dieser Datei und `ETAPPE2-PLAN.md` (vollständiger Plan mit allen Entscheidungen des PO).
 
 ## 1. Technik-Stack
 
@@ -226,4 +226,50 @@ Neue Abhängigkeit `uqr` (Begründung in Abschnitt 1). Der JS-Build ist ca. 107 
 ## 14. Hinweise
 
 - Safari auf dem iPhone löscht Website-Daten nach 7 Tagen ohne Nutzung, wenn die App nicht installiert ist. Export (F7) regelmäßig nutzen.
-- Die Daten liegen pro Browser und Gerät getrennt; gemeinsame Daten erst ab Etappe 2.
+- Die Daten liegen pro Browser und Gerät getrennt; gemeinsame Daten erst ab Etappe 2 (Paket E2-3).
+
+# Etappe 2
+
+Stand: 20.10.2026 · Grundlage: `ETAPPE2-PLAN.md` (vollständiger Plan, Abschnitt 6 mit den Entscheidungen des PO), `ETAPPE2.md` (Prüfliste, Sicherheit S1–S6), `ANFORDERUNGEN.md` (Abschnitt 5 „Sicherheit (Etappe 2)“, Abschnitt 9 „Etappe 2“) und `design/DESIGN.md` (Version 2).
+
+Etappe 2 bringt dieselben Daten für beide Personen auf alle Geräte (Supabase in Frankfurt, Anmeldung per Einmalcode, ein Haushalt mit Einladungslink, Abgleich in Echtzeit, offline weiter nutzbar) und danach das Redesign „Persönlich“ mit Statistik. Dieses Kapitel fasst Stack, Teststrategie und Pakete zusammen; Einzelheiten (Datenbankschema, Konfliktregeln, Datenmodell v3, Sicherheit, Risiken) stehen in `ETAPPE2-PLAN.md`. Bei Widerspruch gelten dort Abschnitt 6 und `ANFORDERUNGEN.md` Abschnitt 9.
+
+## E2.1 Leitentscheidungen und Stack
+
+- **Fachlogik bleibt rein.** `src/domain/` ändert sich nur für das Datenmodell v3 (`schemaVersion` 3: Erledigung bekommt `completedAt` und `assigneeAtCompletion`; Migration v2 → v3 lässt beide weg) und für die Statistik (`statistics.ts`, E2-4b). Die Domänenfunktionen geben weiter ganze `AppData` zurück.
+- **Lokal zuerst, Server als Abgleich.** Jedes Gerät hält eine Kopie der Haushaltsdaten und eine Warteschlange ausstehender Änderungen (`outbox`). Anzeigen und Speichern gehen immer sofort lokal. Der Abgleich (`sync`) schickt die Warteschlange der Reihe nach und holt dann alles, was sich seit dem letzten Stand geändert hat. Echtzeit-Ereignisse stoßen nur einen Abruf an; abgerufen wird auch beim Start, bei `online` und beim Wiedereinblenden.
+- **Neue Schichten:** `src/sync/` (`changes.ts`, `merge.ts`, `outbox.ts`, `syncedStorage.ts`, `remote.ts`, `fakeRemote.ts`, `supabaseRemote.ts`; Abdeckung ≥ 90 %), `src/auth/` (Schnittstelle `Auth`, Umsetzungen Supabase und Fake), `src/backend.ts` (Modus `supabase` | `fake` | `local`), `supabase/` (Konfiguration und Migrationen), `scripts/fake-server.ts`. `AppStorage` bekommt `subscribe(listener)` und `syncStatus`; `load`/`save` bleiben.
+- **Modi:** `supabase` für die echte App, `fake` für die E2E-Tests, `local` für `npm run demo` und für die Online-Version bis zum Ende von E2-3 (Build-Schalter `VITE_BACKEND`).
+- **Konfliktregeln:** Pro Feld gewinnt die zuletzt beim Server angekommene Änderung (Serverzeit), die Checkliste zählt als ein Feld; gleichzeitiges Abhaken desselben Durchgangs zählt einmal; Löschen gewinnt gegen Bearbeiten; Rückgängig nur für die letzte Erledigung einer Aufgabe auf dem Server.
+- **Sicherheit:** Row Level Security auf jeder Tabelle, Schreiben nur über Datenbankfunktionen, `anon` ohne Rechte; Projekt-URL und Publishable Key (öffentlich) per `VITE_SUPABASE_URL`/`VITE_SUPABASE_PUBLISHABLE_KEY` in den Build; Content Security Policy als `<meta>`; der Service Worker fasst nur eigene Adressen an; der Einladungstoken steht im Hash.
+
+### Neue Abhängigkeiten (Begründung, N7)
+
+| Bereich | Wahl | Begründung |
+|---|---|---|
+| Anmeldung, Datenbank, Echtzeit | `@supabase/supabase-js` (Laufzeit) | S1 verlangt einen etablierten Dienst mit Standort in der EU und verbietet eigene Kryptografie und Sitzungsverwaltung (S4). Supabase liefert Anmeldung per Einmalcode, Datenbank mit Row Level Security (S5), Echtzeit und Region Frankfurt im kostenlosen Tarif (N6) aus einer Hand; die Alternative wären drei Dienste. Die Bündelgröße wird in E2-1 gemessen; ist sie zu groß, kommen die Einzelpakete `auth-js`, `postgrest-js`, `realtime-js` zum Einsatz. |
+| Lokale Instanz, Migrationen | `supabase` (Entwicklung, CLI) | Startet die lokale Instanz für `check:db` in CI und spielt die Migrationen ein. Als Entwicklungsabhängigkeit (`npx supabase`), keine globale Installation. |
+| Versand der Einmalcodes | Gmail-SMTP (Konto nur für Putzplan, App-Passwort im Supabase-Dashboard) | Der eingebaute Versand von Supabase schickt nur an Teammitglieder und sehr wenige Mails; Brevo verlangt eine eigene Domain. Keine Abhängigkeit im Code. |
+
+Sonst nichts: Der Fake-Server ist eigener Code mit `node:http`, Diagramme sind eigenes SVG.
+
+## E2.2 Teststrategie
+
+1. **`npm run check`** (unverändert der eine Befehl; ohne Docker, Internet und Zugangsdaten): Vitest für Fachlogik und `src/sync/` gegen `FakeRemote`; Playwright gegen einen Build im Modus `e2e` mit lokalem Fake-Server (zwei Browser-Kontexte für zwei Geräte, `context.setOffline`); zusätzlich ein Produktions-Build mit Platzhalter-URL. `startConfigured`/`storedData` in `tests/e2e/helpers.ts` laufen dann über den Fake-Server.
+2. **`npm run check:db`** (lokale Supabase-Instanz in Docker, **nur in CI**, Entscheidung des PO): Migrationen frisch einspielen, S5-Tests mit direkten API-Anfragen (zwei Haushalte), Vertragstests (dieselbe Testreihe gegen `FakeRemote` und `SupabaseRemote`), Anmeldung im Browser mit Code aus Mailpit. Eigener Job `db`; `pages` veröffentlicht nur, wenn `check` und `db` grün sind. Lokal sagt der Befehl ohne Docker, dass er nur in CI läuft.
+3. **Echtes Projekt nur von Hand** durch den PO (`npm run dev` mit `.env.local`); nie automatische Tests gegen echte Daten.
+
+## E2.3 Arbeitspakete
+
+Jedes Paket endet wie bisher mit grünem `npm run check` (lokal und auf GitHub) und einem Commit; ab E2-1 muss auch der Job `db` auf GitHub grün sein. Pakete mit Schritten des PO (E2-1, E2-2, E2-3, E2-5) sind erst fertig, wenn diese Schritte erledigt und bestätigt sind. Ausführliche Beschreibung und „Fertig, wenn“ je Paket: `ETAPPE2-PLAN.md` Abschnitt 3.
+
+| # | Paket | Inhalt | Fertig, wenn |
+|---|---|---|---|
+| E2-0 | Fundament ohne Server | Datenmodell v3 mit Migration; `src/sync/` gegen `FakeRemote` (Änderungen ableiten, Warteschlange, Zusammenführen, alle Konfliktregeln); `src/auth/` (Schnittstelle, Fake); `src/backend.ts`; Fake-Server und Playwright-`webServer`, Build-Modus `e2e`. Online und Demo bleiben `local`. | Unit-Tests je Konfliktregel und „offline nachgereicht“ grün, `src/sync/` ≥ 90 %, Migration v2 → v3 getestet, erster E2E-Test mit zwei Kontexten, check grün, App unverändert. |
+| E2-1 | Supabase einrichten | PO: Projekt in Frankfurt, AVV, SMTP über das Gmail-Konto, Auth mit Code statt Link, Variablen auf GitHub. Repo: `supabase/` (Konfiguration, Migration mit Tabellen, RLS, Funktionen, Realtime), `npm run check:db`, Job `db`, `.env.example`, CSP, Test „Service Worker fasst Supabase nicht an“, täglicher Abruf per GitHub Actions gegen das Projekt (nur öffentlicher Key), Abhängigkeiten begründet mit gemessener Bündelgröße, Doku (Tarif, Pausierung, keine Backups). Migration ins echte Projekt spielt der PO ein. | `check:db` in CI grün mit S5-Tests; RLS im echten Projekt überall an; `check` ohne Docker grün; kein Geheimnis im Repo. |
+| E2-2 | Anmeldung | Seiten „Anmelden“ und „Code eingeben“, „Haushalt anlegen“, Kachel „Haushalt“ mit Einladung (Link, Teilen, QR-Code), `#/einladung/<token>` samt Fehlerseiten, „Ich bin“ aus der Rolle, Abmelden; Passkey nach Spike oder begründet aufgeschoben. | E2E (Fake) grün mit allen Fehlerfällen und axe; `check:db` mit Anmeldung und Einladung grün; PO meldet sich am echten Projekt an. |
+| E2-3 | Gemeinsamer Speicher | `SupabaseRemote`, `SyncedStorage` in `App.tsx`, Abgleichsstand und Konflikt-Hinweise, Versionsschutz, angepasste Seite „unlesbare Daten“, Abmelden mit Warnung, Sicherung auf Haushaltsdaten (Einspielen nur online); Workflow `pages` auf `VITE_BACKEND=supabase`. | `sync.spec.ts` (zwei Kontexte, Fake) grün, alle bisherigen E2E-Tests über den Fake-Server grün, Vertragstests gegen `SupabaseRemote` in CI grün, zwei echte Geräte sehen dieselben Daten. |
+| E2-4 | Redesign „Persönlich“ und Statistik | E2-4a: neue Tokens (Alpha-Kontraste in `tokens.test.ts`), Navigation, Seite „Heute“, Seite „Woche“, Leistenfarben, Manifest, App-Symbol in Violett. E2-4b: `statistics.ts` und Seite „Statistik“ mit SVG-Diagrammen. Zwei Commits. | Unit-Tests für Statistik, Begrüßung und Zusammenfassungssatz; alle E2E-Tests auf die neue Navigation umgestellt; `phone.spec.ts` prüft „Heute“ bei 360 × 640 und 390 × 844; axe, Kontrast und Kontrastmodus grün. |
+| E2-5 | Gerätetest und Abschluss | `docs/GERAETETEST.md` erweitern (Anmeldung, Einladung, zwei Geräte, offline, gleichzeitig abhaken, Abmelden, Update), PO führt ihn durch; `ETAPPE2.md` abhaken; Datenschutzhinweis in den Einstellungen; README (Anmeldung, Einladung, Pausierung, Sicherung, Konto löschen und Haushalt verlassen von Hand, Daten aus Etappe 1); Neuanmeldungen abschalten; erste Sicherung herunterladen. | Gerätetest bestanden, `ETAPPE2.md` vollständig abgehakt, `check` und `check:db` grün, PO nimmt Etappe 2 ab. |
+
+Umsetzungsabschnitte der Pakete („Umsetzung Paket E2-N (Entscheidungen)“) kommen als `## E2.4`, `## E2.5` … hinter diese Tabelle.

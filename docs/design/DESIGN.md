@@ -1,100 +1,87 @@
 # Putzplan – Design
 
-Stand: 19.10.2026 (umgesetzt in Paket R1) · Ersetzt KERN UX (N1). Barrierefreiheit (N2) gilt unverändert und geht bei Widerspruch vor.
+Stand: 20.10.2026 · Version 2 „Persönlich“ · Ersetzt Version 1 „Kachel-Board“.
+Barrierefreiheit (N2) gilt unverändert. Umsetzung als Teil von Etappe 2 (Paket E2-4).
 
 Visuelle Vorlagen in diesem Ordner (Quelltext eines Design-Tools, nicht lauffähig – nur als Referenz für Aufbau, Farben und Größen lesen):
 
-- `entwurf-mobil-hell.html` – Wochenübersicht am Handy, hell
-- `entwurf-mobil-dunkel.html` – dieselbe Ansicht im Dark Mode
-- `entwurf-pc-hell.html` – Wochenübersicht am PC
+- `entwurf-v2-heute-hell.html` – Startseite „Heute“, hell
+- `entwurf-v2-heute-dunkel.html` – Startseite „Heute“, dunkel
+- `entwurf-v2-statistik.html` – Seite „Statistik“, hell
+
+Die Dateien `entwurf-mobil-*.html` und `entwurf-pc-hell.html` gehören zu Version 1 und gelten nur noch für die PC-Aufteilung (Seitenleiste links, Inhalt rechts).
 
 ## 1. Grundsätze
 
-- Stil „Kachel-Board“: klare Kacheln mit großen Radien, kräftige Akzentflächen, viel Weißraum.
-- Eine Akzentfarbe (Blau), eine Warnfarbe (Orange). Keine Verläufe, keine Emojis.
-- Keine Hoheitszeichen, keine Behördenoptik.
-- Alle Werte unten als CSS-Variablen (Design-Tokens) umsetzen; Komponenten verwenden nur Tokens, nie feste Farbwerte.
+- Persönlich: Die App begrüßt mit Namen und zeigt zuerst, was für die angemeldete Person ansteht.
+- Kooperativ: Statistiken zeigen gemeinsame Leistung und Teamwork, nie eine Rangliste.
+- Weiche, große Formen; Violett als Hauptfarbe; im Dark Mode tiefes Blau mit leichtem Leuchten oben.
+- Keine Emojis, keine Hoheitszeichen. Verläufe nur als Hintergrundleuchten im Dark Mode.
+- Alle Werte als CSS-Variablen (Tokens); Komponenten nutzen nur Tokens.
 
 ## 2. Farben
 
 | Token | Hell | Dunkel | Verwendung |
 |---|---|---|---|
-| `--bg` | #EEF1F5 | #0F1115 | Seitenhintergrund |
-| `--surface` | #FFFFFF | #1A1D24 | Kacheln, Navigation |
-| `--surface-2` | #EEF1F5 | #262A33 | Tagesfelder, Chips, Steuerflächen in Kacheln |
-| `--text` | #111318 | #F3F5F8 | Haupttext |
-| `--text-muted` | #4A5260 | #9AA3B2 | Metazeilen, Beschriftungen |
-| `--control-border` | #7A8494 | #6E7789 | Rahmen des Abhak-Knopfs, der Eingabefelder und Auswahlkreise (Paket R1: dunkler als der erste Entwurf #C9CFD8 / #4A5160, weil Bedienelemente 3:1 zur Umgebung brauchen, WCAG 1.4.11) |
-| `--accent` | #1F47D6 | #8FA8FF | Links, aktive Navigation, Fortschritt, Fokusrahmen |
-| `--accent-tile` | #1F47D6 | #2B4FE0 | Fläche der Kachel „Stand“ und der Hauptknöpfe |
-| `--on-accent-tile` | #FFFFFF | #FFFFFF | Text auf `--accent-tile` |
-| `--warn-tile` | #FF6B2C | #FF6B2C | Fläche der Kachel „Überfällig“, Bestätigen beim Löschen |
-| `--on-warn-tile` | #111318 | #111318 | Text und Fokusrahmen auf `--warn-tile` |
-| `--warn-tile-action` / `--on-warn-tile-action` | #111318 / #FFFFFF | #111318 / #FFFFFF | Knöpfe auf der Kachel „Überfällig“ |
-| `--warn-text` | #A03A0E | #FF8A65 | Warnhinweise und Fehlermeldungen als Text |
-| `--inverse` | #111318 | #F3F5F8 | Aktiver Filter, aktiver Tag, Hauptknopf mobil, Hinweis „Rückgängig“ |
-| `--on-inverse` | #FFFFFF | #0F1115 | Text auf `--inverse` |
+| `--bg` | #F3F2F8 | #0B1022, oben radiales Leuchten #1E2C6B | Seitenhintergrund |
+| `--surface` | #FFFFFF | rgba(255,255,255,0.07), Rahmen rgba(255,255,255,0.10) | Karten, Tagesfelder |
+| `--text` | #15131F | #F2F3FA | Haupttext |
+| `--text-muted` | #5A5670 | #A9B0D0 | Metazeilen, Labels |
+| `--control-border` | #8E89A6 | #7C84AA | Abhak-Knopf, gestrichelte Tageskreise |
+| `--accent` | #5530D9 | #6A4DF4 | Erledigt-Kreise, Fläche „Gemeinsam“, Statistik-Kachel (Text weiß) |
+| `--accent-soft` | #EAE5FB | rgba(106,77,244,0.22) | Hintergrund erledigter Aufgaben |
+| `--accent-strong` | #7B5CFF | #6A4DF4 + Leuchten | Plus-Knopf in der Navigation (nur Symbol) |
+| `--inverse` | #15131F | #F2F3FA | Navigation (hell), aktiver Tag, aktiver Filter |
+| `--on-inverse` | #FFFFFF | #0B1022 | Text auf `--inverse` |
+| `--warn-text` | #A03A0E | #FF9A73 | „überfällig seit …“ |
+| `--person-a` | #5530D9 | #8B6CFF | Person A in Statistiken |
+| `--person-b` | #C2650A | #F2A33A | Person B in Statistiken |
 
-Umsetzung: `src/ui/tokens.css`. `src/ui/tokens.test.ts` prüft jede verwendete Kombination in beiden Themes (Text 4,5:1, Bedienelemente und Symbole 3:1).
+Gemessene Kontraste (Auswahl): Text auf Hintergrund 16,5:1 · Metatext 6,3:1 · Weiß auf Akzent 7,5:1 (hell) / 5,3:1 (dunkel) · Rahmen Abhak-Knopf 3,3:1 · Person B auf Weiß 4,1:1. Glasflächen im Dark Mode vor der Umsetzung gegen den tatsächlichen Hintergrund nachrechnen; die Kontrasttests aus R1 werden um alle neuen Paare erweitert.
 
-Symbolkacheln (Hintergrund / Symbolfarbe):
+Symbolkacheln wie in Version 1 (Blau, Grün, Orange je hell/dunkel).
 
-| Ton | Hell | Dunkel |
-|---|---|---|
-| Blau | #E3E9FF / #1F47D6 | #26304F / #A9BCFF |
-| Grün | #DDF3E4 / #17703A | #1E3A2A / #8FE0A8 |
-| Orange | #FFE9DC / #9A3A0B | #3D2418 / #FFB08A |
+## 3. Schrift
 
-Alle Text-Kombinationen erreichen mindestens 4,5:1. Neue Kombinationen werden vor dem Einsatz geprüft.
+- Archivo, selbst gehostet, Schnitte 400–900.
+- Begrüßung und Seitentitel: 34–36 px, 900, Großbuchstaben per CSS (`text-transform`), Laufweite −0,03 em.
+- Abschnittslabels: 13 px, 800, Großbuchstaben, Laufweite 0,06 em, `--text-muted`.
+- Aufgabentitel 16 px (700) · Metazeile 13 px · große Zahlen 40–44 px (900).
 
-Fokus: in beiden Themes deutlich sichtbar, 3 px Umriss in `--accent` mit 2 px Abstand.
+## 4. Form und Abstände
 
-## 3. Farbschema-Einstellung (N8)
-
-- Einstellungen → „Darstellung“: Hell / Dunkel / Automatisch.
-- Standard: Automatisch (folgt `prefers-color-scheme` des Geräts).
-- Gespeichert pro Gerät (wie „Ich bin“), nicht im Export.
-- Kein Aufblitzen des falschen Themes beim Laden.
-
-## 4. Schrift
-
-- Archivo, Schnitte 400, 500, 600, 700, 800.
-- **Selbst gehostet** (z. B. über ein npm-Paket mit den Schriftdateien). Kein Abruf bei Google Fonts: Das überträgt die IP-Adresse an Google und ist nach DSGVO problematisch.
-- Größen: Seitentitel 30 px mobil / 34 px PC (800) · Kacheltitel 19–20 px (800) · Aufgabentitel 16 px (600) · Metazeile 13 px (400) · Kachel-Label 13 px Großbuchstaben, Laufweite 0,06 em (800).
-
-## 5. Form und Abstände
-
-- Radien: Kacheln 22 px · Knöpfe, Symbolkacheln, Abhak-Knopf 14 px · Chips 10–12 px · Pillen 999 px.
-- Abstände: Seitenrand 16 px mobil, am PC `clamp(16px, 3vw, 40px)` · zwischen Kacheln 12 px mobil, 16 px PC · Kachel-Innenabstand 16 px mobil, 20 px PC.
+- Radien: Karten 22–24 px · Symbolkacheln 14 px · Tagesfelder, Filter, Navigation, Abhak-Knöpfe 999 px.
+- Seitenrand 16 px mobil; Abstand zwischen Karten 8–12 px.
 - Tippflächen mindestens 44 × 44 px.
+- Unten genug Abstand, damit die schwebende Navigation keinen Inhalt verdeckt.
 
-## 6. Bausteine
+## 5. Startseite „Heute“
 
-- **Wochenkopf:** Label „KW 43 · 19.–25. OKTOBER“, darunter Titel „Diese Woche“, daneben Knöpfe „Vorherige Woche“ / „Nächste Woche“ (Pfeil-Symbole mit `aria-label`).
-- **Filter:** Segment-Schalter „Alle / Nur meine“ mit `aria-pressed`.
-- **Heute-Kachel:** je Aufgabe eine Zeile: Symbolkachel 44 px · Titel + Metazeile („Person · Rhythmus“, bei Checklisten „Person · 3 von 5“ plus Fortschrittsbalken) · Abhak-Knopf 44 px rechts. Symbol und Text sind ein Knopf, der die Detailansicht öffnet (Paket 10). Darunter, eingerückt: „Übernehmen“ als Knopf (wo es zutrifft) und die Checklisten-Einträge als abhakbare Chips (Kästchen + Text, 44 px hoch); am PC immer sichtbar, am Handy hinter dem Knopf „Checkliste“ aufklappbar.
-- **Überfällig-Kachel:** dringendste überfällige Aufgabe (Titel, Symbol und Meta-Zeile sind ein Knopf für die Detailansicht), darunter „Abhaken“ und „Übernehmen“ (wo es zutrifft; beide in der Knopffarbe der Kachel).
-- **Anordnung der Wochenübersicht (Paket 12):** Handy und unter 1000 px Breite eine Spalte: Überfällig (wenn vorhanden), Tageskachel, Stand, Woche im Überblick; die Kachel „Überfällig“ liegt beim Öffnen vollständig im Bild (360 × 640 px aufwärts). Ab 1000 px ein Raster: Tageskachel links über zwei Zeilen, rechts Überfällig und darunter Stand, unten die Woche. Die Reihenfolge im Seitenaufbau (Tastatur, Screenreader) ist immer Überfällig, Tag, Stand, Woche. (Der Entwurf zeigt am Handy Überfällig und Stand nebeneinander unter der Tageskachel; das ist ersetzt.)
-- **Detailansicht (Paket 10):** Fenster über der Seite (`<dialog>`, Kachel-Stil, 22 px Radius): Symbolkachel + Titel, Angaben als Liste (Zuständig, Rhythmus, Termin, Notiz), Checkliste mit großen Zeilen (48 px) zum Abhaken, unten „Bearbeiten“, „Übernehmen“ (Sekundärknöpfe) und „Schließen“ (Hauptknopf). Escape schließt; der Fokus kehrt auf die Aufgabe zurück. Mehrere überfällige: Hinweis „+ N weitere“ mit Link zur Liste. Keine überfälligen: Kachel entfällt.
-- **Stand-Kachel:** „erledigt / fällig“ für die angezeigte Woche (fällig = alle Durchgänge mit Termin in dieser Woche, erledigte eingeschlossen) mit Fortschrittsbalken.
-- **Rest der Woche:** mobil 7 Tagesfelder mit Anzahl (Link zum Tag); am PC 7 Spalten mit allen Aufgaben als Chips, in einem waagerecht scrollbaren Bereich, falls der Platz nicht reicht.
-- **Navigation:** mobil Leiste unten (Woche, Aufgaben, Erledigt, Einstellungen), am PC Seitenleiste links. „Woche“ nutzt ein Kalender-Symbol.
-- **Neue Aufgabe:** mobil schwebender Knopf unten rechts, am PC Knopf im Wochenkopf.
-- **Rückgängig:** nach dem Abhaken kurz eine Meldung mit Knopf „Rückgängig“ (`role="status"`).
+Reihenfolge von oben:
+1. **Kopfzeile:** Avatar mit Initiale (Farbe der Person), Datum, rechts Wochenwahl „‹ KW 43 ›“.
+2. **Begrüßung:** tageszeitabhängig „Guten Morgen / Hallo / Guten Abend, {Name}!“.
+3. **Zusammenfassung in einem Satz:** „Heute stehen 3 Aufgaben für dich an. Eine davon ist überfällig.“ (Varianten für 0 Aufgaben, alles erledigt usw.).
+4. **Deine Woche:** 7 Tagesfelder Mo–So. Erledigter Tag: gefüllter Akzentkreis mit Haken. Heute: invertiert mit „erledigt/gesamt“. Kommende Tage: gestrichelter Kreis mit Anzahl. Freier Tag: „–“. Jedes Feld mit vollständigem `aria-label`; Tipp öffnet den Tag.
+5. **Zwei Kacheln:** „Deine Woche x / y“ und „Gemeinsam“ mit Fortschrittsring (Prozent im Ring, Text daneben).
+6. **Heute für dich:** Filter „Meine / Alle“, darunter Aufgabenkarten (Symbolkachel, Titel, Metazeile, runder Abhak-Knopf rechts). Überfällige zuerst mit Warnhinweis. Erledigte unten in `--accent-soft`, durchgestrichen, mit Uhrzeit.
 
-## 7. Symbole
+Die bisherige Überfällig-Regel aus F6 bleibt erfüllt: Überfällige Aufgaben stehen in „Heute für dich“ ganz oben und sind ohne Scrollen sichtbar (360 × 640 prüfen).
 
-- Bibliothek: Lucide (Lizenz ISC, verträglich mit EUPL-1.2). Nur genutzte Symbole einbinden.
-- Navigations- und Bediensymbole aus derselben Bibliothek.
-- Symbol pro Aufgabe (F8, umgesetzt in Paket R2): Auswahl aus einer festen Liste von 21 Haushaltssymbolen mit festem Farbton (`src/domain/taskSymbols.ts`), Standardsymbol (Haus, Blau) für Aufgaben ohne Auswahl. Im Formular als Radio-Gruppe aus quadratischen Symbolkacheln (44–53 px, gewählt mit 3-px-Rahmen in `--accent`) in einem Raster mit 7, 6 oder 3 Spalten je nach Breite, sodass nie eine einzelne Kachel allein in der letzten Reihe steht (Paket 10); auf der Kachel „Überfällig“ nur das Bild in der Textfarbe, auf den Chips am PC nur das Bild im Ton.
+## 6. Seite „Statistik“
 
-## 8. App-Symbol und Leistenfarbe (Paket 12)
+- Zeitraum: Woche / Monat / Jahr.
+- **Gemeinsam erledigt:** große Zahl, Vergleich zum Vorzeitraum, Serie („4 Wochen in Folge“ = alle fälligen Aufgaben einer Woche erledigt), Balken pro Tag. Diagramm mit `role="img"` und vollständiger Textbeschreibung.
+- **Euer Teamwork:** geteilter Balken Person A / Person B mit Namen und Zahlen, darunter „N-mal habt ihr füreinander übernommen“. Keine Rangliste, keine Gewinner-Formulierungen.
+- **Am häufigsten erledigt:** Top 3 Aufgaben mit Symbol und Anzahl.
+- Gezählt wird pro Aufgabe (ID), nicht pro Titel.
 
-- Symbol: blaue Kachel (`--accent-tile` hell, #1F47D6) mit weißem Haus (Lucide „house“, Linienstärke 1,7), Quelle `public/icon.svg`; die PNGs (192, 512, maskierbar 512, iPhone 180) zeichnet `npm run icons`. Rund gerundet (Radius 22 %) nur bei den Symbolen, die so angezeigt werden; maskierbar und iPhone-Symbol sind randlos (das Betriebssystem schneidet zu), das Haus liegt in der inneren 80 % (Sicherheitszone). Keine Hoheitszeichen.
-- Farbe der Browser- und Statusleiste (`<meta name="theme-color">`) und `background_color`/`theme_color` des Manifests: der Seitenhintergrund `--bg` (hell #EEF1F5, dunkel #0F1115). Das Manifest kennt nur einen Wert (hell).
-- Seitenränder halten Abstand zur Aussparung und zum Home-Balken (`env(safe-area-inset-*)`, `viewport-fit=cover`).
+## 7. Navigation
 
-## 9. Bewegung
+- Mobil: schwebende Leiste unten (16 px Rand, Höhe 68 px, Radius 999 px). Hell `--inverse`, dunkel Glasfläche. Einträge: Heute · Woche · [Plus] · Statistik · Einstellungen. Aktiver Eintrag als helle Pille mit Text, übrige nur Symbol mit `aria-label`.
+- Die Seite „Woche“ übernimmt die bisherige Wochenübersicht (Tagesansicht, Blättern); „Aufgaben“ und „Erledigt“ sind von dort und aus den Einstellungen erreichbar.
+- PC: Seitenleiste links wie in Version 1, mit denselben Einträgen.
 
-- Kurze, dezente Übergänge (unter 200 ms), zum Beispiel beim Abhaken.
+## 8. Bewegung
+
+- Abhaken: kurzer Übergang des Kreises (unter 200 ms); Ring und Zahlen zählen sanft hoch.
 - Bei `prefers-reduced-motion: reduce` keine Animationen.

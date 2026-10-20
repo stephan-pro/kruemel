@@ -86,6 +86,7 @@ Startet die App mit erfundenen Beispieldaten (zwei Personen, wiederkehrende und 
 - [`docs/PLAN.md`](docs/PLAN.md) – Technik, Arbeitspakete und technische Entscheidungen.
 - [`docs/design/DESIGN.md`](docs/design/DESIGN.md) – Gestaltung.
 - [`docs/GERAETETEST.md`](docs/GERAETETEST.md) – Prüfliste für echte Geräte, mit Ergebnis.
+- [`docs/ETAPPE2-PLAN.md`](docs/ETAPPE2-PLAN.md) – Plan für Etappe 2 (gemeinsam nutzen) mit den Entscheidungen des Product Owners.
 - [`docs/ETAPPE2.md`](docs/ETAPPE2.md) – Prüfliste für Etappe 2, inklusive Sicherheit S1–S6.
 
 ## Lizenz

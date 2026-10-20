@@ -16,7 +16,7 @@ Person A und Person B organisieren gemeinsam alle Aufgaben im Haushalt: wiederke
 ## 3. Etappen
 
 - **Etappe 1 – lokal:** alle Funktionen, Daten im Browser gespeichert. Ziel: Grundlagen lernen, App am PC nutzbar.
-- **Etappe 2 – gemeinsam:** gemeinsame Datenbank, Anmeldung, App online. Ab dann nutzen beide die App auf allen Geräten.
+- **Etappe 2 – gemeinsam:** gemeinsame Datenbank, Anmeldung, App online. Ab dann nutzen beide die App auf allen Geräten. Dazu gehören das neue Design „Persönlich“ und die Statistik (Paket E2-4). Plan: `ETAPPE2-PLAN.md`.
 
 Das Speichern wird in Etappe 1 bereits hinter einer klaren Schnittstelle gekapselt, damit Etappe 2 nur diese eine Stelle austauscht.
 
@@ -52,7 +52,8 @@ Akzeptanzkriterien:
 - Die Zuweisung ist jederzeit änderbar.
 - „Übernehmen“ bei einer Aufgabe fragt: nur dieses Mal oder dauerhaft. Standard ist „nur dieses Mal“; beim nächsten Zyklus gilt wieder die feste Zuweisung.
 - Beim Abhaken wird gespeichert, wer die Aufgabe erledigt hat.
-- Etappe 1 (ohne Anmeldung): Auf jedem Gerät wählt man einmal „Ich bin: Person A / Person B“. In Etappe 2 ersetzt die Anmeldung diese Auswahl.
+- Etappe 1 (ohne Anmeldung): Auf jedem Gerät wählt man einmal „Ich bin: Person A / Person B“.
+- Etappe 2: „Ich bin“ kommt aus der Anmeldung (die Rolle im Haushalt); die Auswahl am Gerät entfällt, außer im Demo-Modus.
 
 ### F6 Startseite: Wochenübersicht
 - Zeigt die laufende Woche Montag bis Sonntag mit allen fälligen Aufgaben.
@@ -65,7 +66,8 @@ Akzeptanzkriterien:
 
 ### F7 Datensicherung
 - Export aller Daten als Datei und Import aus dieser Datei.
-- Dient in Etappe 1 als Backup und später zur Übernahme in die Datenbank.
+- Dient in Etappe 1 als Backup.
+- Etappe 2: Herunterladen geht auch ohne Internet. Einspielen ersetzt die Daten des Haushalts **für beide Personen** und geht nur mit Internet. Eine Sicherung aus Etappe 1 lässt sich so in den gemeinsamen Haushalt übernehmen.
 
 ### F8 Symbole pro Aufgabe (umgesetzt in Paket R2)
 Nach `docs/design/DESIGN.md` Abschnitt 7.
@@ -79,7 +81,7 @@ Nach `docs/design/DESIGN.md` Abschnitt 7.
 
 - **N1 Design:** Eigenes Design nach `docs/design/DESIGN.md`, keine Hoheitszeichen.
 - **N2 Barrierefreiheit:** WCAG 2.1 AA bzw. BITV 2.0; vollständig per Tastatur bedienbar, mit Screenreader nutzbar.
-- **N3 Geräte:** responsiv für PC und Handy; als PWA auf iPhone und Android installierbar.
+- **N3 Geräte:** responsiv für PC und Handy; als PWA auf iPhone und Android installierbar. Ab Etappe 2 bleibt die App auch ohne Internet bedienbar; Änderungen werden nachgereicht, sobald das Gerät wieder online ist.
 - **N4 Sprache:** Deutsch.
 - **N5 Lizenz:** Open Source unter EUPL-1.2.
 - **N6 Kosten:** kostenlos zu betreiben.
@@ -91,8 +93,8 @@ Nach `docs/design/DESIGN.md` Abschnitt 7.
 Gilt ab Etappe 2 (gemeinsame Datenbank, Anmeldung). In Etappe 1 nur dokumentiert, nichts davon ist umgesetzt.
 
 - **S1 Anmeldedienst:** Die Anmeldung läuft über einen etablierten Anmeldedienst, nicht über eine eigene Lösung. Der Dienst hat seinen Serverstandort in der EU (DSGVO).
-- **S2 Passkeys:** Passkeys sind der Hauptweg der Anmeldung.
-- **S3 Rückfallebene:** Ein Code aus einer Authenticator-App (TOTP) ist die Rückfallebene, z. B. auf einem Gerät ohne Passkey.
+- **S2 Einmalcode:** Der Hauptweg der Anmeldung ist ein Einmalcode per E-Mail (Code eingeben, kein Link). Es gibt kein Passwort und keinen TOTP-Code aus einer Authenticator-App. Ein Link würde auf dem iPhone in Safari statt in der installierten App öffnen.
+- **S3 Passkey zusätzlich:** Ein Passkey ist ein zusätzlicher, bequemerer Weg, nie der einzige. Er hängt am Beta-Stand des Anmeldedienstes und wird nur umgesetzt, wenn ein kurzer Vorversuch (Spike in E2-2) das trägt; sonst wird er begründet aufgeschoben. Der Einmalcode funktioniert immer.
 - **S4 Keine eigene Kryptografie:** Die App speichert keine Passwörter und implementiert keine eigene Kryptografie; beides übernehmen der Anmeldedienst und geprüfte Standardbibliotheken.
 - **S5 Zugriffsregeln in der Datenbank:** Jeder Haushalt sieht nur seine eigenen Daten. Das wird durch Zugriffsregeln auf Datenbankebene erzwungen, nicht nur durch die App, sodass auch ein Fehler in der App keine fremden Daten preisgibt.
 - **S6 Datensparsamkeit:** Gespeichert wird nur, was die App für ihre Funktionen braucht (Anmeldedaten beim Anmeldedienst, Namen, Aufgaben, Erledigungen). Keine Werbe- oder Analysedienste, keine Weitergabe an Dritte, keine Abrufe bei Drittanbietern (z. B. Schriften selbst ausliefern).
@@ -122,7 +124,9 @@ Jeder neue Stand muss sich **ohne Claude und ohne Tokens** vollständig prüfen 
 
 ## 8. Bewusst nicht in Version 1
 
-Push-Benachrichtigungen, Statistiken, Punkte oder Belohnungen, weitere Haushaltsmitglieder.
+Push-Benachrichtigungen, Punkte oder Belohnungen, weitere Haushaltsmitglieder.
+
+Die Statistik gehört seit dem 20.10.2026 dazu (Paket E2-4b, nach `docs/design/DESIGN.md` Version 2): Sie zeigt gemeinsame Leistung und Teamwork, keine Rangliste und keine Gewinner-Wörter.
 
 ## 9. Entscheidungen (19.10.2026)
 
@@ -176,3 +180,27 @@ Präzisierungen zu Abschnitt 4 und 5. Bei Widerspruch gilt dieser Abschnitt. Tec
 - **Repository:** öffentlich auf GitHub.
 - **Code:** englische Namen im Code, Oberfläche deutsch; Wortliste in `CLAUDE.md`. Oberfläche mit Preact.
 - **Design (19.10.2026):** KERN UX ist durch das eigene Design aus `docs/design/DESIGN.md` ersetzt (Paket R1). Die Schrift Archivo liefert die App selbst aus; es gibt keinen Abruf bei Google Fonts oder anderen Drittanbietern.
+
+### Etappe 2 (Entscheidungen des PO, 20.10.2026)
+
+Geplantes Verhalten; es gilt ab dem jeweils genannten Paket (`ETAPPE2-PLAN.md`, Abschnitt 3). Bis dahin bleibt die App wie in Etappe 1.
+
+- **Betrieb Etappe 2:** Ein Haushalt hat genau zwei Mitglieder (Person A, Person B) und liegt bei Supabase in Frankfurt (kostenloser Tarif). Die Anmeldung läuft per E-Mail-Einmalcode (S2), die Daten liegen auf jedem Gerät als Kopie, Änderungen werden abgeglichen (N3).
+- **Online-Version:** Die Online-Version bleibt bis zum Ende von E2-3 bei Etappe 1; erst dann wird sie auf die gemeinsame Version umgestellt.
+- **Haushalt startet leer:** Ein neuer Haushalt hat keine Aufgaben. Es gibt keine automatische Übernahme der Daten aus Etappe 1. Wer sie behalten will, lädt vorher „Sicherung herunterladen“ und spielt die Datei nach der Anmeldung ein (F7); die README beschreibt das mit einem Satz (E2-5).
+- **Haushalt anlegen und einladen (E2-2):** Wer ohne Haushalt angemeldet ist, legt einen an (eigener Name und Name der zweiten Person, die Ersteller-Person ist Person A) oder öffnet einen Einladungslink. Ein Einladungslink gilt 7 Tage und nur einmal; ein neuer Link macht den alten ungültig. Das Annehmen scheitert mit eigener Meldung bei abgelaufenem oder benutztem Link, vollem Haushalt und wenn die Person schon einen Haushalt hat.
+- **Gleichzeitige Änderungen:** Bei Bearbeitungen gewinnt pro Feld die Änderung, die **zuletzt beim Server ankommt** (nicht die der Geräteuhr); verschiedene Felder derselben Aufgabe bleiben beide erhalten. Die Checkliste zählt als ein Feld: Haken zwei Geräte gleichzeitig verschiedene Einträge ab, kann ein Häkchen verloren gehen.
+- **Gleichzeitiges Abhaken:** Haken beide denselben Durchgang einer Aufgabe ab, zählt er einmal. Das zweite Gerät zeigt den Serverstand und den Hinweis „Hatte {Name} schon abgehakt.“
+- **Löschen gegen Bearbeiten:** Löschen gewinnt. Eine gelöschte Aufgabe wird durch eine gleichzeitige Bearbeitung nicht wiederbelebt.
+- **Rückgängig bei mehreren Geräten:** Es geht nur, solange die Erledigung auf dem Server noch die letzte der Aufgabe ist; sonst gilt der Serverstand und ein Hinweis erscheint.
+- **Ohne Internet (N3):** Die App bleibt voll bedienbar. Ein Hinweis nennt den Stand („Alles übertragen“, „Offline – N Änderungen warten“, „Server nicht erreichbar“); beim Abmelden warnt die App, wenn noch Änderungen warten. Einspielen einer Sicherung geht nur mit Internet.
+- **Neue Version nötig:** Hat ein anderes Gerät die Daten schon in einem neueren Format gespeichert, schreibt die App nichts mehr und zeigt „Neue Version verfügbar – Neu laden“.
+- **Pausierung (Supabase, kostenloser Tarif):** Das Projekt pausiert nach 7 Tagen ohne Nutzung; nach rund 90 Tagen Pause lässt es sich nicht mehr per Klick wiederherstellen. Die App läuft dann offline weiter und reicht Änderungen nach, sobald der PO das Projekt im Dashboard wiederhergestellt hat. Damit das nie passiert, ruft ein täglicher Workflow auf GitHub das Projekt ab (nur mit dem öffentlichen Schlüssel, ohne Geheimnisse; E2-1).
+- **Keine Sicherungen im kostenlosen Tarif:** Der Tarif bietet keine herunterladbaren Backups. Deshalb regelmäßig „Sicherung herunterladen“ (README).
+- **E-Mail-Versand:** Die Einmalcodes kommen von einem eigenen Gmail-Konto nur für Putzplan (SMTP mit App-Passwort), nicht von einem privaten Postfach. Ein Dienst wie Brevo kommt nicht in Frage, weil er eine eigene Domain verlangt.
+- **Neuanmeldungen:** Sobald beide Konten bestehen, schaltet der PO Neuanmeldungen im Dashboard ab (E2-5), damit niemand sonst einen Haushalt anlegen kann.
+- **Konto löschen und Haushalt verlassen:** Beides macht der PO bei Bedarf von Hand im Dashboard; die Schritte stehen in der README (E2-5). Die App hat dafür keine Funktion.
+- **Datenschutzhinweis:** Die Einstellungen bekommen einen kurzen Datenschutzhinweis (was gespeichert wird, bei wem: Supabase für Anmeldung und Daten, Google für den Versand der Codes; E2-5). Ein Impressum ist noch nicht entschieden (`ETAPPE2.md`, Abschnitt 1).
+- **Prüfung ohne Screenreader von Hand:** Wie in Etappe 1 wird die Anmeldung nicht von Hand mit einem Screenreader geprüft; die automatischen Prüfungen (axe, Tastatur, Fokus, Kontrastmodus) sichern N2.
+- **Prüfung der Datenbank (Q1):** `npm run check` läuft weiter ohne Docker, Internet und Zugangsdaten. Die Prüfung gegen eine lokale Supabase-Instanz (`npm run check:db`) läuft nur auf GitHub, nicht auf dem Rechner des PO.
+- **App-Symbol:** Mit dem neuen Design (E2-4) wird das Symbol im Violett des Designs neu gezeichnet.

@@ -247,20 +247,39 @@ Inhalt:
 - **Bündelgröße** durch supabase-js; wird gemessen.
 - **Tests:** Der Umbau der E2E-Hilfen auf den Fake-Server berührt alle Tests; daher passiert er früh (E2-0/E2-3) und zentral in `helpers.ts`.
 
-## 6. Offene Fragen an den PO (mit Empfehlung)
+## 6. Fragen an den PO und Entscheidungen
+
+Die Antworten des PO vom 20.10.2026 stehen jeweils unter der Frage. Sie gehen dem übrigen Plan vor, wo sie abweichen, und sind zusätzlich in `ANFORDERUNGEN.md` Abschnitt 9 eingetragen. Zeilen mit „Folge“ nennen, was die Entscheidung für die Pakete heißt.
 
 1. **E-Mail-Versand:** eigener SMTP nötig (siehe Risiken). Brevo (Frankreich, kostenlos ca. 300 Mails/Tag, AVV) oder das eigene Postfach per SMTP mit App-Passwort? *Empfehlung: Brevo, damit kein Passwort eines privaten Postfachs bei Supabase liegt.*
+   - **Entscheidung:** Ein eigenes, neues Gmail-Konto nur für Putzplan, per SMTP mit App-Passwort. Kein privates Postfach. Brevo scheidet aus, weil es eine eigene Domain verlangt.
+   - Folge: E2-1 richtet den SMTP-Versand von Supabase mit diesem Konto ein. Das App-Passwort steht nur im Supabase-Dashboard, nie im Repo. Google verlangt für App-Passwörter die Zwei-Faktor-Anmeldung am Gmail-Konto.
 2. **Wer darf sich anmelden?** Die Adresse ist öffentlich; jeder könnte einen eigenen Haushalt anlegen (sicher getrennt, verbraucht aber den kostenlosen Tarif). *Empfehlung: Neuanmeldungen im Dashboard abschalten, sobald beide Konten bestehen.*
+   - **Entscheidung:** Neuanmeldungen im Dashboard abschalten, sobald beide Konten bestehen (E2-5).
 3. **„Letzte Änderung“:** Gilt die zuletzt beim Server angekommene (Empfehlung) oder die zuletzt auf einem Gerät gemachte (hängt an der Geräteuhr)? Ist es in Ordnung, dass Bearbeitungen feldweise zusammengeführt werden und die Checkliste dabei als ein Feld zählt?
+   - **Entscheidung:** Es gilt die zuletzt beim Server angekommene Änderung. Feldweises Zusammenführen mit der Checkliste als ein Feld ist in Ordnung.
 4. **Löschen gegen Bearbeiten:** Löschen gewinnt? *Empfehlung: ja.*
+   - **Entscheidung:** Löschen gewinnt gegen Bearbeiten.
 5. **Online-Version:** bleibt bis zum Ende von E2-3 Etappe 1 (Empfehlung) oder wird schon mit E2-2 umgestellt?
+   - **Entscheidung:** Die Online-Version bleibt bis zum Ende von E2-3 bei Etappe 1.
 6. **Daten aus Etappe 1:** Nicht nötig, aber per „Sicherung einspielen“ möglich. Soll das in der README als Weg beschrieben werden? *Empfehlung: ja, ein Satz.*
+   - **Entscheidung:** Ja, ein Satz in der README (E2-5).
 7. **Pausierung:** nur dokumentieren (Empfehlung; tägliche Nutzung hält das Projekt wach) oder zusätzlich ein täglicher Abruf per GitHub Actions?
+   - **Entscheidung:** Zusätzlich ein täglicher Abruf per GitHub Actions, damit das Projekt nie pausiert. Ohne Geheimnisse, nur mit dem öffentlichen Publishable Key. In E2-1 einplanen.
+   - Folge, offen für E2-1: Der Abruf braucht ein Ziel, das ohne Anmeldung antwortet und keine Daten preisgibt (z. B. eine Funktion `ping`, die nur `true` liefert; die einzige Ausnahme zu „`anon` bekommt keine Rechte“). Ob eine Anfrage mit Fehlerantwort als Aktivität zählt, ist unsicher und wird in E2-1 geprüft. GitHub schaltet geplante Workflows in öffentlichen Repositories nach 60 Tagen ohne Aktivität im Repository ab; das kommt mit in die README.
 8. **Datenschutzhinweis/Impressum** (ETAPPE2.md): Soll die App einen kurzen Datenschutzhinweis bekommen (Supabase, SMTP-Anbieter, was gespeichert wird)? Das ist eine rechtliche Frage, die ich nicht verbindlich beantworten kann. *Empfehlung: kurzer Hinweis in den Einstellungen.*
+   - **Entscheidung:** Ja, ein kurzer Datenschutzhinweis in den Einstellungen (E2-5).
+   - Folge: Ob zusätzlich ein Impressum nötig ist, bleibt als offener Punkt in `ETAPPE2.md` Abschnitt 1.
 9. **Konto löschen / Haushalt verlassen:** in der App bauen oder von Hand durch den PO im Dashboard (dokumentiert)? *Empfehlung: von Hand, bei zwei Personen.*
+   - **Entscheidung:** Von Hand durch den PO, dokumentiert (README, E2-5). Die App bekommt keine Funktion dafür.
 10. **Screenreader-Prüfung der Anmeldung von Hand** (in ETAPPE2.md empfohlen, weil Passkey-Dialoge vom System kommen): durchführen oder wie in Etappe 1 bewusst weglassen?
+    - **Entscheidung:** Keine Screenreader-Prüfung von Hand, wie in Etappe 1. Die automatischen Prüfungen (axe, Tastatur, Fokus, Kontrastmodus) sichern die Barrierefreiheit.
 11. **Docker Desktop lokal:** installieren (dann `check:db` auch lokal) oder `check:db` nur in CI laufen lassen?
+    - **Entscheidung:** Kein Docker Desktop lokal; `check:db` läuft nur in CI.
+    - Folge: „Fertig, wenn“ in E2-1 bis E2-3 gilt für `check:db` nur auf GitHub. Fehler dort zeigen sich erst nach dem Hochladen; der Skill `/paket` wartet deshalb auf den Job `db`. `npm run check:db` bleibt als Befehl für CI erhalten und sagt lokal ohne Docker, dass er nur in CI läuft.
 12. **App-Symbol:** bleibt blau oder wird im Violett des neuen Designs neu gezeichnet?
+    - **Entscheidung:** Im Violett des neuen Designs neu zeichnen (E2-4).
+    - Folge: `public/icon.svg`, `npm run icons`, Manifest und `pwa.test.ts` anpassen; der Satz „blaue Kachel mit weißem Haus“ in `ANFORDERUNGEN.md` (N3 App auf dem Home-Bildschirm) wird dann in E2-4a angepasst.
 
 ## 7. Prüfung dieses Plans
 
