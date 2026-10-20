@@ -7,8 +7,9 @@ Etappe 2 macht aus der lokalen App eine gemeinsame: eine Datenbank für beide Pe
 ## 1. Entscheidungen vorab (Product Owner)
 
 - [x] **Anbieter für Anmeldung und Datenbank** gewählt: Supabase, Region West EU (Paris, eu-west-3; Entscheidung des PO vom 20.10.2026 statt Frankfurt), Free Plan; Anmeldung per E-Mail-Einmalcode, Versand über ein eigenes Gmail-Konto nur für Krümel. Begründung in `PLAN.md` (Kapitel Etappe 2, neue Abhängigkeiten nur mit Begründung, N7). Der Nachweis der Region (S1) kommt in E2-1.
-- [x] **Vertrag zur Auftragsverarbeitung** (AVV) des Anbieters geprüft und abgeschlossen, soweit nötig (PO, E2-1). *Entscheidung des PO (20.10.2026): kein AVV nötig (private Nutzung).*
-- [ ] **Mailversand über das Gmail-Konto (offen aus E2-1):** Konto `kruemel.haushaltsapp@gmail.com` steht (2-Faktor an), das App-Passwort ließ sich am 20.10.2026 nicht erzeugen (Google: „We couldn't verify it's you“). Bis dahin verschickt Supabase die Anmeldemails selbst: nur an Mitglieder der Supabase-Organisation (also nur an den PO) und höchstens 2 Mails pro Stunde. **Muss erledigt sein, bevor die zweite Person sich anmeldet** (Einladungstest in E2-2/E2-3): App-Passwort erzeugen, im Dashboard unter Authentication → Emails → SMTP Settings eintragen (Werte in `docs/SUPABASE.md`), dann die Mailvorlagen mit `{{ .Token }}` setzen (vorher gesperrt: „Set up custom SMTP to edit templates“) und `npm run try:sign-in` mit Code wiederholen. Stand 20.10.2026: Anmeldung über den Link der Standardmail erfolgreich getestet; Code-Länge 6, Gültigkeit 600 s und Adressen sind eingestellt.
+- [x] **Vertrag zur Auftragsverarbeitung** (AVV) des Anbieters geprüft und abgeschlossen, soweit nötig (PO, E2-1). *Entscheidung des PO (20.10.2026): kein AVV nötig (private Nutzung).* Stand 20.10.2026 (Quelle: Supabase-Dashboard, Organization settings → Legal Documents): Das Data Processing Addendum ist Teil der Nutzungsbedingungen von Supabase und gilt für alle Organisationen automatisch, „No separate signed DPA is needed“; es gibt nur „View DPA“ und ein Transfer Impact Assessment (TIA). Kein eigenes Unterschreiben nötig. DSGVO-Einordnung: private Nutzung im Haushalt (Haushaltsausnahme), Daten in der EU (Region Paris).
+- [x] **Mailversand (vorläufig, Runde 6, 20.10.2026):** Das Krümel-Konto `kruemel.haushaltsapp@gmail.com` ist von Google für bis zu 7 Tage gesperrt. Der Versand läuft deshalb **vorübergehend über die private Gmail-Adresse des PO** (App-Passwort „Krümel temporär“, nur im Supabase-Dashboard gespeichert). Die Vorlagen „Confirm signup“ und „Magic link“ sind auf den Code umgestellt (Text: `supabase/templates/code.html`), die Mail mit 6-stelligem Code kommt an. Einstellungen: Code-Länge 6, Gültigkeit 600 s, Adressen gesetzt (Referenz in `docs/SUPABASE.md`).
+- [ ] **Offen: Mailversand endgültig umstellen:** SMTP auf `kruemel.haushaltsapp@gmail.com` (sobald entsperrt) oder eine eigene Domain, danach das App-Passwort „Krümel temporär“ im Google-Konto **widerrufen**. Muss erledigt sein, bevor die zweite Person sich anmeldet; `npm run try:sign-in` danach wiederholen.
 - [ ] **Datenschutz:** Entschieden ist ein kurzer **Datenschutzhinweis** in den Einstellungen (E2-5).
 - [ ] **Impressum (To-do, E2-5):** Entschieden ist ein einfaches **Impressum** (Entscheidung des PO, 20.10.2026), erreichbar aus den Einstellungen. Welche Angaben genau nötig sind (öffentliche Adresse, aber nur zwei Nutzer), klärt der PO; ob seine Anschrift im öffentlichen Repository stehen darf, entscheidet er ebenfalls. Nachweis: Seite in der App, E2E-Test mit axe.
 - [x] **App-Name** ist „Krümel“ (Entscheidung des PO, 20.10.2026). [ ] Repository und Adresse umbenannt (E2-3, erster Schritt). [ ] Sichtbare Texte, Manifest, Seitentitel, Dateinamen der Sicherung und App-Symbol (`docs/design/kruemel-icon.svg`) umgestellt (E2-4).
@@ -48,3 +49,29 @@ Etappe 2 macht aus der lokalen App eine gemeinsame: eine Datenbank für beide Pe
 - iPhone: Wie Downloads aus der installierten App ankommen, hängt von iOS ab; im Gerätetest am 20.10.2026 funktionierten Download und Einspielen. Ein eigener Hinweis „Zuerst Sicherung herunterladen“ wurde deshalb nicht gebaut.
 - Android zeigt beim Start der installierten App kurz hellen Hintergrund, auch im Dark Mode (das Manifest kennt nur eine Farbe).
 - Installierte Apps holen eine neue Version erst beim Neustart mit Internet (Einstellungen → Version → „Neu laden“ erzwingt es).
+
+## E2-2 Plan
+
+Stand 20.10.2026. Inhalt und „Fertig, wenn“: `ETAPPE2-PLAN.md`, E2-2. Jeder Teilschritt endet mit grünem `npm run check` (ab b auch Job `db`) und einem Commit; die Online-Version bleibt im Modus `local`.
+
+| Schritt | Ziel | Ordner | Größe | Modell | Tests |
+|---|---|---|---|---|---|
+| **E2-2a** Auth-Anbindung | `SupabaseAuth` (supabase-js `signInWithOtp`/`verifyOtp`, Fehler → `AuthFailure`, Sitzung aus dem Speicher auch offline), `FakeAuth` per HTTP am Fake-Server samt Client | `src/auth/`, `scripts/fake-server.ts`, `supabase/tests/` | mittel | Opus High | `describeAuthContract` für Fake (Vitest) und lokale Instanz mit Code aus Mailpit (`check:db`) |
+| **E2-2b** Haushalt-Schnittstelle | `HouseholdApi`: anlegen, Mitglieder, Einladung erzeugen/annehmen, Fehlerarten (abgelaufen, benutzt, voll, schon Mitglied); Fake und RPC | `src/auth/` (oder `src/household/`), `src/sync/fake*`, `supabase/tests/` | mittel | Opus Medium | Vertragstest für Fake und RPC, Einladung durch zweiten Benutzer |
+| **E2-2c** Anmeldeseiten | Gate in `App.tsx` (nur `fake`/`supabase`): „Anmelden“ → „Code eingeben“ (`one-time-code`, erneut senden nach 60 s, Meldung am Feld), Laden ohne Netz mit gemerkter Sitzung | `src/ui/pages/`, `src/ui/App.tsx`, `tests/e2e/` | viele | Sonnet High | E2E (Fake): Code richtig/falsch/abgelaufen, zu viele Versuche, offline, axe |
+| **E2-2d** Haushalt und Einladung | „Haushalt anlegen“, Kachel „Haushalt“ (Link, Kopieren, Teilen, QR über `qrCode.ts`), `#/einladung/<token>` mit vier Fehlerseiten | `src/ui/`, `tests/e2e/` | viele | Sonnet Medium | E2E (Fake) mit zwei Kontexten, alle Fehlerfälle, axe |
+| **E2-2e** Rolle und Abmelden | „Ich bin“ aus der Rolle; Einstellung „Ich bin“ und „Ich bin: <Name>“ entfallen (außer `local`/Demo), „Angemeldet als <Name> · Abmelden“ | `src/ui/`, `tests/e2e/` | mittel | Sonnet Medium | E2E Abmelden (mit Rückfrage), Anzeige; bestehende Tests im Modus `local` unverändert grün |
+| **E2-2f** Passkey-Spike | Prüfen, ob supabase-js und lokale Instanz Passkeys tragen; Ergebnis und Entscheidung in `PLAN.md` | `docs/` | wenige | Sonnet Medium | keine (nur Doku) |
+
+**Reihenfolge:** a → b → c → d → e; f unabhängig, jederzeit. c braucht a, d braucht b und c, e braucht c. Ohne endgültigen Mailversand testbar: alles in Vitest und E2E gegen den Fake (`lastCode` statt Mail) und `check:db` (Mailpit der lokalen Instanz). Am echten Projekt reicht der vorläufige Versand für den PO allein (`npm run dev` nach c); nur die Anmeldung der zweiten Person braucht den endgültigen Absender.
+
+**Entscheidungen des PO** (Empfehlung in Klammern):
+1. Lokale Daten bei der ersten Anmeldung (Ersteller-Gerät bietet „Bisherige Aufgaben übernehmen“ an, vorher automatische Sicherung; umgesetzt in E2-3, E2-2 lässt die lokalen Daten unberührt).
+2. Passkey (aufschieben, Spike f nur als Notiz; der Code reicht für zwei Personen).
+3. Abmelden (löscht die Kopie auf dem Gerät nach Rückfrage, warnt bei ausstehenden Änderungen).
+4. Online-Version (bleibt bis Ende E2-3 im Modus `local`).
+5. Einladungstest mit der zweiten Person (erst mit endgültigem Absender, nicht über die private Adresse).
+
+**Risiken:** Sitzung läuft ab oder Gerät startet offline → gemerkte Sitzung weiter nutzen, Auffrischen still im Hintergrund, Anmeldeseite erst bei endgültiger Ablehnung. Code falsch/abgelaufen oder Mail-Limit erreicht → eigene Meldung am Feld; alte lokale Daten dürfen bei der ersten Anmeldung weder verloren gehen noch doppelt in den Haushalt kommen.
+
+**Aufwand:** Teuerster Schritt ist **E2-2c** (Gate, Sitzung offline, viele E2E-Fälle): **mittel**, etwa halb so groß wie E2-4a. a und b sind kleiner, aber sicherheitskritisch (Opus).

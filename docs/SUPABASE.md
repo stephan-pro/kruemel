@@ -7,7 +7,7 @@ Stand: 20.10.2026 (Paket E2-1). Für den Product Owner und spätere Sitzungen. D
 | Was | Wo | Öffentlich? |
 |---|---|---|
 | Projekt „kruemel“ (`sedjrghhtopgewwkmvrw`), Region West EU (Paris, eu-west-3), Free Plan, Organisation „stephan-pro's Org“ | supabase.com, Konto des PO (GitHub-Login, ohne GitHub-Verbindung im Projekt) | – |
-| Absender der Codes | Gmail-Konto `kruemel.haushaltsapp@gmail.com` (2-Faktor an) | Adresse ja |
+| Absender der Codes | **vorläufig** private Gmail-Adresse des PO (App-Passwort „Krümel temporär“); Ziel: `kruemel.haushaltsapp@gmail.com` (2-Faktor an, am 20.10.2026 von Google bis zu 7 Tage gesperrt) oder eigene Domain | Adresse ja |
 | Projekt-URL `https://<ref>.supabase.co` und Publishable Key `sb_publishable_…` | GitHub-Repository-Variablen `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`; lokal `.env.local` (Vorlage `.env.example`) | ja (stehen später ohnehin in der App) |
 | Datenbank-Passwort | nur Passwortmanager des PO; wird bei `npx supabase link` im eigenen Terminal abgefragt | **nein** |
 | Secret Key / service_role | bleibt im Dashboard, wird nirgends gebraucht | **nein** |
@@ -20,8 +20,9 @@ Kein Geheimnis gehört ins Repository, in den Chat oder in GitHub Actions. Der H
 ## Einstellungen im Dashboard (Soll-Stand)
 
 - **Authentication → Sign In / Providers → Email:** E-Mail an, „Confirm email“ an, Email OTP Length 6, Email OTP Expiration 600 s (10 min).
-- **Authentication → Emails → Templates:** „Confirm signup“ und „Magic Link“ mit Betreff „Dein Anmeldecode für Krümel“ und dem Text aus `supabase/templates/code.html` (enthält `{{ .Token }}`, keinen Link). Erst nach der SMTP-Einrichtung bearbeitbar („Set up custom SMTP to edit templates“); bis dahin kommt die Standardmail mit Link.
-- **Authentication → Emails → SMTP Settings:** eigener SMTP an, Host `smtp.gmail.com`, Port 465, Benutzer = Adresse des Krümel-Gmail-Kontos, Passwort = App-Passwort, Absender = dieselbe Adresse, Absendername „Krümel“.
+- **Authentication → Emails → Templates:** „Confirm signup“ und „Magic Link“ mit Betreff „Dein Anmeldecode für Krümel“ und dem Text aus `supabase/templates/code.html` (enthält `{{ .Token }}`, keinen Link). Erst nach der SMTP-Einrichtung bearbeitbar („Set up custom SMTP to edit templates“). Stand 20.10.2026: gesetzt, Mail mit 6-stelligem Code kommt an.
+- **Authentication → Emails → SMTP Settings:** eigener SMTP an, Host `smtp.gmail.com`, Port 465, Benutzer = Gmail-Adresse des Absenders, Passwort = App-Passwort, Absender = dieselbe Adresse, Absendername „Krümel“. **Aktuell (vorläufig):** private Adresse des PO mit App-Passwort „Krümel temporär“. **Offen:** auf `kruemel.haushaltsapp@gmail.com` oder eine eigene Domain umstellen, danach „Krümel temporär“ im Google-Konto widerrufen.
+- **Auftragsverarbeitung (AVV/DPA):** Supabase bietet keinen separaten Vertrag zum Unterschreiben; das DPA ist Teil der Nutzungsbedingungen und gilt automatisch (Stand 20.10.2026, Quelle: Dashboard, Organization settings → Legal Documents, „View DPA“; dazu ein Transfer Impact Assessment). DSGVO: private Nutzung im Haushalt (Haushaltsausnahme), Daten in der EU (Region Paris).
 - **Authentication → URL Configuration:** Site URL `https://stephan-pro.github.io/kruemel/`, Redirect URLs `https://stephan-pro.github.io/kruemel/` und `http://localhost:5173/kruemel/`. (Die Anmeldung läuft über den Code, Links in Mails gibt es nicht; die Adressen braucht Supabase trotzdem.)
 - **Authentication → Rate Limits:** nur ansehen; „emails sent“ reicht mit dem Standardwert für zwei Personen.
 - **Advisors → Security Advisor:** ohne Fehler und Warnungen (Row Level Security ist auf jeder Tabelle an).
