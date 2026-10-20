@@ -65,7 +65,7 @@ Stand 20.10.2026. Inhalt und „Fertig, wenn“: `ETAPPE2-PLAN.md`, E2-2. Jeder 
 
 **Reihenfolge:** a → b → c → d → e; f unabhängig, jederzeit. c braucht a, d braucht b und c, e braucht c. Ohne endgültigen Mailversand testbar: alles in Vitest und E2E gegen den Fake (`lastCode` statt Mail) und `check:db` (Mailpit der lokalen Instanz). Am echten Projekt reicht der vorläufige Versand für den PO allein (`npm run dev` nach c); nur die Anmeldung der zweiten Person braucht den endgültigen Absender.
 
-**Entscheidungen des PO** (Empfehlung in Klammern):
+**Entscheidungen des PO** (Empfehlung in Klammern; am 20.10.2026 alle fünf so entschieden):
 1. Lokale Daten bei der ersten Anmeldung (Ersteller-Gerät bietet „Bisherige Aufgaben übernehmen“ an, vorher automatische Sicherung; umgesetzt in E2-3, E2-2 lässt die lokalen Daten unberührt).
 2. Passkey (aufschieben, Spike f nur als Notiz; der Code reicht für zwei Personen).
 3. Abmelden (löscht die Kopie auf dem Gerät nach Rückfrage, warnt bei ausstehenden Änderungen).
