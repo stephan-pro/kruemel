@@ -1,6 +1,7 @@
 import { QrCode } from "lucide-preact";
 import { useEffect, useId, useState } from "preact/hooks";
 import type { QrPicture } from "../qrCode";
+import { ErrorAlert } from "./Alert";
 
 /** Modules of light margin around the code; scanners need it (QR standard: 4). */
 const QUIET_ZONE = 4;
@@ -17,6 +18,7 @@ interface OtherDeviceTileProps {
 export function OtherDeviceTile({ address }: OtherDeviceTileProps) {
   const [shown, setShown] = useState(false);
   const [picture, setPicture] = useState<QrPicture>();
+  const [failed, setFailed] = useState(false);
   const codeId = useId();
 
   // The QR encoder is loaded only when the code is asked for (about 15 KB less for every start).
@@ -26,11 +28,20 @@ export function OtherDeviceTile({ address }: OtherDeviceTileProps) {
       return;
     }
     let current = true;
-    void import("../qrCode").then(({ qrPicture }) => {
-      if (current) {
-        setPicture(qrPicture(address));
-      }
-    });
+    setFailed(false);
+    import("../qrCode").then(
+      ({ qrPicture }) => {
+        if (current) {
+          setPicture(qrPicture(address));
+        }
+      },
+      () => {
+        // An old version still open after an update asks for a file the new one replaced.
+        if (current) {
+          setFailed(true);
+        }
+      },
+    );
     return () => {
       current = false;
     };
@@ -70,6 +81,11 @@ export function OtherDeviceTile({ address }: OtherDeviceTileProps) {
             <rect class="qr__light" x={-QUIET_ZONE} y={-QUIET_ZONE} width={box} height={box} />
             <path class="qr__dark" d={picture.path} />
           </svg>
+        )}
+        {shown && failed && (
+          <ErrorAlert title="QR-Code nicht geladen">
+            Mit Internet unter „Version“ auf „Neu laden“ tippen und es noch einmal versuchen.
+          </ErrorAlert>
         )}
         <p class="qr__address">{address}</p>
       </div>

@@ -265,6 +265,27 @@ test.describe("N3 Auf anderem Gerät öffnen", () => {
   });
 });
 
+test.describe("N3 QR-Code nach einem Update", () => {
+  // Without the service worker, so the test decides what the server answers.
+  test.use({ serviceWorkers: "block" });
+
+  test("N3 Fehlt die nachgeladene Datei (alte Version noch offen), sagt eine Meldung, was zu tun ist", async ({
+    page,
+  }) => {
+    await page.route(/\/assets\/qrCode-.*\.js$/, (route) => route.fulfill({ status: 404 }));
+    await openWeek(page);
+    await goToPage(page, "Einstellungen");
+    const tile = page.getByRole("region", { name: "Auf anderem Gerät öffnen" });
+
+    await tile.getByRole("button", { name: "QR-Code zeigen" }).click();
+
+    await expect(tile.getByRole("alert")).toContainText("QR-Code nicht geladen");
+    await expect(tile.getByRole("alert")).toContainText("„Neu laden“");
+    await expect(tile.getByRole("img")).toHaveCount(0);
+    await expect(tile).toContainText(new URL("./", page.url()).href);
+  });
+});
+
 test.describe("Version", () => {
   test("Die Einstellungen nennen den Stand der App und laden sie mit „Neu laden“ neu", async ({
     page,
