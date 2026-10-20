@@ -4,6 +4,7 @@
 import type { TakeOverMode } from "../domain/assignment";
 import type { ChecklistItem } from "../domain/checklist";
 import { addDays, type CalendarDay, isoWeek, weekdayOf } from "../domain/date";
+import type { DayRange, StatisticsPeriod } from "../domain/statistics";
 import type {
   Assignee,
   Completion,
@@ -67,6 +68,113 @@ export function weekdayName(day: CalendarDay): string {
 /** The day of the month without a leading zero: "5" */
 export function dayOfMonth(day: CalendarDay): string {
   return String(Number(day.slice(8, 10)));
+}
+
+const MONTHS_SHORT = [
+  "Jan",
+  "Feb",
+  "Mär",
+  "Apr",
+  "Mai",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Okt",
+  "Nov",
+  "Dez",
+] as const;
+
+/** "Okt" – the month of a bar of a year's chart. */
+export function monthShort(day: CalendarDay): string {
+  return MONTHS_SHORT[Number(day.slice(5, 7)) - 1] as string;
+}
+
+/** The label of a period button of the statistics. */
+export const PERIOD_LABELS: Record<StatisticsPeriod, string> = {
+  week: "Woche",
+  month: "Monat",
+  year: "Jahr",
+};
+
+/** What the total is "of": "Gemeinsam erledigt · KW 43", "… · Oktober 2026", "… · 2026". */
+export function describePeriod(period: StatisticsPeriod, range: DayRange): string {
+  if (period === "week") {
+    return formatWeekNumber(range.start);
+  }
+  const year = range.start.slice(0, 4);
+  return period === "year" ? year : `${MONTHS[Number(range.start.slice(5, 7)) - 1]} ${year}`;
+}
+
+const BEFORE: Record<StatisticsPeriod, string> = {
+  week: "in der Vorwoche",
+  month: "im Vormonat",
+  year: "im Vorjahr",
+};
+
+/**
+ * The comparison with the period before, without a verdict: "6 mehr als in der Vorwoche",
+ * "3 weniger als im Vormonat", "so viele wie im Vorjahr".
+ */
+export function describeComparison(
+  period: StatisticsPeriod,
+  total: number,
+  previousTotal: number,
+): string {
+  const difference = total - previousTotal;
+  if (difference === 0) {
+    return `so viele wie ${BEFORE[period]}`;
+  }
+  return `${Math.abs(difference)} ${difference > 0 ? "mehr" : "weniger"} als ${BEFORE[period]}`;
+}
+
+/** "4 Wochen in Folge" for the row of weeks with everything done; `undefined` if there is none. */
+export function describeStreak(weeks: number): string | undefined {
+  if (weeks === 0) {
+    return undefined;
+  }
+  return weeks === 1 ? "1 Woche alles erledigt" : `${weeks} Wochen in Folge`;
+}
+
+/** "5-mal habt ihr füreinander übernommen." */
+export function describeTakenOver(count: number): string {
+  if (count === 0) {
+    return "Bisher hat niemand für die andere Person übernommen.";
+  }
+  return `${count}-mal habt ihr füreinander übernommen.`;
+}
+
+/** The label of a bar: "Mo" in a week, "5." in a month, "Okt" in a year. */
+export function barLabel(start: CalendarDay, period: StatisticsPeriod): string {
+  if (period === "year") {
+    return monthShort(start);
+  }
+  return period === "week" ? weekdayShort(start) : `${dayOfMonth(start)}.`;
+}
+
+/** The chart as a sentence, for screen readers: "Erledigt pro Tag: Montag 7, Dienstag 5, …". */
+export function describeBars(
+  bars: readonly { readonly start: CalendarDay; readonly count: number }[],
+  period: StatisticsPeriod,
+): string {
+  const unit = period === "year" ? "Monat" : "Tag";
+  const name = (start: CalendarDay) =>
+    period === "week"
+      ? weekdayName(start)
+      : period === "month"
+        ? `${dayOfMonth(start)}.`
+        : (MONTHS[Number(start.slice(5, 7)) - 1] as string);
+  return `Erledigt pro ${unit}: ${bars.map((bar) => `${name(bar.start)} ${bar.count}`).join(", ")}`;
+}
+
+/** The split of the team: "Alex 21 Aufgaben, Robin 17 Aufgaben". */
+export function describeTeamwork(
+  counts: { readonly personA: number; readonly personB: number },
+  names: PersonNames,
+): string {
+  const part = (person: "personA" | "personB") =>
+    `${names[person]} ${counts[person] === 1 ? "1 Aufgabe" : `${counts[person]} Aufgaben`}`;
+  return `${part("personA")}, ${part("personB")}`;
 }
 
 /** "Dienstag, 20. Oktober" – the date line of "Heute". */

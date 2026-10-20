@@ -27,7 +27,9 @@ test("Die Hauptseiten öffnen sich und haben keine Barrierefreiheitsverstöße (
   await expectNoAccessibilityViolations(page);
   await goToPage(page, "Heute", greetingHeading());
   await expectNoAccessibilityViolations(page);
-  for (const title of ["Statistik", "Aufgaben", "Erledigt", "Einstellungen"]) {
+  await goToPage(page, "Statistik", "Eure Bilanz");
+  await expectNoAccessibilityViolations(page);
+  for (const title of ["Aufgaben", "Erledigt", "Einstellungen"]) {
     await goToPage(page, title);
     await expectNoAccessibilityViolations(page);
   }

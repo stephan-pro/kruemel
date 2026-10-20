@@ -286,7 +286,7 @@ test.describe("N1 Navigation: Heute · Woche · Plus · Statistik · Einstellung
     await expect(nav.getByRole("link", { name: "Woche" })).toHaveAttribute("aria-current", "page");
 
     await nav.getByRole("link", { name: "Statistik" }).click();
-    await expect(page.getByRole("heading", { level: 1, name: "Statistik" })).toBeFocused();
+    await expect(page.getByRole("heading", { level: 1, name: "Eure Bilanz" })).toBeFocused();
 
     await nav.getByRole("link", { name: "Einstellungen" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Einstellungen" })).toBeFocused();

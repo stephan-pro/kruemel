@@ -2315,12 +2315,218 @@ main:focus {
   cursor: default;
 }
 
+/* ---------- Statistics (DESIGN.md section 6) ---------- */
+
+.stats {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 44rem;
+}
+
+.stats > .page-title {
+  margin: 2px 0 0;
+}
+
+.stats__periods {
+  align-self: flex-start;
+}
+
+.stats-total {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: var(--radius-tile);
+  background: var(--accent-tile);
+  color: var(--on-accent-tile);
+}
+
+.stats-total__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.stats-total__numbers {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.stats-total__label {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.stats-total__value {
+  font-size: 44px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.stats-total__text {
+  font-size: 13px;
+}
+
+/* "4 Wochen in Folge": an outline, so the text keeps the full contrast of the tile. */
+.stats-total__streak {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 2px solid color-mix(in srgb, var(--on-accent-tile) 55%, transparent);
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.chart {
+  display: block;
+  width: 100%;
+  max-width: 30rem;
+  height: auto;
+}
+
+.chart__bar {
+  fill: var(--on-accent-tile);
+  opacity: 0.92;
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: bar-grow 180ms ease-out;
+}
+
+.chart__label,
+.chart__value {
+  fill: var(--on-accent-tile);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.chart__value {
+  font-weight: 800;
+}
+
+.stats-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: var(--radius-tile);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--surface-border);
+}
+
+.stats-card__title {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.stats-card__note {
+  font-size: 13px;
+}
+
+/* The share of each person: two parts side by side, never ordered by who did more. */
+.split {
+  display: flex;
+  gap: 3px;
+  height: 14px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+}
+
+.split__part {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.split__part--a {
+  background: var(--person-a);
+}
+
+.split__part--b {
+  background: var(--person-b);
+}
+
+.split__empty {
+  flex: 1;
+  background: var(--surface-2);
+}
+
+.split-legend {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  font-size: 14px;
+  list-style: none;
+}
+
+.split-legend li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.split-legend__key {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.split-legend__key--a {
+  background: var(--person-a);
+}
+
+.split-legend__key--b {
+  background: var(--person-b);
+}
+
+.top-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.top-list__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.top-list__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.top-list__count {
+  font-size: 15px;
+  font-weight: 800;
+}
+
 /* ---------- Motion (DESIGN.md section 8) ---------- */
 
 @keyframes rise {
   from {
     opacity: 0;
     transform: translateY(6px);
+  }
+}
+
+@keyframes bar-grow {
+  from {
+    transform: scaleY(0);
   }
 }
 
@@ -2388,6 +2594,45 @@ main:focus {
 
   .ring__text {
     fill: CanvasText;
+  }
+
+  .stats-total,
+  .stats-card {
+    border: 1px solid CanvasText;
+  }
+
+  .chart__bar {
+    fill: Highlight;
+    opacity: 1;
+  }
+
+  .chart__label,
+  .chart__value {
+    fill: CanvasText;
+  }
+
+  /* The two parts of the split also differ by system colour, not only by the legend. */
+  .split__part--a,
+  .split__part--b {
+    forced-color-adjust: none;
+  }
+
+  .split__part--a {
+    background: Highlight;
+  }
+
+  .split__part--b {
+    background: ButtonText;
+  }
+
+  .split-legend__key--a {
+    forced-color-adjust: none;
+    background: Highlight;
+  }
+
+  .split-legend__key--b {
+    forced-color-adjust: none;
+    background: ButtonText;
   }
 
   .main-nav__link[aria-current] {

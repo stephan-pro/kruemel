@@ -135,7 +135,7 @@ test.describe("Rahmen und Navigation", () => {
   const pages = [
     { link: "Heute", title: "Heute", heading: greetingHeading() },
     { link: "Woche", title: "Wochenübersicht", heading: "Diese Woche" },
-    { link: "Statistik", title: "Statistik", heading: "Statistik" },
+    { link: "Statistik", title: "Statistik", heading: "Eure Bilanz" },
     { link: "Einstellungen", title: "Einstellungen", heading: "Einstellungen" },
   ];
 

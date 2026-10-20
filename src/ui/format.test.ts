@@ -3,19 +3,26 @@ import { calendarDay } from "../domain/date";
 import type { Completion } from "../domain/task";
 import {
   assigneeLabel,
+  barLabel,
   completionNotice,
   countCompletions,
   countEntries,
   countTasks,
   dayField,
   dayOfMonth,
+  describeBars,
   describeChecklist,
+  describeComparison,
   describeCompletedBy,
   describeContents,
   describeDoneAt,
   describeOverdue,
+  describePeriod,
   describeRecurrence,
   describeResponsibility,
+  describeStreak,
+  describeTakenOver,
+  describeTeamwork,
   exportNotice,
   formatDay,
   formatLongDay,
@@ -25,6 +32,8 @@ import {
   formatWeekNumber,
   greeting,
   importNotice,
+  monthShort,
+  PERIOD_LABELS,
   percentOf,
   takeOverNotice,
   todaySummary,
@@ -281,5 +290,64 @@ describe("Anzeige von „Heute“", () => {
       mark: "–",
       label: "Mittwoch, heute, frei",
     });
+  });
+});
+
+describe("Anzeige der Statistik", () => {
+  const week = { start: calendarDay("2026-10-19"), end: calendarDay("2026-10-25") };
+  const month = { start: calendarDay("2026-10-01"), end: calendarDay("2026-10-31") };
+  const year = { start: calendarDay("2026-01-01"), end: calendarDay("2026-12-31") };
+
+  it("Statistik Die Zeiträume haben Namen für die Auswahl und eine Angabe, was gemeint ist", () => {
+    expect(Object.values(PERIOD_LABELS)).toEqual(["Woche", "Monat", "Jahr"]);
+    expect(describePeriod("week", week)).toBe("KW 43");
+    expect(describePeriod("month", month)).toBe("Oktober 2026");
+    expect(describePeriod("year", year)).toBe("2026");
+  });
+
+  it("Statistik Der Vergleich nennt den Unterschied ohne Urteil, für jeden Zeitraum in der richtigen Form", () => {
+    expect(describeComparison("week", 38, 32)).toBe("6 mehr als in der Vorwoche");
+    expect(describeComparison("month", 10, 13)).toBe("3 weniger als im Vormonat");
+    expect(describeComparison("year", 5, 5)).toBe("so viele wie im Vorjahr");
+    expect(describeComparison("week", 0, 0)).toBe("so viele wie in der Vorwoche");
+  });
+
+  it("Statistik Die Serie nennt die Wochen in Folge und fehlt ganz, solange es keine gibt", () => {
+    expect(describeStreak(0)).toBeUndefined();
+    expect(describeStreak(1)).toBe("1 Woche alles erledigt");
+    expect(describeStreak(4)).toBe("4 Wochen in Folge");
+  });
+
+  it("Statistik „Füreinander übernommen“ klingt gemeinsam, auch bei null", () => {
+    expect(describeTakenOver(5)).toBe("5-mal habt ihr füreinander übernommen.");
+    expect(describeTakenOver(0)).toBe("Bisher hat niemand für die andere Person übernommen.");
+  });
+
+  it("Statistik Die Balken haben je Zeitraum eine kurze Beschriftung und eine ausgeschriebene für das Diagramm", () => {
+    expect(barLabel(calendarDay("2026-10-19"), "week")).toBe("Mo");
+    expect(barLabel(calendarDay("2026-10-05"), "month")).toBe("5.");
+    expect(barLabel(calendarDay("2026-10-01"), "year")).toBe("Okt");
+    expect(monthShort(calendarDay("2026-03-01"))).toBe("Mär");
+    expect(
+      describeBars(
+        [
+          { start: calendarDay("2026-10-19"), count: 7 },
+          { start: calendarDay("2026-10-20"), count: 0 },
+        ],
+        "week",
+      ),
+    ).toBe("Erledigt pro Tag: Montag 7, Dienstag 0");
+    expect(describeBars([{ start: calendarDay("2026-10-05"), count: 2 }], "month")).toBe(
+      "Erledigt pro Tag: 5. 2",
+    );
+    expect(describeBars([{ start: calendarDay("2026-03-01"), count: 9 }], "year")).toBe(
+      "Erledigt pro Monat: März 9",
+    );
+  });
+
+  it("Statistik Das Teamwork nennt beide mit Namen und Anzahl, im Singular und im Plural", () => {
+    expect(describeTeamwork({ personA: 21, personB: 1 }, names)).toBe(
+      "Alex 21 Aufgaben, Robin 1 Aufgabe",
+    );
   });
 });

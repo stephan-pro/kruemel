@@ -425,7 +425,6 @@ export function App({ storage, demo }: AppProps) {
               tasks={state.data.tasks}
               completions={state.data.completions}
               names={names}
-              currentPerson={person}
               today={today}
             />
           )}
