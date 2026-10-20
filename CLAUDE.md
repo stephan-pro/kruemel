@@ -6,7 +6,8 @@ Anforderungen: `docs/ANFORDERUNGEN.md` · Plan und Arbeitspakete: `docs/PLAN.md`
 ## Befehle
 
 - **Nach Änderungen `npm run check` ausführen und nur die Kurzausgabe lesen** (bei Erfolg eine Zeile, bei Fehlern nur die fehlgeschlagenen Tests mit Datei, Zeile und Meldung). Testdateien und Reports nicht komplett lesen; Traces und Berichte liegen nur auf der Platte (`test-results/`, `playwright-report/`).
-- `npm run check` – alles prüfen (Biome → tsc → Vitest mit Abdeckung → Build → Playwright). Muss grün sein.
+- `npm run check` – alles prüfen (Biome → tsc → Vitest mit Abdeckung → Build → Playwright nur in Chromium/Desktop). Muss grün sein; läuft bei jedem Push in CI.
+- `npm run check:full` – dasselbe, E2E in der vollen Matrix (zusätzlich `chromium-mobile`, `webkit-desktop`, `webkit-mobile`; dort nur `smoke`, `phone`, `pwa`, `install`, `design`, `accessibility`, Liste `CROSS_BROWSER_SPECS` in `playwright.config.ts`). CI: Workflow `check-full.yml` nachts und von Hand; vor einem Release ausführen. Neue Tests laufen nur in Chromium/Desktop, außer die Datei gehört in diese Liste (browser- oder größenabhängig). Die axe-Prüfung der Hauptseiten steht in `smoke.spec.ts`.
 - `npm run dev` – Entwicklungsserver.
 - `npm run demo` – App mit Beispieldaten (eigener Speicherbereich `putzplan-demo`) im Browser.
 - `npm test` – Vitest im Beobachtungsmodus.

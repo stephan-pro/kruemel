@@ -10,6 +10,9 @@ const demoPort = 4174;
 const e2ePort = 4175;
 const fakeServerPort = 4180;
 
+// What the extra browsers and sizes of `check:full` run (see `projects`).
+const CROSS_BROWSER_SPECS = /(smoke|phone|pwa|install|design|accessibility)\.spec\.ts$/;
+
 export default defineConfig({
   testDir: "tests/e2e",
   fullyParallel: true,
@@ -51,10 +54,18 @@ export default defineConfig({
       reuseExistingServer: !process.env.CI,
     },
   ],
+  // `npm run check` (every commit): all tests in Chromium on the desktop. `npm run check:full`
+  // (E2E_FULL=1: nightly and before a release) adds the other browsers and sizes, which run only
+  // what depends on them: the smoke test with axe on the main pages, the layout at phone sizes, the
+  // PWA, the installation help and the design (colour scheme, focus, touch targets).
   projects: [
     { name: "chromium-desktop", use: { ...devices["Desktop Chrome"] } },
-    { name: "chromium-mobile", use: { ...devices["Pixel 7"] } },
-    { name: "webkit-desktop", use: { ...devices["Desktop Safari"] } },
-    { name: "webkit-mobile", use: { ...devices["iPhone 15"] } },
+    ...(process.env.E2E_FULL
+      ? [
+          { name: "chromium-mobile", use: { ...devices["Pixel 7"] } },
+          { name: "webkit-desktop", use: { ...devices["Desktop Safari"] } },
+          { name: "webkit-mobile", use: { ...devices["iPhone 15"] } },
+        ].map((project) => ({ ...project, testMatch: CROSS_BROWSER_SPECS }))
+      : []),
   ],
 });
