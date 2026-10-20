@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BACKEND_MODES, backendMode } from "./backend";
+import { backendMode } from "./backend";
 
 describe("Speicher-Modus (local, fake, supabase)", () => {
   it("Ohne Angabe bleibt es local; nur der Build-Modus e2e nimmt den Fake-Server", () => {
