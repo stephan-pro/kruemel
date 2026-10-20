@@ -48,10 +48,18 @@ try {
   console.log(
     `Code an ${email} geschickt (kann eine Minute dauern, auch im Spam-Ordner nachsehen).`,
   );
-  const code = (await terminal.question("Code aus der Mail: ")).replace(/\s/g, "");
-  const session = await auth("verify", { type: "email", email, token: code });
+  const answer = (await terminal.question("Code aus der Mail (oder kopierter Link): ")).trim();
+  // Without our own mail server, Supabase sends its standard mail with a link instead of the code
+  // (the templates with the code need custom SMTP). The link carries a one-time token as well.
+  const link = /^https?:\/\//.test(answer) ? new URL(answer) : null;
+  const session = link
+    ? await auth("verify", {
+        type: link.searchParams.get("type") ?? "magiclink",
+        token_hash: link.searchParams.get("token"),
+      })
+    : await auth("verify", { type: "email", email, token: answer.replace(/\s/g, "") });
   console.log(
-    `✅ Angemeldet als ${session.user?.email ?? email}. Anmeldung per Code funktioniert.`,
+    `✅ Angemeldet als ${session.user?.email ?? email} (${link ? "über den Link" : "per Code"}).`,
   );
   await auth("logout", {}, session.access_token);
   console.log("Wieder abgemeldet.");
