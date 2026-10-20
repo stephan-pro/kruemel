@@ -28,6 +28,16 @@
 
 create extension if not exists pgcrypto with schema extensions;
 
+-- New tables, sequences and functions in `public` get no rights for `anon` and `authenticated`
+-- automatically (the real project was prepared with "expose new tables" on). Every migration grants
+-- what is needed explicitly, as this one does below.
+alter default privileges for role postgres in schema public
+  revoke all on tables from anon, authenticated;
+alter default privileges for role postgres in schema public
+  revoke all on sequences from anon, authenticated;
+alter default privileges for role postgres in schema public
+  revoke execute on functions from public, anon, authenticated;
+
 create schema if not exists private;
 revoke all on schema private from public;
 grant usage on schema private to authenticated;
