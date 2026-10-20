@@ -45,7 +45,19 @@ function ids(result: PullResult): string[] {
   return result.tasks.filter((row) => !row.deleted).map((row) => row.id);
 }
 
-export function describeRemoteContract(name: string, setup: () => Promise<ContractSetup>): void {
+export interface ContractOptions {
+  /**
+   * `false` leaves out the test of `subscribe`: the database functions of E2-1 are tested before
+   * their `Remote` with realtime exists (E2-3).
+   */
+  readonly hints?: boolean;
+}
+
+export function describeRemoteContract(
+  name: string,
+  setup: () => Promise<ContractSetup>,
+  options: ContractOptions = {},
+): void {
   describe(`Vertrag: ${name}`, () => {
     it("Ein neuer Haushalt ist leer", async () => {
       const { a } = await setup();
@@ -254,20 +266,23 @@ export function describeRemoteContract(name: string, setup: () => Promise<Contra
       ]);
     });
 
-    it("Die Verbindung meldet eine Änderung des anderen Geräts", async () => {
-      const { a, b } = await setup();
-      let hints = 0;
-      const stop = b.subscribe(() => {
-        hints++;
-      });
+    it.skipIf(options.hints === false)(
+      "Die Verbindung meldet eine Änderung des anderen Geräts",
+      async () => {
+        const { a, b } = await setup();
+        let hints = 0;
+        const stop = b.subscribe(() => {
+          hints++;
+        });
 
-      await a.push(create(weekly()));
-      await new Promise((resolve) => setTimeout(resolve, 50));
-      stop();
-      await a.push(create(once()));
-      await new Promise((resolve) => setTimeout(resolve, 50));
+        await a.push(create(weekly()));
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        stop();
+        await a.push(create(once()));
+        await new Promise((resolve) => setTimeout(resolve, 50));
 
-      expect(hints).toBe(1);
-    });
+        expect(hints).toBe(1);
+      },
+    );
   });
 }

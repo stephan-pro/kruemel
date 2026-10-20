@@ -1,6 +1,7 @@
 import { loadEnv, type Plugin } from "vite";
 import { defineConfig } from "vitest/config";
 import { backendMode } from "./src/backend.ts";
+import { contentSecurityPolicy, scriptHash, supabaseSources } from "./src/csp.ts";
 
 // Minimal Node typing instead of @types/node (N7), as in playwright.config.ts.
 declare const process: { env: Record<string, string | undefined> };
@@ -81,48 +82,86 @@ function serviceWorker(): Plugin {
   };
 }
 
+/**
+ * Puts the Content Security Policy (`src/csp.ts`) into the built page, with the hashes of its
+ * inline scripts (the colour scheme script in index.html). Only in the build: the development
+ * server and the demo inject scripts of their own.
+ */
+function securityPolicy(connectTo: readonly string[]): Plugin {
+  return {
+    name: "kruemel-csp",
+    apply: (config, { command }) => command === "build" && !config.build?.ssr,
+    transformIndexHtml: {
+      // After Vite has filled in %MODE% and the like, so the hashes match the final page.
+      order: "post",
+      async handler(html) {
+        const inline = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
+        const hashes = await Promise.all(inline.map((match) => scriptHash(match[1] ?? "")));
+        const policy = contentSecurityPolicy(hashes, connectTo);
+        return [
+          {
+            tag: "meta",
+            attrs: { "http-equiv": "Content-Security-Policy", content: policy },
+            injectTo: "head-prepend",
+          },
+        ];
+      },
+    },
+  };
+}
+
 /** Where the app finds the fake server in the mode `e2e` (`scripts/fake-server.ts`). */
 const FAKE_SERVER = process.env.FAKE_SERVER_URL ?? "http://localhost:4180";
 
-export default defineConfig(({ mode }) => ({
-  // GitHub Pages serves the app under /<repo-name>/.
-  base: "/kruemel/",
-  plugins: [serviceWorker()],
-  define: {
-    __APP_BUILD__: JSON.stringify(BUILD),
-    // Which storage the app uses (stage 2), fixed at build time so the code of the other
-    // storages is left out of the build. `VITE_BACKEND` from the environment or an .env file.
-    __BACKEND__: JSON.stringify(backendMode(mode, loadEnv(mode, ".", "VITE_").VITE_BACKEND)),
-    __FAKE_SERVER__: JSON.stringify(FAKE_SERVER),
-  },
-  test: {
-    include: ["src/**/*.test.ts"],
-    // `tokens.test.ts` reads the design tokens; other CSS stays empty in unit tests.
-    css: { include: [/tokens\.css/] },
-    // No `passWithNoTests`: `npm run check` must fail if no unit tests are found.
-    coverage: {
-      provider: "v8",
-      include: [
-        "src/domain/**/*.ts",
-        "src/storage/**/*.ts",
-        "src/demo/**/*.ts",
-        "src/sync/**/*.ts",
-        "src/auth/**/*.ts",
-        "src/backend.ts",
-      ],
-      // `browserFake.ts` only connects parts that have their own tests (and needs the browser).
-      exclude: [
-        "src/**/*.test.ts",
-        "src/**/*.fixtures.ts",
-        "src/**/*.contract.ts",
-        "src/sync/browserFake.ts",
-      ],
-      thresholds: {
-        lines: 90,
-        functions: 90,
-        branches: 90,
-        statements: 90,
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, ".", "VITE_");
+  const backend = backendMode(mode, env.VITE_BACKEND);
+  const connectTo =
+    backend === "fake"
+      ? [new URL(FAKE_SERVER).origin]
+      : backend === "supabase"
+        ? supabaseSources(env.VITE_SUPABASE_URL)
+        : [];
+  return {
+    // GitHub Pages serves the app under /<repo-name>/.
+    base: "/kruemel/",
+    plugins: [serviceWorker(), securityPolicy(connectTo)],
+    define: {
+      __APP_BUILD__: JSON.stringify(BUILD),
+      // Which storage the app uses (stage 2), fixed at build time so the code of the other
+      // storages is left out of the build. `VITE_BACKEND` from the environment or an .env file.
+      __BACKEND__: JSON.stringify(backend),
+      __FAKE_SERVER__: JSON.stringify(FAKE_SERVER),
+    },
+    test: {
+      include: ["src/**/*.test.ts"],
+      // `tokens.test.ts` reads the design tokens; other CSS stays empty in unit tests.
+      css: { include: [/tokens\.css/] },
+      // No `passWithNoTests`: `npm run check` must fail if no unit tests are found.
+      coverage: {
+        provider: "v8",
+        include: [
+          "src/domain/**/*.ts",
+          "src/storage/**/*.ts",
+          "src/demo/**/*.ts",
+          "src/sync/**/*.ts",
+          "src/auth/**/*.ts",
+          "src/backend.ts",
+        ],
+        // `browserFake.ts` only connects parts that have their own tests (and needs the browser).
+        exclude: [
+          "src/**/*.test.ts",
+          "src/**/*.fixtures.ts",
+          "src/**/*.contract.ts",
+          "src/sync/browserFake.ts",
+        ],
+        thresholds: {
+          lines: 90,
+          functions: 90,
+          branches: 90,
+          statements: 90,
+        },
       },
     },
-  },
-}));
+  };
+});

@@ -347,3 +347,44 @@ test.describe("N3 Service Worker und Nutzung ohne Internet", () => {
     expect(registrations).toBe(0);
   });
 });
+
+test.describe("S6 Content Security Policy", () => {
+  test("S6 Die Seite erlaubt Verbindungen nur zur eigenen Adresse (Etappe 1: ohne Server)", async ({
+    page,
+  }) => {
+    await page.goto("./");
+
+    const policy = await page
+      .locator('meta[http-equiv="Content-Security-Policy"]')
+      .getAttribute("content");
+
+    expect(policy).toContain("connect-src 'self' blob:;");
+    expect(policy).toMatch(/script-src 'self' 'sha256-[A-Za-z0-9+/=]+';/);
+  });
+
+  test("S6 Die App läuft ohne Verstoß gegen die Richtlinie: Farbschema-Skript, Schrift, Service Worker, QR-Code", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      const found: string[] = [];
+      (window as unknown as { cspViolations: string[] }).cspViolations = found;
+      document.addEventListener("securitypolicyviolation", (event) => {
+        found.push(`${event.violatedDirective}: ${event.blockedURI}`);
+      });
+    });
+    await startInstalled(page);
+    await store(page, {
+      [deviceKey]: JSON.stringify({ currentPerson: "personA", colorScheme: "dark" }),
+    });
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+
+    await goToPage(page, "Einstellungen");
+    await page.getByRole("button", { name: "QR-Code zeigen" }).click();
+    await expect(page.getByRole("img", { name: /^QR-Code mit der Adresse / })).toBeVisible();
+    await goToPage(page, "Aufgaben");
+
+    expect(
+      await page.evaluate(() => (window as unknown as { cspViolations: string[] }).cspViolations),
+    ).toEqual([]);
+  });
+});

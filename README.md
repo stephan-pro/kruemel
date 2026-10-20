@@ -90,6 +90,11 @@ Startet die App mit erfundenen Beispieldaten (zwei Personen, wiederkehrende und 
 - [`docs/GERAETETEST.md`](docs/GERAETETEST.md) – Prüfliste für echte Geräte, mit Ergebnis.
 - [`docs/ETAPPE2-PLAN.md`](docs/ETAPPE2-PLAN.md) – Plan für Etappe 2 (gemeinsam nutzen) mit den Entscheidungen des Product Owners.
 - [`docs/ETAPPE2.md`](docs/ETAPPE2.md) – Prüfliste für Etappe 2, inklusive Sicherheit S1–S6.
+- [`docs/SUPABASE.md`](docs/SUPABASE.md) – Supabase (Etappe 2): Einrichtung, wo Schlüssel liegen, kostenloser Tarif, Pausierung nach 7 Tagen, keine Backups.
+
+### Datenbank (Etappe 2)
+
+Die gemeinsamen Daten liegen ab E2-3 bei Supabase (Frankfurt, kostenloser Tarif). Tabellen, Zugriffsregeln und Funktionen stehen in `supabase/migrations/`. `npm run check:db` prüft sie gegen eine lokale Supabase-Instanz und braucht Docker; er läuft deshalb nur auf GitHub (Job `db`). Wichtig im kostenlosen Tarif: Ein Projekt pausiert nach 7 Tagen ohne Nutzung (ein täglicher Abruf per GitHub Actions verhindert das), und es gibt keine herunterladbaren Backups, also regelmäßig „Sicherung herunterladen“. Einzelheiten: [`docs/SUPABASE.md`](docs/SUPABASE.md).
 
 ## Lizenz
 

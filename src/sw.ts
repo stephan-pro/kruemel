@@ -7,6 +7,8 @@
 // them. A new build means a new version, so the browser installs the new worker, which keeps the
 // new files and drops the old ones.
 
+import { isAppRequest } from "./swScope";
+
 const sw = self as unknown as ServiceWorkerGlobalScope;
 
 interface BuildInfo {
@@ -92,14 +94,9 @@ sw.addEventListener("activate", (event) => {
 
 sw.addEventListener("fetch", (event) => {
   const { request } = event;
-  const address = new URL(request.url);
-  // Only what belongs to the app: GET requests to its own address. Downloads of backups are
-  // `blob:` addresses and never get here.
-  if (
-    request.method !== "GET" ||
-    address.origin !== sw.location.origin ||
-    !address.href.startsWith(SCOPE)
-  ) {
+  // Only what belongs to the app: GET requests to its own address (not Supabase). Downloads of
+  // backups are `blob:` addresses and never get here.
+  if (!isAppRequest(request.method, request.url, SCOPE)) {
     return;
   }
   event.respondWith(request.mode === "navigate" ? page(request) : file(request));
