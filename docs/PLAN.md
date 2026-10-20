@@ -327,3 +327,16 @@ Ein kurzes Video, das alle Funktionen von Krümel zeigt (Woche bzw. „Heute“,
 - **Idee:** Das Video entsteht automatisch mit Playwright im Demo-Modus (`npm run demo`, erfundene Beispieldaten, kein echtes Konto): ein Aufnahme-Skript fährt die Funktionen der Reihe nach ab (Playwright-Videoaufnahme, feste Uhr wie in den E2E-Tests, Bildschirmgröße Handy). Nach Designänderungen erzeugt ein einziger Befehl (z. B. `npm run video`) das Video neu, ohne Handarbeit.
 - **Untertitel:** Werden am Ende ergänzt (zeitgesteuerte Untertiteldatei zu den Schritten des Skripts), damit das Video ohne Ton verständlich ist; die Texte stehen auf Deutsch im Skript und werden mit den Schritten zusammen gepflegt.
 - **Zu klären, wenn es soweit ist:** Ausgabeformat und Ort (Datei im Repository ist zu groß: eher als Release-Anhang oder Download), Länge (Richtwert 1–2 Minuten), ob eine Sprecherstimme gewünscht ist, Einbindung des Krümels (Figur, Symbol aus `design/kruemel-icon.svg`). Neue Abhängigkeiten (z. B. ein Programm zum Zusammensetzen der Untertitel) nur mit Begründung in diesem Dokument.
+
+## Stand 20.10.2026 / Offene Punkte
+
+- **Erledigt (Etappe 2):** E2-0, E2-0b (Umbenennung Krümel), Test-Diät, E2-1 (Supabase-Projekt `kruemel`, West EU/Paris, Tabellen eingespielt, Security Advisor ohne Befunde, Anmeldung per Link mit Standardversand getestet), E2-4 (Redesign, Statistik, Krümel-Symbol).
+- **Offen in E2-1:** Runde 5 (AVV/DPA mit Supabase: PO entscheidet, meldet „unterschrieben am …“ oder „kein AVV nötig“), Runde 6 (Gmail-Versand mit Code-Vorlage).
+- **Blockiert:** Gmail-App-Passwort für `kruemel.haushaltsapp@gmail.com` (Google: „We couldn't verify it's you“, vermutlich bis zu 7 Tage). Optionen: (a) in einigen Tagen erneut versuchen, (b) eigene Domain (ca. 1 €/Monat) plus Resend oder Brevo als SMTP, (c) Brevo ohne Domain (Zustellung unsicher). Entscheidung steht aus. Bis dahin Anmeldetest nur mit Standardversand (max. 2 Mails/Stunde, nur an die PO-Adresse).
+- **Als Nächstes:** E2-2 (Anmeldung) und E2-3 (gemeinsamer Speicher) nach dem Limit-Reset (Fr, 23.10., 11:00), Opus, Effort High. Bis dahin keine größeren Pakete. E2-5 (Gerätetest mit der zweiten Person) braucht funktionierenden Mailversand.
+- **Vorgemerkte Wünsche (noch nicht umsetzen):**
+  1. Krümel-Symbol links oben (Seitenleiste, Kopfzeile am Handy), SVG, leeres `alt`, da der Name daneben steht.
+  2. „Ich bin: <Name>“ unten links ersetzen: bis E2-2 neutral („Dieses Gerät: <Name>“), mit E2-2 „Angemeldet als <Name>“; die Einstellung „Ich bin“ entfällt, weil das Konto sagt, wer man ist.
+  3. Englisch mit Umschalter (Einstellungen, Voreinstellung nach Browsersprache) als eigenes Paket nach E2-5: Texte in Sprachdateien, Mehrzahlformen und Datumsformate, `lang` mitwechseln, Tests sprachunabhängig. Nicht früher, weil E2-2/E2-3 neue Bildschirme bringen.
+  4. Rückmeldungen zum Redesign (Redmi, PC) sammelt der PO und gibt sie nach dem Reset gesammelt ab.
+- **Bereits vorgemerkt:** Impressum (E2-5), Vorstellungsvideo (nach Etappe 2), später Gym-App, WoW-Addon, LEGO-Browsererweiterung, Gamification.
