@@ -70,4 +70,23 @@ describe("Anmeldedienst des Fake-Servers", () => {
     expect(auth.sessionFor(other)?.email).toBe("c@d.de");
     expect(auth.sessionFor(undefined)).toBeUndefined();
   });
+
+  it("E2-5b Ein von Hand angelegtes Konto braucht keine Einladung; nach dem Löschen gilt sein offener Code nicht mehr", () => {
+    const auth = new FakeAuth({
+      newCode: () => "123456",
+      newUserId: () => "user-1",
+      admit: () => "notAllowed",
+    });
+    auth.addUser("a@b.de");
+    auth.addUser("A@b.de");
+    auth.requestCode("a@b.de");
+
+    expect(failureOf(() => auth.requestCode("neu@b.de"))).toBe("notAllowed");
+    expect(auth.mailCount("neu@b.de")).toBe(0);
+    expect(auth.mailCount("a@b.de")).toBe(1);
+
+    auth.deleteUser("user-1");
+    expect(failureOf(() => auth.verifyCode("a@b.de", "123456"))).toBe("expiredCode");
+    expect(failureOf(() => auth.requestCode("a@b.de"))).toBe("notAllowed");
+  });
 });

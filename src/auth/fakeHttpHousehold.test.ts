@@ -20,6 +20,7 @@ async function device(server: FakeServer) {
   const send = fetchFrom(server);
   const email = `person-${crypto.randomUUID()}@example.com`;
   const auth = new FakeHttpAuth({ baseUrl: BASE, store, fetch: send });
+  server.auth.addUser(email);
   await auth.requestCode(email);
   await auth.verifyCode(email, server.auth.lastCode(email) ?? "");
   return { store, send, household: new FakeHttpHousehold({ baseUrl: BASE, store, fetch: send }) };
@@ -31,6 +32,9 @@ describeHouseholdContract("FakeHttpHousehold (über den Fake-Server)", async () 
   return {
     newPerson: async () => (await device(server)).household,
     expireInvites: async () => {
+      now += 8 * 24 * 60 * 60_000;
+    },
+    expireFriendInvite: async () => {
       now += 8 * 24 * 60 * 60_000;
     },
   };

@@ -71,8 +71,8 @@ export class FakeHttpAuth implements Auth {
     return stored.session;
   }
 
-  async requestCode(email: string): Promise<void> {
-    await this.call("/auth/code", { email: emailAddress(email) });
+  async requestCode(email: string, invite?: string): Promise<void> {
+    await this.call("/auth/code", { email: emailAddress(email), ...(invite ? { invite } : {}) });
   }
 
   async verifyCode(email: string, code: string): Promise<Session> {

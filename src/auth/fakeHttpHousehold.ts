@@ -79,6 +79,18 @@ export class FakeHttpHousehold implements HouseholdApi {
     await this.call("POST", "/household/delete-account");
   }
 
+  async createFriendInvite(): Promise<Invite> {
+    return (await this.call("POST", "/household/friend-invite")) as Invite;
+  }
+
+  async friendInvites(): Promise<readonly Invite[]> {
+    return ((await this.call("GET", "/household/friend-invites")) as { invites: Invite[] }).invites;
+  }
+
+  async cancelFriendInvite(token: string): Promise<void> {
+    await this.call("POST", "/household/friend-invite/cancel", { token });
+  }
+
   private async call(method: string, path: string, body?: object): Promise<unknown> {
     const token = fakeAuthToken(this.options.store);
     const headers: Record<string, string> = { "Content-Type": "application/json" };

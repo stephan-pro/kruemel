@@ -5,10 +5,17 @@
 // seven days, a new invite makes the unused earlier ones invalid, an invite fills the free place
 // (`personA` first), the last one to leave deletes the household. For the fake server of the
 // tests; the app's side is `FakeHttpHousehold`.
+//
+// E2-5b (`create_friend_invite`, `before_user_created`): friend invites (7 days, once, at most 5
+// open and 10 a day per person), and `admit`, the gate for new accounts: only with a valid friend
+// invite (used up by it) or a valid household invite (one new account per invite).
 
+import type { AuthFailure } from "../auth/auth";
 import {
   checkedHouseholdName,
   checkedNames,
+  FRIEND_INVITES_OPEN,
+  FRIEND_INVITES_PER_DAY,
   HouseholdError,
   type HouseholdInfo,
   INVITE_DAYS,
@@ -31,11 +38,24 @@ interface StoredInvite {
   readonly home: Home;
   readonly expiresAt: number;
   used: boolean;
+  /** A new account was made with it (E2-5b). */
+  signedUp: boolean;
 }
+
+interface FriendInvite {
+  readonly createdBy: string;
+  readonly createdAt: number;
+  readonly expiresAt: number;
+  used: boolean;
+  cancelled: boolean;
+}
+
+const DAY_MS = 24 * 60 * 60_000;
 
 export class FakeAccounts {
   private readonly homeOf = new Map<string, Home>(); // user id → household
   private readonly invites = new Map<string, StoredInvite>();
+  private readonly friendInvites = new Map<string, FriendInvite>();
 
   /** @param now Milliseconds since 1970. */
   constructor(private readonly now: () => number = Date.now) {}
@@ -100,9 +120,73 @@ export class FakeAccounts {
       }
     }
     const token = crypto.randomUUID().replaceAll("-", "");
-    const expiresAt = this.now() + INVITE_DAYS * 24 * 60 * 60_000;
-    this.invites.set(token, { home, expiresAt, used: false });
+    const expiresAt = this.now() + INVITE_DAYS * DAY_MS;
+    this.invites.set(token, { home, expiresAt, used: false, signedUp: false });
     return { token, expiresAt: new Date(expiresAt).toISOString() };
+  }
+
+  createFriendInvite(userId: string): Invite {
+    if (!this.homeOf.has(userId)) {
+      throw new HouseholdError("noHousehold");
+    }
+    if (this.openFriendInvites(userId).length >= FRIEND_INVITES_OPEN) {
+      throw new HouseholdError("friendInvitesOpen");
+    }
+    const today = [...this.friendInvites.values()].filter(
+      (invite) => invite.createdBy === userId && invite.createdAt > this.now() - DAY_MS,
+    );
+    if (today.length >= FRIEND_INVITES_PER_DAY) {
+      throw new HouseholdError("friendInvitesToday");
+    }
+    const token = crypto.randomUUID().replaceAll("-", "");
+    const expiresAt = this.now() + INVITE_DAYS * DAY_MS;
+    this.friendInvites.set(token, {
+      createdBy: userId,
+      createdAt: this.now(),
+      expiresAt,
+      used: false,
+      cancelled: false,
+    });
+    return { token, expiresAt: new Date(expiresAt).toISOString() };
+  }
+
+  /** The person's open friend invites, oldest first. */
+  openFriendInvites(userId: string): Invite[] {
+    return [...this.friendInvites]
+      .filter(([, invite]) => invite.createdBy === userId && this.isOpen(invite))
+      .map(([token, invite]) => ({ token, expiresAt: new Date(invite.expiresAt).toISOString() }));
+  }
+
+  cancelFriendInvite(userId: string, token: string): void {
+    const invite = this.friendInvites.get(token);
+    if (invite?.createdBy === userId && !invite.used) {
+      invite.cancelled = true;
+    }
+  }
+
+  /**
+   * The gate for a new account: `undefined` lets it in (and uses up the invite), otherwise the
+   * refusal, as the database's `before_user_created` answers.
+   */
+  admit(token: string | undefined): AuthFailure | undefined {
+    if (token === undefined || token === "") {
+      return "notAllowed";
+    }
+    const friendInvite = this.friendInvites.get(token);
+    if (friendInvite !== undefined && this.isOpen(friendInvite)) {
+      friendInvite.used = true;
+      return undefined;
+    }
+    const invite = this.invites.get(token);
+    if (invite !== undefined && !invite.used && !invite.signedUp && invite.expiresAt > this.now()) {
+      invite.signedUp = true;
+      return undefined;
+    }
+    return "inviteInvalid";
+  }
+
+  private isOpen(invite: FriendInvite): boolean {
+    return !invite.used && !invite.cancelled && invite.expiresAt > this.now();
   }
 
   acceptInvite(userId: string, token: string): HouseholdInfo {
@@ -165,10 +249,18 @@ export class FakeAccounts {
     }
   }
 
-  /** The household's part of deleting an account: leaving it, if the person has one. */
+  /**
+   * The household's part of deleting an account: leaving it, if the person has one; the
+   * person's friend invites go with the account.
+   */
   forgetUser(userId: string): void {
     if (this.homeOf.has(userId)) {
       this.leave(userId);
+    }
+    for (const [token, invite] of this.friendInvites) {
+      if (invite.createdBy === userId) {
+        this.friendInvites.delete(token);
+      }
     }
   }
 }

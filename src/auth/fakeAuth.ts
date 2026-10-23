@@ -4,8 +4,12 @@
 // network address instead (a limit on tries) is a limit per code here: after five wrong tries the
 // code is used up. For tests; `lastCode` stands in for the mail that would carry the code.
 // The app's side is `FakeHttpAuth` (`fakeHttpAuth.ts`).
+//
+// New accounts (E2-5b): as with the real service, an address gets its account when it first asks
+// for a code, and only if `admit` lets it in (the fake server checks the invite there, like the
+// database's gate). `addUser` makes an account by hand, as the operator does in the dashboard.
 
-import { AuthError, CODE_MINUTES, emailAddress, type Session } from "./auth";
+import { AuthError, type AuthFailure, CODE_MINUTES, emailAddress, type Session } from "./auth";
 
 const MAX_WRONG_TRIES = 5;
 
@@ -24,6 +28,11 @@ export interface FakeAuthOptions {
   readonly newUserId?: () => string;
   /** How long after a code a new one may be asked for; default 60 s (as in the real project). */
   readonly resendAfterMs?: number;
+  /**
+   * Whether a new address may get an account with the given invite key: `undefined` lets it in,
+   * otherwise the refusal. Default: everybody (the fake server checks invites).
+   */
+  readonly admit?: (invite: string | undefined) => AuthFailure | undefined;
 }
 
 /** What a successful sign-in hands to the device: the session and the secret that proves it. */
@@ -35,12 +44,14 @@ export interface SignedIn {
 export class FakeAuth {
   private readonly codes = new Map<string, PendingCode>();
   private readonly sentAt = new Map<string, number>();
+  private readonly mails = new Map<string, number>();
   private readonly users = new Map<string, string>();
   private readonly sessions = new Map<string, Session>();
   private readonly now: () => number;
   private readonly newCode: () => string;
   private readonly newUserId: () => string;
   private readonly resendAfterMs: number;
+  private readonly admit: (invite: string | undefined) => AuthFailure | undefined;
 
   constructor(options: FakeAuthOptions = {}) {
     this.now = options.now ?? Date.now;
@@ -48,6 +59,7 @@ export class FakeAuth {
       options.newCode ?? (() => String(Math.floor(Math.random() * 1_000_000)).padStart(6, "0"));
     this.newUserId = options.newUserId ?? (() => crypto.randomUUID());
     this.resendAfterMs = options.resendAfterMs ?? 60_000;
+    this.admit = options.admit ?? (() => undefined);
   }
 
   /** The code the last mail to this address carried (the test's way to "read the mail"). */
@@ -55,13 +67,34 @@ export class FakeAuth {
     return this.codes.get(email.trim().toLowerCase())?.code;
   }
 
-  requestCode(email: string): void {
+  /** How many mails with a code went to the address. */
+  mailCount(email: string): number {
+    return this.mails.get(email.trim().toLowerCase()) ?? 0;
+  }
+
+  /** An account made by hand (as "Add user" in the dashboard); nothing happens if it exists. */
+  addUser(email: string): void {
     const address = emailAddress(email);
+    if (!this.users.has(address)) {
+      this.users.set(address, this.newUserId());
+    }
+  }
+
+  requestCode(email: string, invite?: string): void {
+    const address = emailAddress(email);
+    if (!this.users.has(address)) {
+      const refused = this.admit(invite);
+      if (refused !== undefined) {
+        throw new AuthError(refused);
+      }
+      this.users.set(address, this.newUserId());
+    }
     const last = this.sentAt.get(address);
     if (last !== undefined && this.now() - last < this.resendAfterMs) {
       throw new AuthError("tooManyTries");
     }
     this.sentAt.set(address, this.now());
+    this.mails.set(address, this.mailCount(address) + 1);
     this.codes.set(address, {
       code: this.newCode(),
       expiresAt: this.now() + CODE_MINUTES * 60_000,
@@ -85,10 +118,10 @@ export class FakeAuth {
       throw new AuthError("wrongCode");
     }
     this.codes.delete(address); // a code works once
-    let userId = this.users.get(address);
+    const userId = this.users.get(address);
     if (userId === undefined) {
-      userId = this.newUserId();
-      this.users.set(address, userId);
+      // The account was deleted after the code was sent: the code went with it.
+      throw new AuthError("expiredCode");
     }
     const signedIn = { token: crypto.randomUUID(), session: { userId, email: address } };
     this.sessions.set(signedIn.token, signedIn.session);
@@ -108,8 +141,8 @@ export class FakeAuth {
   }
 
   /**
-   * Deletes the account (E2-5a): its sessions end and the address counts as new afterwards. (The
-   * real project lets no new accounts in by themselves; the fake does, see E2-5b.)
+   * Deletes the account (E2-5a): its sessions end and the address counts as new afterwards, so it
+   * needs an invite again (E2-5b).
    */
   deleteUser(userId: string): void {
     for (const [address, id] of this.users) {

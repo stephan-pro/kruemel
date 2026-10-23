@@ -10,6 +10,7 @@ import { appAddress } from "../appInfo";
 import { AccountTile } from "../components/AccountTile";
 import { ErrorAlert } from "../components/Alert";
 import { BackupTile } from "../components/BackupTile";
+import { FriendInviteTile } from "../components/FriendInviteTile";
 import { type Choice, RadioGroup } from "../components/fields";
 import { HouseholdTile } from "../components/HouseholdTile";
 import { InstallTile } from "../components/InstallTile";
@@ -67,6 +68,12 @@ interface SettingsPageProps {
     /** Downloads a backup of all data (offered in the questions). */
     readonly onBackup: () => void;
   };
+  /** "Freunde einladen" (E2-5b); only for a member of a household. */
+  readonly friends?: {
+    readonly onCreate: () => Promise<Invite>;
+    readonly onList: () => Promise<readonly Invite[]>;
+    readonly onCancel: (token: string) => Promise<void>;
+  };
   /** Where the shared data stand ("Übertragung", E2-3c); missing without shared data. */
   readonly sync?: {
     readonly status: SyncStatus;
@@ -102,6 +109,7 @@ export function SettingsPage({
   onInstall,
   account,
   household,
+  friends,
   sync,
 }: SettingsPageProps) {
   const [schemeError, setSchemeError] = useState<string>();
@@ -200,6 +208,13 @@ export function SettingsPage({
             onPrepareLeave={household.onPrepare}
             onLeave={household.onLeave}
             onBackup={household.onBackup}
+          />
+        )}
+        {friends && (
+          <FriendInviteTile
+            onCreate={friends.onCreate}
+            onList={friends.onList}
+            onCancel={friends.onCancel}
           />
         )}
         {account && (

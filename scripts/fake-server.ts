@@ -14,9 +14,11 @@
 //   POST /auth/code, POST /auth/verify, GET /auth/session, POST /auth/sign-out
 //                       sign-in with a code (`FakeAuth`; the app's side is `FakeHttpAuth`)
 //   GET  /test/code?email=  the last code "sent" to the address, instead of a mail
+//   POST /test/user     {email} an account made by hand (new addresses need an invite, E2-5b)
 //
 //   GET /household, POST /household/create, /household/invite, /household/accept,
-//   /household/rename, /household/remove, /household/leave, /household/delete-account
+//   /household/rename, /household/remove, /household/leave, /household/delete-account,
+//   /household/friend-invite(s), /household/friend-invite/cancel
 //                       the household of a signed-in person (`FakeAccounts`; the app's side is
 //                       `FakeHttpHousehold`); their secret also opens /pull, /push and /events
 //

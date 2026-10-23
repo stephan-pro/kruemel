@@ -66,7 +66,11 @@ export class FakeServer {
   private readonly accounts: FakeAccounts;
 
   constructor(options: FakeServerOptions = {}) {
-    this.auth = new FakeAuth(options.auth);
+    // New accounts only with an invite (E2-5b), checked where the invites are.
+    this.auth = new FakeAuth({
+      ...options.auth,
+      admit: (invite) => this.accounts.admit(invite),
+    });
     this.accounts = new FakeAccounts(options.auth?.now);
   }
 
@@ -100,7 +104,7 @@ export class FakeServer {
       const { tokens } = this.createHousehold(data);
       return { status: 200, body: { tokens } };
     }
-    if (path.startsWith("/auth/") || path === "/test/code") {
+    if (path.startsWith("/auth/") || path === "/test/code" || path === "/test/user") {
       return this.handleAuth(request);
     }
     if (path.startsWith("/household")) {
@@ -147,6 +151,9 @@ export class FakeServer {
    *   POST /household/remove {person} → {household}  (E2-5a)
    *   POST /household/leave           → {}
    *   POST /household/delete-account  → {}, the session ends
+   *   POST /household/friend-invite   → {token, expiresAt}  (E2-5b)
+   *   GET  /household/friend-invites  → {invites}, the open ones
+   *   POST /household/friend-invite/cancel {token} → {}
    * Needs the secret of a signed-in person (401 otherwise). A refused step answers with
    * `{failure}` (a `HouseholdFailure`), status 400.
    */
@@ -194,6 +201,16 @@ export class FakeServer {
         this.auth.deleteUser(userId);
         return { status: 200, body: {} };
       }
+      if (method === "POST" && path === "/household/friend-invite") {
+        return { status: 200, body: this.accounts.createFriendInvite(userId) };
+      }
+      if (method === "GET" && path === "/household/friend-invites") {
+        return { status: 200, body: { invites: this.accounts.openFriendInvites(userId) } };
+      }
+      if (method === "POST" && path === "/household/friend-invite/cancel") {
+        this.accounts.cancelFriendInvite(userId, textOf(body, "token"));
+        return { status: 200, body: {} };
+      }
     } catch (error) {
       if (error instanceof HouseholdError) {
         return { status: 400, body: { failure: error.failure } };
@@ -204,18 +221,25 @@ export class FakeServer {
   }
 
   /**
-   *   POST /auth/code    {email}        a code "by mail" (read with /test/code)
+   *   POST /auth/code    {email, invite?}  a code "by mail" (read with /test/code); a new address
+   *                                        needs a valid invite (E2-5b, 403 otherwise)
    *   POST /auth/verify   {email, code}  → {token, session}
    *   GET  /auth/session                 the session of the secret, 401 if it ended
    *   POST /auth/sign-out                ends the session of the secret
    *   GET  /test/code?email=             → {code}, the last code sent to the address
+   *   POST /test/user     {email}        an account made by hand ("Add user" in the dashboard)
    * A refused step answers with `{failure}` (an `AuthFailure`), status 429 for too many tries.
    */
   private handleAuth(request: ApiRequest): ApiResponse {
     const { method, path, body, token } = request;
     try {
       if (method === "POST" && path === "/auth/code") {
-        this.auth.requestCode(textOf(body, "email"));
+        const invite = textOf(body, "invite");
+        this.auth.requestCode(textOf(body, "email"), invite === "" ? undefined : invite);
+        return { status: 200, body: {} };
+      }
+      if (method === "POST" && path === "/test/user") {
+        this.auth.addUser(textOf(body, "email"));
         return { status: 200, body: {} };
       }
       if (method === "POST" && path === "/auth/verify") {
@@ -226,10 +250,13 @@ export class FakeServer {
       }
     } catch (error) {
       if (error instanceof AuthError) {
-        return {
-          status: error.failure === "tooManyTries" ? 429 : 400,
-          body: { failure: error.failure },
-        };
+        const status =
+          error.failure === "tooManyTries"
+            ? 429
+            : error.failure === "notAllowed" || error.failure === "inviteInvalid"
+              ? 403
+              : 400;
+        return { status, body: { failure: error.failure } };
       }
       throw error;
     }

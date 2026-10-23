@@ -18,4 +18,13 @@ describeHouseholdContract("Datenbankfunktionen (lokale Supabase-Instanz)", async
       throw error;
     }
   },
+  expireFriendInvite: async (token) => {
+    const { error } = await admin
+      .from("friend_invites")
+      .update({ expires_at: new Date(Date.now() - 60_000).toISOString() })
+      .eq("token", token);
+    if (error) {
+      throw error;
+    }
+  },
 }));

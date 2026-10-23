@@ -21,8 +21,13 @@ export type AuthFailure =
   | "tooManyTries"
   /** No connection to the sign-in service (no network, or the service does not answer). */
   | "offline"
-  /** The service does not let this address sign in (e.g. new sign-ups switched off). */
+  /**
+   * The service does not let this address sign in: a new address without an invite (E2-5b), or
+   * new sign-ups switched off.
+   */
   | "notAllowed"
+  /** A new address came with an invite that does not work (unknown, used, expired, withdrawn). */
+  | "inviteInvalid"
   /** Anything else the service refused. */
   | "unknown";
 
@@ -32,7 +37,10 @@ export const AUTH_MESSAGES: Readonly<Record<AuthFailure, string>> = {
   expiredCode: "Der Code ist abgelaufen. Bitte einen neuen anfordern.",
   tooManyTries: "Zu viele Versuche. Bitte kurz warten und dann einen neuen Code anfordern.",
   offline: "Keine Verbindung zum Anmeldedienst. Bitte Internet prüfen und erneut versuchen.",
-  notAllowed: "Mit dieser Adresse ist keine Anmeldung möglich.",
+  notAllowed:
+    "Krümel ist gerade nur mit Einladung nutzbar. Frag jemanden, der Krümel schon nutzt, nach einem Einladungslink. Hast du schon ein Konto? Dann prüf deine Adresse.",
+  inviteInvalid:
+    "Dein Einladungslink gilt nicht mehr: Er ist abgelaufen, schon benutzt oder zurückgezogen. Frag nach einem neuen Link. Hast du schon ein Konto? Dann prüf deine Adresse.",
   unknown: "Die Anmeldung hat nicht geklappt. Bitte später erneut versuchen.",
 };
 
@@ -69,8 +77,12 @@ export interface Auth {
    * a final refusal by the server ends it (then `onChange` reports `null`).
    */
   session(): Promise<Session | null>;
-  /** Sends a code to the address. Throws `AuthError`. */
-  requestCode(email: string): Promise<void>;
+  /**
+   * Sends a code to the address. A new address gets an account (and a code) only with `invite`,
+   * the key of a friend or household invite, which the service checks and uses up (E2-5b); for an
+   * address that has an account already the key does not matter. Throws `AuthError`.
+   */
+  requestCode(email: string, invite?: string): Promise<void>;
   /** Checks the code and signs in. Throws `AuthError`. */
   verifyCode(email: string, code: string): Promise<Session>;
   /** Ends the session on this device, also without network. */

@@ -126,6 +126,18 @@ export function inviteTokenFrom(text: string): string | undefined {
   return new RegExp(`^${TOKEN}$`).test(alone) ? alone : undefined;
 }
 
+const FRIEND_INVITE_PREFIX = "#/freunde/";
+
+/** The part of a friend invite link (E2-5b) after the app's address, e.g. "#/freunde/abc…". */
+export function friendInviteHash(token: string): string {
+  return `${FRIEND_INVITE_PREFIX}${token}`;
+}
+
+/** The token of a friend invite link in an address; `undefined` for anything else. */
+export function friendInviteTokenFrom(text: string): string | undefined {
+  return new RegExp(`${FRIEND_INVITE_PREFIX}(${TOKEN})`).exec(text)?.[1];
+}
+
 /** The link target of the form for changing a task. */
 export function editTaskHash(taskId: string): string {
   return `#/${EDIT_TASK_PREFIX}${encodeURIComponent(taskId)}`;

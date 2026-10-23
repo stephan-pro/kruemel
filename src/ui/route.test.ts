@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_ROUTE,
   editTaskHash,
+  friendInviteHash,
+  friendInviteTokenFrom,
   inviteHash,
   inviteTokenFrom,
   NAVIGATION,
@@ -117,5 +119,18 @@ describe("Einladungslink (E2-2d)", () => {
     expect(inviteTokenFrom("#/einladung/")).toBeUndefined();
     expect(inviteTokenFrom("kurz")).toBeUndefined();
     expect(inviteTokenFrom("mit Leerzeichen dazwischen 1234")).toBeUndefined();
+  });
+});
+
+describe("Einladungslink für Freunde (E2-5b)", () => {
+  const token = "Ab3_-xYz0123456789abcdefGHIJKLMN";
+
+  it("Der Schlüssel steckt im Adressteil; ein Haushalts-Link ist keiner und umgekehrt", () => {
+    expect(friendInviteHash(token)).toBe(`#/freunde/${token}`);
+    expect(friendInviteTokenFrom(`https://x.de/kruemel/${friendInviteHash(token)}`)).toBe(token);
+    expect(friendInviteTokenFrom(inviteHash(token))).toBeUndefined();
+    expect(friendInviteTokenFrom("#/freunde/kurz")).toBeUndefined();
+    expect(inviteTokenFrom(`https://x.de/kruemel/${friendInviteHash(token)}`)).toBeUndefined();
+    expect(parseRoute(friendInviteHash(token))).toBe("today");
   });
 });

@@ -17,6 +17,11 @@ export const ACCOUNT_TEXTS = {
   signInTitle: "Anmelden",
   signInIntro:
     "Melde dich mit deiner E-Mail-Adresse an. Wir schicken dir einen Code, ein Passwort brauchst du nicht.",
+  /** Above the form when an invite link was opened (E2-5b). */
+  invitedFriend:
+    "Du bist zu Krümel eingeladen. Melde dich mit deiner E-Mail-Adresse an. Danach legst du deinen eigenen Haushalt an.",
+  invitedHousehold:
+    "Du bist zu einem Haushalt bei Krümel eingeladen. Melde dich mit deiner E-Mail-Adresse an. Danach trittst du dem Haushalt bei.",
   emailLabel: "E-Mail-Adresse",
   sendCode: "Code schicken",
 
@@ -58,7 +63,7 @@ export const DELETE_ACCOUNT_TEXTS = {
     "Du bist die letzte Person im Haushalt. Deshalb wird auch der Haushalt mit allen Aufgaben und Erledigungen gelöscht. Die App lädt vorher automatisch eine Sicherung herunter.",
   noUndo: "Das lässt sich nicht rückgängig machen.",
   wayBack:
-    "Selbst kannst du dich danach nicht wieder anmelden: Neue Konten legt bei Krümel gerade nur die Person an, die die App betreibt. Willst du später wieder mitmachen, bitte sie darum und lass dich neu einladen.",
+    "Ein neues Konto bekommst du danach nur mit einer neuen Einladung. Willst du später wieder mitmachen, bitte jemanden, der Krümel nutzt, um einen Einladungslink.",
   wordLabel: `Zum Bestätigen „${DELETE_WORD}“ eintippen`,
   wordMissing: `Bitte tippe „${DELETE_WORD}“ ein, wenn du dein Konto wirklich löschen willst.`,
   confirm: "Konto endgültig löschen",

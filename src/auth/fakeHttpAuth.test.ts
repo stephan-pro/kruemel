@@ -5,16 +5,39 @@ import { fetchFrom } from "../sync/fakeServer.fixtures";
 import { AuthError } from "./auth";
 import { describeAuthContract } from "./auth.contract";
 import { FAKE_AUTH_KEY, FakeHttpAuth } from "./fakeHttpAuth";
+import { FakeHttpHousehold } from "./fakeHttpHousehold";
 import { offlineFetch } from "./supabaseAuth.fixtures";
 
 const BASE = "http://fake.test";
+
+const newEmail = () => `person-${crypto.randomUUID()}@example.com`;
+
+/** A member of a new household, signed in through the fake server's API. */
+async function member(server: FakeServer) {
+  const store = new FakeStore();
+  const send = fetchFrom(server);
+  const email = newEmail();
+  server.auth.addUser(email);
+  const auth = new FakeHttpAuth({ baseUrl: BASE, store, fetch: send });
+  await auth.requestCode(email);
+  await auth.verifyCode(email, server.auth.lastCode(email) ?? "");
+  const household = new FakeHttpHousehold({ baseUrl: BASE, store, fetch: send });
+  await household.create({ personA: "Alex", personB: "Robin" });
+  return household;
+}
 
 describeAuthContract("FakeHttpAuth (über den Fake-Server)", async () => {
   let now = 1_000_000;
   const server = new FakeServer({ auth: { now: () => now } });
   const store = new FakeStore();
+  const email = newEmail();
+  server.auth.addUser(email);
   return {
-    email: `person-${crypto.randomUUID()}@example.com`,
+    email,
+    newEmail,
+    friendInvite: async () => (await (await member(server)).createFriendInvite()).token,
+    householdInvite: async () => (await (await member(server)).createInvite()).token,
+    mailCount: async (address) => server.auth.mailCount(address),
     open: (options) =>
       new FakeHttpAuth({
         baseUrl: BASE,
@@ -49,6 +72,7 @@ describe("FakeHttpAuth und die Anmeldung am Fake-Server", () => {
     const auth = new FakeHttpAuth({ baseUrl: BASE, store: new FakeStore(), fetch: send });
 
     expect((await send(`${BASE}/test/code?email=a@b.de`)).status).toBe(404);
+    await send(`${BASE}/test/user`, { method: "POST", body: JSON.stringify({ email: "a@b.de" }) });
     await auth.requestCode("a@b.de");
     expect(await (await send(`${BASE}/test/code?email=a@b.de`)).json()).toEqual({ code: "424242" });
     await auth.verifyCode("a@b.de", "424242");

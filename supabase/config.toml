@@ -79,6 +79,13 @@ content_path = "./supabase/templates/code.html"
 subject = "Dein Anmeldecode für Krümel"
 content_path = "./supabase/templates/code.html"
 
+# New accounts only with an invite (E2-5b): the function of the migration `…_friend_invites.sql`
+# decides before an account is made and a mail goes out. In the real project the same hook is
+# switched on in the dashboard (Authentication → Auth Hooks, see docs/SUPABASE.md).
+[auth.hook.before_user_created]
+enabled = true
+uri = "pg-functions://postgres/public/before_user_created"
+
 [auth.mfa.totp]
 enroll_enabled = false
 verify_enabled = false

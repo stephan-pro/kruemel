@@ -44,7 +44,12 @@ import { Navigation } from "./components/Navigation";
 import { APP_NAME } from "./components/PageTitle";
 import { conflictText, SyncNotices } from "./components/SyncNotices";
 import { downloadTextFile } from "./download";
-import { pendingInvite, rememberInvite } from "./householdMemory";
+import {
+  pendingFriendInvite,
+  pendingInvite,
+  rememberFriendInvite,
+  rememberInvite,
+} from "./householdMemory";
 import { LEAVE_TEXTS, SHARED_TEXTS } from "./householdTexts";
 import { offersInstallHint, useInstallWay } from "./install";
 import { DonePage } from "./pages/DonePage";
@@ -60,7 +65,15 @@ import { TasksPage } from "./pages/TasksPage";
 import { TodayPage } from "./pages/TodayPage";
 import { WeekPage } from "./pages/WeekPage";
 import { WhoAmIPage } from "./pages/WhoAmIPage";
-import { inviteHash, inviteTokenFrom, type PageLocation, parseLocation, routeHash } from "./route";
+import {
+  friendInviteHash,
+  friendInviteTokenFrom,
+  inviteHash,
+  inviteTokenFrom,
+  type PageLocation,
+  parseLocation,
+  routeHash,
+} from "./route";
 import { useHousehold } from "./useHousehold";
 import { useToday } from "./useToday";
 
@@ -191,6 +204,21 @@ function takeInvite(keep: boolean): string | undefined {
   return keep ? pendingInvite() : undefined;
 }
 
+/**
+ * The friend invite of an opened link (`#/freunde/<token>`, E2-5b), taken like `takeInvite`: it
+ * is needed only to sign in with a new address.
+ */
+function takeFriendInvite(keep: boolean): string | undefined {
+  if (location.hash.startsWith(friendInviteHash(""))) {
+    const token = friendInviteTokenFrom(location.hash);
+    history.replaceState(null, "", `${location.pathname}${location.search}${routeHash("today")}`);
+    if (keep && token !== undefined) {
+      rememberFriendInvite(token);
+    }
+  }
+  return keep ? pendingFriendInvite() : undefined;
+}
+
 function useLocation(onInvite: () => void): PageLocation {
   const [pageLocation, setPageLocation] = useState(() => parseLocation(location.hash));
   useEffect(() => {
@@ -213,6 +241,9 @@ export function App({
 }: AppProps) {
   const [session, setSession] = useSession(auth);
   const [invite, setInvite] = useState(() => takeInvite(householdApi !== undefined));
+  const [friendInvite, setFriendInvite] = useState(() =>
+    takeFriendInvite(householdApi !== undefined),
+  );
   const household = useHousehold(householdApi, session?.userId, () => void lostHousehold());
   /** What "Haushalt anlegen" says after leaving or being removed (E2-5a). */
   const [householdNotice, setHouseholdNotice] = useState<string>();
@@ -259,7 +290,10 @@ export function App({
   }
   /** What just happened to a task; the task list shows and announces it, then forgets it. */
   const [notice, setNotice] = useState<string>();
-  const { route, taskId } = useLocation(() => setInvite(takeInvite(householdApi !== undefined)));
+  const { route, taskId } = useLocation(() => {
+    setInvite(takeInvite(householdApi !== undefined));
+    setFriendInvite(takeFriendInvite(householdApi !== undefined));
+  });
   const today = useToday();
   const install = useInstallWay();
 
@@ -700,6 +734,14 @@ export function App({
       setSignInNotice(undefined);
     }
   }, [session != null]);
+  // A friend invite only opens the door to an account: once signed in it is done (used up by the
+  // new account, or not needed by a known one); "Haushalt anlegen" follows for a new account.
+  useEffect(() => {
+    if (session != null && friendInvite !== undefined) {
+      rememberFriendInvite(undefined);
+      setFriendInvite(undefined);
+    }
+  }, [session != null, friendInvite]);
 
   /** "Haushalt anlegen": the new household is shown and its names taken over (see below). */
   async function createHousehold(names: PersonNames): Promise<HouseholdInfo> {
@@ -871,7 +913,18 @@ export function App({
             <p role="status">Wird geladen …</p>
           )}
           {gate === "signIn" && auth && (
-            <SignInPage auth={auth} onSignedIn={setSession} notice={signInNotice} />
+            <SignInPage
+              auth={auth}
+              onSignedIn={setSession}
+              notice={signInNotice}
+              invite={
+                invite !== undefined
+                  ? { key: invite, kind: "household" }
+                  : friendInvite !== undefined
+                    ? { key: friendInvite, kind: "friend" }
+                    : undefined
+              }
+            />
           )}
           {gate === "unavailable" && household.state.status === "failed" && (
             <HouseholdUnavailablePage message={household.state.message} onRetry={household.retry} />
@@ -953,6 +1006,15 @@ export function App({
                       onLeave: leaveHousehold,
                       onPrepare: pendingBeforeSignOut,
                       onBackup: downloadBackup,
+                    },
+                  }
+                : {})}
+              {...(householdApi && joined
+                ? {
+                    friends: {
+                      onCreate: () => householdApi.createFriendInvite(),
+                      onList: () => householdApi.friendInvites(),
+                      onCancel: (token: string) => householdApi.cancelFriendInvite(token),
                     },
                   }
                 : {})}

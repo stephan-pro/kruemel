@@ -26,7 +26,14 @@ Kein Geheimnis gehört ins Repository, in den Chat oder in GitHub Actions. Der H
 - **Authentication → URL Configuration:** Site URL `https://stephan-pro.github.io/kruemel/`, Redirect URLs `https://stephan-pro.github.io/kruemel/` und `http://localhost:5173/kruemel/`. (Die Anmeldung läuft über den Code, Links in Mails gibt es nicht; die Adressen braucht Supabase trotzdem.)
 - **Authentication → Rate Limits:** nur ansehen; „emails sent“ reicht mit dem Standardwert für zwei Personen.
 - **Advisors → Security Advisor:** ohne Fehler und Warnungen (Row Level Security ist auf jeder Tabelle an).
-- **E2-5:** Neuanmeldungen abschalten (Sign In / Providers → „Allow new users to sign up“ aus), sobald beide Konten bestehen.
+- ~~**E2-5:** Neuanmeldungen abschalten~~ – ersetzt durch E2-5b:
+- **Neue Konten nur mit Einladung (E2-5b):** Reihenfolge einhalten, sonst kann kurz jede Adresse ein Konto anlegen:
+  1. Migration `20261026120000_friend_invites.sql` einspielen (`npx supabase db push`, siehe unten).
+  2. **Authentication → Auth Hooks → „Add hook“ → „Before User Created“** → Hook type „Postgres“ → Schema `public`, Function `before_user_created` → „Create hook“ (danach steht er als „Enabled“ in der Liste). Kein Geheimnis nötig.
+  3. Erst dann **Authentication → Sign In / Providers → „Allow new users to sign up“ an** → „Save changes“.
+  4. Probe: im privaten Fenster mit einer unbekannten Adresse „Code schicken“ → Meldung „Krümel ist gerade nur mit Einladung nutzbar …“, keine Mail.
+  Neue Konten von Hand weiter unter **Authentication → Users → „Add user“ → „Create new user“** (Adresse, „Auto Confirm User“ an); „Send invitation“ dort geht nicht mehr (der Hook lehnt es ab). Zurück zum alten Zustand: „Allow new users to sign up“ aus (dann hilft auch kein Link mehr) oder den Hook ausschalten (dann ist die Anmeldung wieder offen).
+- **Mailgrenzen:** Supabase schickt höchstens einen Code je Adresse pro 60 s; die Gesamtzahl der Mails je Stunde steht unter Authentication → Rate Limits („emails sent“, beim eigenen SMTP einstellbar, Standard 30). Gmail erlaubt rund 500 Mails am Tag und sperrt bei Auffälligkeiten. Abgelehnte Anfragen ohne Einladung verschicken nichts; die App begrenzt Freundes-Links (5 offen, 10 am Tag je Person).
 
 Dieselben Werte stehen für die lokale Test-Instanz in `supabase/config.toml`.
 
@@ -47,6 +54,8 @@ npx supabase db push
 | `20261020120000_household.sql` (E2-1) | Tabellen, Zeilenschutz, Schreibfunktionen, `pull_changes`, `ping` | eingespielt |
 | `20261023120000_sync.sql` (E2-3a) | Versionsschutz (ältere App → `outdated`), `pull_changes` mit Version des Haushalts, Übernahme `add_household_data` | eingespielt (E2-3f) |
 | `20261024120000_household_name.sql` (E2-3g) | Spalte `households.name`, Funktion `rename_household` (nur Mitglieder, eigener Haushalt) | eingespielt (23.10.2026) |
+| `20261025120000_leave.sql` (E2-5a) | `remove_member`, `leave_household`, `delete_account` | spielt der PO ein |
+| `20261026120000_friend_invites.sql` (E2-5b) | Freundes-Einladungen (`friend_invites`, Grenzen), Hook `before_user_created` (danach im Dashboard einschalten, siehe oben) | spielt der PO ein |
 
 ## Kostenloser Tarif: Grenzen
 

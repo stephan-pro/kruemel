@@ -11,6 +11,8 @@ export interface HouseholdContractSetup {
   newPerson(): Promise<HouseholdApi>;
   /** Lets every open invite of the household run out (more than seven days pass). */
   expireInvites(householdId: string): Promise<void>;
+  /** Lets the friend invite run out (more than seven days pass, E2-5b). */
+  expireFriendInvite(token: string): Promise<void>;
 }
 
 async function failureOf(promise: Promise<unknown>): Promise<string> {
@@ -223,6 +225,56 @@ export function describeHouseholdContract(
       expect(await failureOf((await s.newPerson()).acceptInvite(samsInvite.token))).toBe(
         "inviteUnknown",
       );
+    });
+
+    it("E2-5b Freunde einladen: nur mit Haushalt; offene Links stehen in der Liste, bis sie zurückgezogen werden oder ablaufen", async () => {
+      const s = await setup();
+      const [alex, sam] = [await s.newPerson(), await s.newPerson()];
+      expect(await failureOf(alex.createFriendInvite())).toBe("noHousehold");
+      await alex.create(NAMES);
+      await sam.create({ personA: "Sam", personB: "Kim" });
+
+      const first = await alex.createFriendInvite();
+      const second = await alex.createFriendInvite();
+
+      expect(first.token.length).toBeGreaterThanOrEqual(20);
+      expect(second.token).not.toBe(first.token);
+      expect(Number.isNaN(Date.parse(first.expiresAt))).toBe(false);
+      expect(await alex.friendInvites()).toEqual([first, second]);
+      expect(await sam.friendInvites()).toEqual([]);
+
+      // Fremde Links zieht niemand zurück; der eigene geht, zweimal ändert nichts.
+      await sam.cancelFriendInvite(first.token);
+      expect((await alex.friendInvites()).length).toBe(2);
+      await alex.cancelFriendInvite(first.token);
+      await alex.cancelFriendInvite(first.token);
+      expect(await alex.friendInvites()).toEqual([second]);
+
+      await s.expireFriendInvite(second.token);
+      expect(await alex.friendInvites()).toEqual([]);
+      // Ein Haushalts-Link bleibt davon unberührt.
+      expect((await alex.createInvite()).token).not.toBe(second.token);
+    });
+
+    it("E2-5b Höchstens 5 offene Freundes-Einladungen und 10 neue am Tag, zurückgezogene zählen mit", async () => {
+      const s = await setup();
+      const alex = await s.newPerson();
+      await alex.create(NAMES);
+      const made = [];
+      for (let count = 0; count < 5; count++) {
+        made.push(await alex.createFriendInvite());
+      }
+
+      expect(await failureOf(alex.createFriendInvite())).toBe("friendInvitesOpen");
+      for (const invite of made) {
+        await alex.cancelFriendInvite(invite.token);
+      }
+      for (let count = 0; count < 5; count++) {
+        await alex.createFriendInvite();
+      }
+      await alex.cancelFriendInvite((await alex.friendInvites())[0]?.token ?? "");
+      expect(await failureOf(alex.createFriendInvite())).toBe("friendInvitesToday");
+      expect((await alex.friendInvites()).length).toBe(4);
     });
 
     it("Wer schon einen Haushalt hat, kann keiner Einladung folgen, auch nicht der eigenen", async () => {

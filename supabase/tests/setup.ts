@@ -78,6 +78,56 @@ export async function invite(person: Person): Promise<{ token: string; expiresAt
   return call(person, "create_invite");
 }
 
+// The mails of the local instance, caught by its mail catcher (Mailpit).
+
+const MAIL_URL = process.env.SUPABASE_MAIL_URL || "http://127.0.0.1:54324";
+
+interface MailSummary {
+  readonly ID: string;
+  readonly To: readonly { readonly Address: string }[];
+}
+
+export const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/** The mails sent to the address so far, newest first. */
+export async function mailTo(email: string): Promise<MailSummary[]> {
+  const response = await fetch(`${MAIL_URL}/api/v1/messages?limit=500`);
+  const { messages } = (await response.json()) as { messages: MailSummary[] };
+  return messages.filter((mail) => mail.To.some((to) => to.Address.toLowerCase() === email));
+}
+
+/** The code in the newest mail to the address, once more mails arrived than `seen` counts. */
+export async function codeFromMail(email: string, seen: Map<string, number>): Promise<string> {
+  const known = seen.get(email) ?? 0;
+  for (let attempt = 0; attempt < 50; attempt++) {
+    const mails = await mailTo(email);
+    const newest = mails[0];
+    if (mails.length > known && newest !== undefined) {
+      seen.set(email, mails.length);
+      const message = (await (await fetch(`${MAIL_URL}/api/v1/message/${newest.ID}`)).json()) as {
+        Text?: string;
+        HTML?: string;
+      };
+      const text = `${message.Text ?? ""} ${(message.HTML ?? "").replace(/<[^>]*>/g, " ")}`;
+      const code = /\b\d{6}\b/.exec(text)?.[0];
+      if (code === undefined) {
+        throw new Error(`Kein sechsstelliger Code in der Mail an ${email}: ${text}`);
+      }
+      return code;
+    }
+    await sleep(200);
+  }
+  throw new Error(`Keine neue Mail an ${email} in Mailpit (${MAIL_URL}).`);
+}
+
+/** An account made by hand, as the operator does in the dashboard ("Add user"), not signed in. */
+export async function addUser(email: string): Promise<void> {
+  const { error } = await admin.auth.admin.createUser({ email, email_confirm: true });
+  if (error) {
+    throw error;
+  }
+}
+
 /** A household of two: A created it, B accepted the invite. */
 export async function couple() {
   const a = await withHousehold();

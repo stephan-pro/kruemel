@@ -26,8 +26,15 @@ describeAuthContract("SupabaseAuth (Nachbau des Anmeldedienstes)", async () => {
   let now = Date.now();
   const service = fakeGoTrue({ now: () => now });
   const store = new FakeStore();
+  const newEmail = () => `person-${crypto.randomUUID()}@example.com`;
+  const email = newEmail();
+  service.addUser(email);
   return {
-    email: `person-${crypto.randomUUID()}@example.com`,
+    email,
+    newEmail,
+    friendInvite: async () => service.newInvite(),
+    householdInvite: async () => service.newInvite(),
+    mailCount: async (address) => service.mailCount(address),
     open: (options) => device(options?.offline ? offlineFetch : service.fetch, store, () => now),
     nextCode: async (email) => service.lastCode(email) ?? "",
     expireCodes: async () => {
@@ -86,6 +93,7 @@ describe("SupabaseAuth: Fehler des Dienstes werden zu AuthFailure", () => {
     let now = 0;
     const service = fakeGoTrue({ now: () => now });
     const store = new FakeStore();
+    service.addUser("a@b.de");
     await device(service.fetch, store, () => now).requestCode("a@b.de");
 
     now += 9 * 60_000;
@@ -105,6 +113,8 @@ describe("SupabaseAuth: Fehler des Dienstes werden zu AuthFailure", () => {
     const service = fakeGoTrue();
     const store = new FakeStore();
     const auth = device(service.fetch, store);
+    service.addUser("a@b.de");
+    service.addUser("e@f.de");
     await auth.requestCode("a@b.de");
     const code = service.lastCode("a@b.de") ?? "";
     // supabase-js keeps its session in memory as well; only our own notes fail to be written.

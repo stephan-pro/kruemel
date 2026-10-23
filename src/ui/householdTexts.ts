@@ -2,7 +2,12 @@
 // only has to replace this file (like `accountTexts.ts`). The messages for refused steps come from
 // `HOUSEHOLD_MESSAGES` (`src/auth/household.ts`).
 
-import { type HouseholdFailure, INVITE_DAYS } from "../auth/household";
+import {
+  FRIEND_INVITES_OPEN,
+  FRIEND_INVITES_PER_DAY,
+  type HouseholdFailure,
+  INVITE_DAYS,
+} from "../auth/household";
 
 /** "Fr., 30.10.2026": until when an invite works, in the device's time zone unless one is given. */
 export function formatInviteEnd(expiresAt: string, timeZone?: string): string {
@@ -80,6 +85,30 @@ export const HOUSEHOLD_TEXTS = {
   showQr: "QR-Code zeigen",
   hideQr: "QR-Code ausblenden",
   qrLabel: "QR-Code mit dem Einladungslink",
+} as const;
+
+/** "Freunde einladen" in the settings (E2-5b): a link for an account and a household of one's own. */
+export const FRIEND_TEXTS = {
+  tileTitle: "Freunde einladen",
+  intro: `Kennst du jemanden, der Krümel auch nutzen möchte? Mit einem Einladungslink legt die Person ein eigenes Konto und einen eigenen Haushalt an. Eure Aufgaben bleiben getrennt. Der Link gilt ${INVITE_DAYS} Tage und nur einmal.`,
+  limits: `Du kannst bis zu ${FRIEND_INVITES_OPEN} offene Links haben und ${FRIEND_INVITES_PER_DAY} am Tag erzeugen.`,
+  create: "Einladungslink erzeugen",
+  createAnother: "Noch einen Link erzeugen",
+  failed: "Kein Link erzeugt",
+  linkField: "Einladungslink für Freunde",
+  shareTitle: "Einladung zu Krümel",
+  shareText:
+    "Ich nutze Krümel für unseren Haushalt. Probier es aus und leg deinen eigenen Haushalt an. Öffne den Link und melde dich an:",
+  qrLabel: "QR-Code mit dem Einladungslink für Freunde",
+  openTitle: "Offene Links",
+  openEntry: (end: string) => `Gültig bis ${end}`,
+  show: "Zeigen",
+  cancel: "Zurückziehen",
+  /** Completes the button names for screen readers: "Zeigen: Link gültig bis …". */
+  entryName: (end: string) => `: Link gültig bis ${end}`,
+  cancelled: "Link zurückgezogen. Er funktioniert nicht mehr.",
+  cancelFailed: "Nicht zurückgezogen",
+  listFailed: "Die offenen Links lassen sich gerade nicht laden. Bitte Internet prüfen.",
 } as const;
 
 /** "1 Änderung ist" / "3 Änderungen sind". */

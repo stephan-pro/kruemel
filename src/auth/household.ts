@@ -21,11 +21,17 @@ export interface HouseholdInfo {
 }
 
 export interface Invite {
-  /** Goes into the link after `#/einladung/`. */
+  /** Goes into the link after `#/einladung/` (a friend invite: after `#/freunde/`). */
   readonly token: string;
   /** ISO time. */
   readonly expiresAt: string;
 }
+
+/** At most this many open friend invites per person (E2-5b, database and fake). */
+export const FRIEND_INVITES_OPEN = 5;
+
+/** At most this many new friend invites per person in 24 hours, withdrawn ones included. */
+export const FRIEND_INVITES_PER_DAY = 10;
 
 /** Why a step failed; `HOUSEHOLD_MESSAGES` says it to the person. */
 export type HouseholdFailure =
@@ -43,6 +49,10 @@ export type HouseholdFailure =
   | "invalidHouseholdName"
   /** Removing oneself, or a place that does not exist (E2-5a; leaving is `leave`). */
   | "invalidMember"
+  /** Already `FRIEND_INVITES_OPEN` open friend invites (E2-5b). */
+  | "friendInvitesOpen"
+  /** Already `FRIEND_INVITES_PER_DAY` friend invites in the last 24 hours (E2-5b). */
+  | "friendInvitesToday"
   | "offline"
   | "unknown";
 
@@ -57,6 +67,8 @@ export const HOUSEHOLD_MESSAGES: Readonly<Record<HouseholdFailure, string>> = {
   invalidNames: "Bitte beide Namen eingeben (höchstens 30 Zeichen).",
   invalidHouseholdName: "Der Name des Haushalts darf höchstens 30 Zeichen lang sein.",
   invalidMember: "Dich selbst kannst du nicht entfernen. Nimm dafür „Haushalt verlassen“.",
+  friendInvitesOpen: `Du hast schon ${FRIEND_INVITES_OPEN} offene Links. Zieh einen zurück oder warte, bis jemand einen benutzt.`,
+  friendInvitesToday: `Du hast in den letzten 24 Stunden schon ${FRIEND_INVITES_PER_DAY} Links erzeugt. Bitte versuch es morgen wieder.`,
   offline: "Keine Verbindung zum Server. Bitte Internet prüfen und erneut versuchen.",
   unknown: "Das hat nicht geklappt. Bitte später erneut versuchen.",
 };
@@ -129,4 +141,15 @@ export interface HouseholdApi {
    * `HouseholdError`. The session on the device is ended by the caller (`Auth.signOut`).
    */
   deleteAccount(): Promise<void>;
+  /**
+   * A friend invite (E2-5b): a link with which somebody gets an account and creates a household
+   * of their own; 7 days, once. Only for members, within `FRIEND_INVITES_OPEN` and
+   * `FRIEND_INVITES_PER_DAY`. Its token goes into the link after `#/freunde/`. Throws
+   * `HouseholdError`.
+   */
+  createFriendInvite(): Promise<Invite>;
+  /** The person's open friend invites (not used, withdrawn or expired), oldest first. */
+  friendInvites(): Promise<readonly Invite[]>;
+  /** Withdraws one of the person's open friend invites; anything else changes nothing. */
+  cancelFriendInvite(token: string): Promise<void>;
 }

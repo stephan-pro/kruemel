@@ -1,16 +1,16 @@
-import { Copy, Link, QrCode as QrCodeIcon, Share2 } from "lucide-preact";
-import { useEffect, useId, useState } from "preact/hooks";
+import { Link } from "lucide-preact";
+import { useEffect, useState } from "preact/hooks";
 import type { HouseholdInfo, Invite } from "../../auth/household";
 import type { Person } from "../../domain/task";
 import type { PersonNames } from "../../storage/appData";
 import { appAddress } from "../appInfo";
-import { formatInviteEnd, HOUSEHOLD_TEXTS, LEAVE_TEXTS } from "../householdTexts";
+import { HOUSEHOLD_TEXTS, LEAVE_TEXTS } from "../householdTexts";
 import { householdMessage } from "../pages/HouseholdPage";
 import { inviteHash } from "../route";
 import { ErrorAlert } from "./Alert";
 import { LeaveHousehold, RemoveMember } from "./HouseholdLeave";
 import { HouseholdNamesForm } from "./HouseholdNamesForm";
-import { QrCode } from "./QrCode";
+import { InviteLinkShare } from "./InviteLinkShare";
 
 interface HouseholdTileProps {
   readonly household: HouseholdInfo;
@@ -44,8 +44,7 @@ export function inviteLink(token: string): string {
 
 /**
  * "Haushalt" in the settings (stage 2): who belongs to it and, while the second person is missing,
- * the invite link to pass on: copy (with "Kopiert." for eyes and screen readers), the phone's share
- * menu where there is one, and a QR code to scan from the screen. Below, the names (E2-3g).
+ * the invite link to pass on (`InviteLinkShare`). Below, the names (E2-3g).
  */
 export function HouseholdTile({
   household,
@@ -61,19 +60,7 @@ export function HouseholdTile({
   const [invite, setInvite] = useState<Invite>();
   const [failed, setFailed] = useState<string>();
   const [busy, setBusy] = useState(false);
-  /** What the status line says after copying, and how often it was said (read out each time). */
-  const [copied, setCopied] = useState<{ text: string; count: number }>();
-  const [qrShown, setQrShown] = useState(false);
-  const qrId = useId();
   const link = invite === undefined ? undefined : inviteLink(invite.token);
-  const canShare = typeof navigator.share === "function";
-
-  // A new link: the focus goes to it, so a screen reader reads it with its hint.
-  useEffect(() => {
-    if (invite !== undefined) {
-      document.getElementById(LINK_FIELD)?.focus();
-    }
-  }, [invite]);
 
   async function createInvite() {
     if (busy) {
@@ -81,42 +68,12 @@ export function HouseholdTile({
     }
     setBusy(true);
     setFailed(undefined);
-    setCopied(undefined);
     try {
       setInvite(await onCreateInvite());
     } catch (error) {
       setFailed(householdMessage(error));
     } finally {
       setBusy(false);
-    }
-  }
-
-  async function copy() {
-    if (link === undefined) {
-      return;
-    }
-    let text: string = HOUSEHOLD_TEXTS.copied;
-    try {
-      await navigator.clipboard.writeText(link);
-    } catch {
-      text = HOUSEHOLD_TEXTS.copyFailed;
-      document.getElementById(LINK_FIELD)?.focus();
-    }
-    setCopied((before) => ({ text, count: (before?.count ?? 0) + 1 }));
-  }
-
-  async function share() {
-    if (link === undefined) {
-      return;
-    }
-    try {
-      await navigator.share({
-        title: HOUSEHOLD_TEXTS.shareTitle,
-        text: HOUSEHOLD_TEXTS.shareText(household.name),
-        url: link,
-      });
-    } catch {
-      // Closed without sharing, or the browser refused: the link is still there to copy.
     }
   }
 
@@ -170,51 +127,15 @@ export function HouseholdTile({
           <p class="muted">{HOUSEHOLD_TEXTS.inviteIntro}</p>
           {link !== undefined && invite !== undefined && (
             <>
-              <div class="field">
-                <label class="field__label" for={LINK_FIELD}>
-                  {HOUSEHOLD_TEXTS.inviteLinkField}
-                </label>
-                <span class="field__hint" id={`${LINK_FIELD}-hinweis`}>
-                  {HOUSEHOLD_TEXTS.validUntil(formatInviteEnd(invite.expiresAt))}
-                </span>
-                <input
-                  class="input"
-                  id={LINK_FIELD}
-                  type="text"
-                  readOnly
-                  value={link}
-                  aria-describedby={`${LINK_FIELD}-hinweis`}
-                  onFocus={(event) => event.currentTarget.select()}
-                />
-              </div>
-              <div class="button-row">
-                <button class="btn btn--primary" type="button" onClick={() => void copy()}>
-                  <Copy size={20} />
-                  {HOUSEHOLD_TEXTS.copy}
-                </button>
-                {canShare && (
-                  <button class="btn btn--secondary" type="button" onClick={() => void share()}>
-                    <Share2 size={20} />
-                    {HOUSEHOLD_TEXTS.share}
-                  </button>
-                )}
-                <button
-                  class="btn btn--secondary"
-                  type="button"
-                  aria-expanded={qrShown}
-                  aria-controls={qrId}
-                  onClick={() => setQrShown(!qrShown)}
-                >
-                  <QrCodeIcon size={20} />
-                  {qrShown ? HOUSEHOLD_TEXTS.hideQr : HOUSEHOLD_TEXTS.showQr}
-                </button>
-              </div>
-              <p class="form-status" role="status">
-                {copied && <span key={copied.count}>{copied.text}</span>}
-              </p>
-              <div class="qr" id={qrId} hidden={!qrShown}>
-                {qrShown && <QrCode content={link} label={HOUSEHOLD_TEXTS.qrLabel} />}
-              </div>
+              <InviteLinkShare
+                link={link}
+                expiresAt={invite.expiresAt}
+                fieldId={LINK_FIELD}
+                fieldLabel={HOUSEHOLD_TEXTS.inviteLinkField}
+                shareTitle={HOUSEHOLD_TEXTS.shareTitle}
+                shareText={HOUSEHOLD_TEXTS.shareText(household.name)}
+                qrLabel={HOUSEHOLD_TEXTS.qrLabel}
+              />
               <p class="muted">{HOUSEHOLD_TEXTS.newInviteHint}</p>
             </>
           )}

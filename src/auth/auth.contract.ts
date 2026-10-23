@@ -9,8 +9,19 @@ import { type Auth, AuthError, type Session } from "./auth";
 
 /** One device (its storage stays between `open` calls) and the service behind it. */
 export interface AuthContractSetup {
-  /** An address nobody has used yet. */
+  /**
+   * An address with an account made by hand (as "Add user" in the dashboard), not signed in yet.
+   * Since E2-5b a new address needs an invite; that path has tests of its own below.
+   */
   readonly email: string;
+  /** An address nobody has used yet. */
+  newEmail(): string;
+  /** The key of a new friend invite of a member (E2-5b). */
+  friendInvite(): Promise<string>;
+  /** The key of a new household invite (E2-5b). */
+  householdInvite(): Promise<string>;
+  /** How many mails with a code went to the address so far. */
+  mailCount(email: string): Promise<number>;
   /** The device's `Auth`; called again, it is the app after a reload, optionally without network. */
   open(options?: { readonly offline?: boolean }): Auth;
   /** The code in the mail of the last request (waits for it if needed). */
@@ -68,6 +79,46 @@ export function describeAuthContract(name: string, setup: () => Promise<AuthCont
       expect(session).toEqual({ userId: expect.any(String), email: s.email });
       expect(await auth.session()).toEqual(session);
       expect(seen).toEqual([s.email]);
+    });
+
+    it("E2-5b Ohne gültige Einladung bekommt eine unbekannte Adresse weder Code noch Konto; bestehende Konten brauchen keine", async () => {
+      const s = await setup();
+      const auth = s.open();
+      const stranger = s.newEmail();
+
+      expect(await failureOf(auth.requestCode(stranger))).toBe("notAllowed");
+      expect(await failureOf(auth.requestCode(stranger, "gibt-es-nicht-0123456789"))).toBe(
+        "inviteInvalid",
+      );
+      expect(await s.mailCount(stranger)).toBe(0);
+
+      await auth.requestCode(s.email, "gibt-es-nicht-0123456789");
+      expect((await auth.verifyCode(s.email, await s.nextCode(s.email))).email).toBe(s.email);
+    });
+
+    it("E2-5b Mit einer Freundes-Einladung entsteht das Konto; derselbe Link gilt kein zweites Mal", async () => {
+      const s = await setup();
+      const key = await s.friendInvite();
+      const [first, second] = [s.newEmail(), s.newEmail()];
+      const auth = s.open();
+
+      await auth.requestCode(first, key);
+      const session = await auth.verifyCode(first, await s.nextCode(first));
+
+      expect(session).toEqual({ userId: expect.any(String), email: first });
+      expect(await failureOf(s.open().requestCode(second, key))).toBe("inviteInvalid");
+      expect(await s.mailCount(second)).toBe(0);
+    });
+
+    it("E2-5b Auch eine Haushalts-Einladung erlaubt ein neues Konto, aber nur eines", async () => {
+      const s = await setup();
+      const key = await s.householdInvite();
+      const [first, second] = [s.newEmail(), s.newEmail()];
+      const auth = s.open();
+
+      await auth.requestCode(first, key);
+      expect((await auth.verifyCode(first, await s.nextCode(first))).email).toBe(first);
+      expect(await failureOf(s.open().requestCode(second, key))).toBe("inviteInvalid");
     });
 
     it("Eine ungültige Adresse wird abgelehnt", async () => {

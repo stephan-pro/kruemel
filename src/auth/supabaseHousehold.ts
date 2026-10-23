@@ -1,7 +1,8 @@
 // `HouseholdApi` over the database functions and tables of the real project (through supabase-js).
 // Reading goes through the tables (row level security shows a person only their own household),
 // writing through the functions `create_household`, `create_invite`, `accept_invite`,
-// `rename_household` and (E2-5a) `remove_member`, `leave_household`, `delete_account`; their
+// `rename_household`, (E2-5a) `remove_member`, `leave_household`, `delete_account` and (E2-5b)
+// `create_friend_invite`, `open_friend_invites`, `cancel_friend_invite`; their
 // errors are the messages the functions raise (`supabase/migrations/`).
 
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -27,6 +28,8 @@ const RAISED: Readonly<Record<string, HouseholdFailure>> = {
   household_full: "householdFull",
   invalid_household_name: "invalidHouseholdName",
   invalid_member: "invalidMember",
+  friend_invites_open: "friendInvitesOpen",
+  friend_invites_today: "friendInvitesToday",
 };
 
 interface Failed {
@@ -141,12 +144,25 @@ export class SupabaseHousehold implements HouseholdApi {
     await this.run("delete_account");
   }
 
-  /** Calls a database function that answers nothing; throws `HouseholdError`. */
-  private async run(name: string, args?: Record<string, unknown>): Promise<void> {
-    const { error } = await this.client.rpc(name, args);
+  async createFriendInvite(): Promise<Invite> {
+    return (await this.run("create_friend_invite")) as Invite;
+  }
+
+  async friendInvites(): Promise<readonly Invite[]> {
+    return (await this.run("open_friend_invites")) as Invite[];
+  }
+
+  async cancelFriendInvite(token: string): Promise<void> {
+    await this.run("cancel_friend_invite", { p_token: token });
+  }
+
+  /** Calls a database function and returns its answer; throws `HouseholdError`. */
+  private async run(name: string, args?: Record<string, unknown>): Promise<unknown> {
+    const { data, error } = await this.client.rpc(name, args);
     if (error) {
       throw failure(error);
     }
+    return data;
   }
 
   /** The household right after it was created, joined or renamed. */

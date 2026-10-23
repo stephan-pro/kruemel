@@ -53,6 +53,9 @@ const NOT_ALLOWED = [
   "email_address_not_authorized",
   "user_banned",
 ];
+/** The refusals of the gate for new accounts (`supabase/migrations/…_friend_invites.sql`). */
+const INVITE_REQUIRED = "invite_required";
+const INVITE_INVALID = "invite_invalid";
 
 function toSession(user: Pick<User, "id" | "email">): Session {
   return { userId: user.id, email: user.email ?? "" };
@@ -73,11 +76,13 @@ export class SupabaseAuth implements Auth {
     return this.remembered();
   }
 
-  async requestCode(email: string): Promise<void> {
+  async requestCode(email: string, invite?: string): Promise<void> {
     const address = emailAddress(email);
+    // The key goes into the new account's metadata, where the database's gate (Auth hook "Before
+    // User Created") checks it; for a known address the service ignores it.
     const { error } = await this.client.auth.signInWithOtp({
       email: address,
-      options: { shouldCreateUser: true },
+      options: { shouldCreateUser: true, ...(invite === undefined ? {} : { data: { invite } }) },
     });
     if (error) {
       throw new AuthError(this.failureOf(error, "request", address), error.message);
@@ -159,8 +164,11 @@ export class SupabaseAuth implements Auth {
     if ((code !== undefined && TOO_MANY.includes(code)) || error.status === 429) {
       return "tooManyTries";
     }
-    if (code !== undefined && NOT_ALLOWED.includes(code)) {
+    if ((code !== undefined && NOT_ALLOWED.includes(code)) || error.message === INVITE_REQUIRED) {
       return "notAllowed";
+    }
+    if (error.message === INVITE_INVALID) {
+      return "inviteInvalid";
     }
     return "unknown";
   }

@@ -11,6 +11,11 @@ interface SignInPageProps {
   readonly onSignedIn: (session: Session) => void;
   /** Said above the form, e.g. that the account was deleted (E2-5a). */
   readonly notice?: string | undefined;
+  /**
+   * The invite of an opened link (E2-5b): its key goes with the code request, so a new address
+   * gets an account; the page says what comes after signing in.
+   */
+  readonly invite?: { readonly key: string; readonly kind: "friend" | "household" } | undefined;
 }
 
 const EMAIL_FIELD = "anmelden-email";
@@ -26,7 +31,7 @@ function messageOf(error: unknown): string {
  * its own (heading, tab title, focus). A refused step shows its message at the field and moves
  * the focus there; if the focus is there already, a hidden status line reads the message out.
  */
-export function SignInPage({ auth, onSignedIn, notice: farewell }: SignInPageProps) {
+export function SignInPage({ auth, onSignedIn, notice: farewell, invite }: SignInPageProps) {
   const [step, setStep] = useState<CodeStep | undefined>(() => rememberedStep());
   const [email, setEmail] = useState(step?.email ?? "");
   const [code, setCode] = useState("");
@@ -90,7 +95,7 @@ export function SignInPage({ auth, onSignedIn, notice: farewell }: SignInPagePro
 
   /** Asks for a code and goes on to (or stays on) the code step. */
   async function sendCode(address: string) {
-    await auth.requestCode(address);
+    await auth.requestCode(address, invite?.key);
     const sent: CodeStep = { email: address, sentAt: Date.now() };
     rememberStep(sent);
     setStep(sent);
@@ -153,6 +158,13 @@ export function SignInPage({ auth, onSignedIn, notice: farewell }: SignInPagePro
         <PageTitle title={ACCOUNT_TEXTS.signInTitle} />
         <div class="tile tile--narrow">
           {farewell && <p class="intro">{farewell}</p>}
+          {invite && (
+            <p class="intro">
+              {invite.kind === "friend"
+                ? ACCOUNT_TEXTS.invitedFriend
+                : ACCOUNT_TEXTS.invitedHousehold}
+            </p>
+          )}
           <p class="intro">{ACCOUNT_TEXTS.signInIntro}</p>
           <form class="form" onSubmit={submitEmail} noValidate>
             <TextField

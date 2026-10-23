@@ -24,7 +24,20 @@ export function newAddress(): string {
 export const emailField = (page: Page) => page.getByLabel(ACCOUNT_TEXTS.emailLabel);
 export const codeField = (page: Page) => page.getByLabel(ACCOUNT_TEXTS.codeLabel);
 
-export async function requestCode(page: Page, email: string) {
+/**
+ * Makes an account for the address by hand, as the operator does in the dashboard ("Add user").
+ * New addresses need an invite since E2-5b; the tests of that path are in `friends.spec.ts`.
+ */
+export async function addUser(request: APIRequestContext, email: string) {
+  const response = await request.post(`${FAKE_SERVER}/test/user`, { data: { email } });
+  expect(response.ok()).toBe(true);
+}
+
+/** On the sign-in page: asks for a code; the address gets an account first unless `invited`. */
+export async function requestCode(page: Page, email: string, invited = false) {
+  if (!invited) {
+    await addUser(page.request, email);
+  }
   await emailField(page).fill(email);
   await page.getByRole("button", { name: ACCOUNT_TEXTS.sendCode }).click();
   await expectPageShown(page, ACCOUNT_TEXTS.codeTitle);
@@ -41,12 +54,12 @@ export async function enterCode(page: Page, code: string) {
   await page.getByRole("button", { name: ACCOUNT_TEXTS.verifyCode, exact: true }).click();
 }
 
-/** On the sign-in page: asks for a code and enters it. */
-export async function signInWithCode(page: Page, email: string) {
+/** On the sign-in page: asks for a code and enters it (see `requestCode` for `invited`). */
+export async function signInWithCode(page: Page, email: string, invited = false) {
   await expect(
     page.getByRole("heading", { level: 1, name: ACCOUNT_TEXTS.signInTitle }),
   ).toBeVisible();
-  await requestCode(page, email);
+  await requestCode(page, email, invited);
   await enterCode(page, await mailedCode(page, email));
 }
 
@@ -73,6 +86,7 @@ const bearer = (member: Member) => ({ Authorization: `Bearer ${member.token}` })
 
 /** Signs a new address in through the API. */
 export async function memberByApi(request: APIRequestContext, email = newAddress()) {
+  await addUser(request, email);
   await request.post(`${FAKE_SERVER}/auth/code`, { data: { email } });
   const code = (await (await request.get(`${FAKE_SERVER}/test/code`, { params: { email } })).json())
     .code as string;

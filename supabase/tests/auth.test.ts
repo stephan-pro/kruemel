@@ -4,54 +4,28 @@ import { SupabaseAuth } from "../../src/auth/supabaseAuth";
 import { expireAccessToken, offlineFetch } from "../../src/auth/supabaseAuth.fixtures";
 import { createSupabaseClient, SESSION_KEY } from "../../src/auth/supabaseClient";
 import { FakeStore } from "../../src/storage/storage.fixtures";
-import { admin, anonKey, url } from "./setup";
+import {
+  addUser,
+  admin,
+  anonKey,
+  call,
+  codeFromMail,
+  invite,
+  mailTo,
+  sleep,
+  url,
+  withHousehold,
+} from "./setup";
 
 // Sign-in with a code (S2) against the local instance: the same series of tests as for the fake
 // server and the stand-in in `npm run check`. The code comes from the mail the instance sent,
 // caught by its mail catcher (Mailpit). Settings as in the real project: six digits, ten minutes
 // (`supabase/config.toml`); only "a new code after 1 s" instead of 60 s, so the run stays short.
+// New accounts only with an invite (E2-5b): the hook of the migration `…_friend_invites.sql`.
 
 declare const process: { env: Record<string, string | undefined> };
 
-const MAIL_URL = process.env.SUPABASE_MAIL_URL || "http://127.0.0.1:54324";
 const DB_CONTAINER = process.env.SUPABASE_DB_CONTAINER || "supabase_db_kruemel";
-
-interface MailSummary {
-  readonly ID: string;
-  readonly To: readonly { readonly Address: string }[];
-}
-
-const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
-
-async function mailTo(email: string): Promise<MailSummary[]> {
-  const response = await fetch(`${MAIL_URL}/api/v1/messages?limit=500`);
-  const { messages } = (await response.json()) as { messages: MailSummary[] };
-  return messages.filter((mail) => mail.To.some((to) => to.Address.toLowerCase() === email));
-}
-
-/** The code in the newest mail to the address, once more mails arrived than `seen` counts. */
-async function codeFromMail(email: string, seen: Map<string, number>): Promise<string> {
-  const known = seen.get(email) ?? 0;
-  for (let attempt = 0; attempt < 50; attempt++) {
-    const mails = await mailTo(email);
-    const newest = mails[0];
-    if (mails.length > known && newest !== undefined) {
-      seen.set(email, mails.length);
-      const message = (await (await fetch(`${MAIL_URL}/api/v1/message/${newest.ID}`)).json()) as {
-        Text?: string;
-        HTML?: string;
-      };
-      const text = `${message.Text ?? ""} ${(message.HTML ?? "").replace(/<[^>]*>/g, " ")}`;
-      const code = /\b\d{6}\b/.exec(text)?.[0];
-      if (code === undefined) {
-        throw new Error(`Kein sechsstelliger Code in der Mail an ${email}: ${text}`);
-      }
-      return code;
-    }
-    await sleep(200);
-  }
-  throw new Error(`Keine neue Mail an ${email} in Mailpit (${MAIL_URL}).`);
-}
 
 /** Moves the time the codes of the address were sent back by `minutes` (in the database). */
 function backdateCodes(email: string, minutes: number): void {
@@ -91,8 +65,20 @@ describeAuthContract("SupabaseAuth (lokale Supabase-Instanz, Code aus Mailpit)",
   const store = new FakeStore();
   const seen = new Map<string, number>();
   let offset = 0;
+  const newEmail = () => `auth-${crypto.randomUUID()}@example.com`;
+  const email = newEmail();
+  await addUser(email);
   return {
-    email: `auth-${crypto.randomUUID()}@example.com`,
+    email,
+    newEmail,
+    friendInvite: async () =>
+      (await call<{ token: string }>(await withHousehold(), "create_friend_invite")).token,
+    householdInvite: async () => (await invite(await withHousehold())).token,
+    mailCount: async (address) => {
+      // A refused request sends nothing; wait a moment so a mail that went out would be there.
+      await sleep(500);
+      return (await mailTo(address)).length;
+    },
     open: (options) =>
       new SupabaseAuth({
         client: createSupabaseClient({
