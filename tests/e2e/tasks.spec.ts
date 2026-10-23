@@ -489,9 +489,11 @@ test.describe("F1 Aufgabe bearbeiten", () => {
     const card = page.getByRole("article", { name: "Fenster putzen" });
     await expect(card).toContainText("Beide");
     await expect(card).not.toContainText("übernommen");
-    const saved = (await storedData(page)).tasks.find((task) => task.id === "demo-fenster");
-    expect(saved).toMatchObject({ assignee: "both" });
-    expect(saved).not.toHaveProperty("takenOverBy");
+    // Der Speicher schreibt einen Moment nach der Anzeige.
+    const savedTask = async () =>
+      (await storedData(page)).tasks.find((task) => task.id === "demo-fenster");
+    await expect.poll(savedTask).toMatchObject({ assignee: "both" });
+    expect(await savedTask()).not.toHaveProperty("takenOverBy");
   });
 
   test("F1 Eine Adresse zu einer gelöschten oder unbekannten Aufgabe wird erklärt", async ({

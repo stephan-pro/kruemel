@@ -142,6 +142,13 @@ test.describe("E2-3b Gemeinsame Daten im Haushalt", () => {
     await b.context().setOffline(true);
     await tick(b, "Bad putzen");
     await tick(a, "Bad putzen");
+    // Alex' Häkchen muss beim Server sein, bevor Robins Gerät wieder Netz hat.
+    await expectOnServer(
+      request,
+      alex,
+      (data) => data.completions.map((completion) => completion.completedBy),
+      ["personA"],
+    );
     await b.context().setOffline(false);
 
     await b.waitForTimeout(500);
