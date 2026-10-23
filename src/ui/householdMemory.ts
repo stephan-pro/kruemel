@@ -37,8 +37,9 @@ function write(key: string, value: unknown): void {
 /** The household last seen for this person on this device. */
 export function rememberedHousehold(userId: string): HouseholdInfo | undefined {
   const stored = read(HOUSEHOLD_KEY) as Partial<Remembered> | null;
+  // Remembered before E2-3g: without the household's name.
   return stored?.userId === userId && typeof stored.household?.id === "string"
-    ? stored.household
+    ? { ...stored.household, name: stored.household.name ?? null }
     : undefined;
 }
 

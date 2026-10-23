@@ -37,7 +37,12 @@ export function describeHouseholdContract(
 
       const created = await alex.create({ personA: "  Alex ", personB: "Robin  " });
 
-      expect(created).toMatchObject({ me: "personA", names: NAMES, members: ["personA"] });
+      expect(created).toMatchObject({
+        me: "personA",
+        names: NAMES,
+        name: null,
+        members: ["personA"],
+      });
       expect(await alex.current()).toEqual(created);
       // The second place stays free until someone accepts: inviting works, nobody joins by it.
       await alex.createInvite();
@@ -118,6 +123,29 @@ export function describeHouseholdContract(
 
       const again = await alex.createInvite();
       expect((await robin.acceptInvite(again.token)).me).toBe("personB");
+    });
+
+    it("E2-3g Den Namen des Haushalts ändert jedes Mitglied für beide; leer entfernt ihn, zu lang wird abgelehnt", async () => {
+      const s = await setup();
+      const [alex, robin, sam] = [await s.newPerson(), await s.newPerson(), await s.newPerson()];
+      await alex.create(NAMES);
+      await robin.acceptInvite((await alex.createInvite()).token);
+      await sam.create({ personA: "Sam", personB: "Kim" });
+
+      expect(await alex.rename("  WG Sonnenweg ")).toMatchObject({ name: "WG Sonnenweg" });
+      expect((await robin.current())?.name).toBe("WG Sonnenweg");
+      expect((await robin.rename("Zuhause")).name).toBe("Zuhause");
+      expect((await alex.current())?.name).toBe("Zuhause");
+
+      expect(await failureOf(alex.rename("x".repeat(31)))).toBe("invalidHouseholdName");
+      expect((await alex.current())?.name).toBe("Zuhause");
+      // Nur der eigene Haushalt: der fremde behält seinen Zustand, die Namen der Personen bleiben.
+      expect((await sam.current())?.name).toBeNull();
+      expect((await alex.current())?.names).toEqual(NAMES);
+
+      expect((await alex.rename("  ")).name).toBeNull();
+      expect((await robin.current())?.name).toBeNull();
+      expect(await failureOf((await s.newPerson()).rename("Ohne Haushalt"))).toBe("noHousehold");
     });
 
     it("Wer schon einen Haushalt hat, kann keiner Einladung folgen, auch nicht der eigenen", async () => {

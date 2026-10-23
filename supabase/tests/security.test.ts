@@ -84,6 +84,7 @@ describe("S5 Ohne Anmeldung", () => {
       ["pull_changes", { p_cursor: null }],
       ["accept_invite", { p_token: open.token }],
       ["create_invite", {}],
+      ["rename_household", { p_name: "Fremd" }],
       [
         "add_household_data",
         {
@@ -158,6 +159,7 @@ describe("S5 Fremder Haushalt", () => {
     ).toEqual({ status: "rejected", reason: "completionGone" });
     await call(other, "delete_task", { ...change(), p_task_id: "t-bad" });
     await call(other, "set_names", { ...change(), p_names: { personA: "X", personB: "Y" } });
+    await call(other, "rename_household", { p_name: "Fremd" });
     await call(other, "replace_household_data", {
       p_change_id: crypto.randomUUID(),
       p_data: { schemaVersion: SCHEMA_VERSION, settings: {}, tasks: [], completions: [] },
@@ -177,8 +179,14 @@ describe("S5 Fremder Haushalt", () => {
     // The taking over landed in the caller's own household (same task id, no clash).
     const theirs = await call<Pulled>(other, "pull_changes", { p_cursor: null });
     expect(theirs.tasks.map((row) => row.task.title)).toEqual(["Fremd übernommen"]);
-    const names = (await readable(a.client, "households")) as { person_a_name: string }[];
+    const names = (await readable(a.client, "households")) as {
+      person_a_name: string;
+      name: string | null;
+    }[];
     expect(names[0]?.person_a_name).toBe("Alex");
+    expect(names[0]?.name).toBeNull();
+    const theirName = (await readable(other.client, "households")) as { name: string | null }[];
+    expect(theirName[0]?.name).toBe("Fremd");
   });
 
   it("S5 Direkt in die Tabellen schreiben geht nicht, auch nicht im eigenen Haushalt", async () => {
@@ -198,6 +206,8 @@ describe("S5 Fremder Haushalt", () => {
         .update({ person_a_name: "x" })
         .eq("id", a.household);
       expect(renamed.error?.message).toMatch(/permission denied/);
+      const named = await client.from("households").update({ name: "x" }).eq("id", a.household);
+      expect(named.error?.message).toMatch(/permission denied/);
     }
     expect((await readable(a.client, "tasks")).length).toBe(1);
     expect((await readable(a.client, "completions")).length).toBe(1);

@@ -140,6 +140,7 @@ export class FakeServer {
    *   POST /household/create {personA, personB}  → {household}
    *   POST /household/invite          → {token, expiresAt}
    *   POST /household/accept {token}  → {household}
+   *   POST /household/rename {name}   → {household}
    * Needs the secret of a signed-in person (401 otherwise). A refused step answers with
    * `{failure}` (a `HouseholdFailure`), status 400.
    */
@@ -167,6 +168,12 @@ export class FakeServer {
       if (method === "POST" && path === "/household/accept") {
         const household = this.accounts.acceptInvite(userId, textOf(body, "token"));
         return { status: 200, body: { household } };
+      }
+      if (method === "POST" && path === "/household/rename") {
+        return {
+          status: 200,
+          body: { household: this.accounts.rename(userId, textOf(body, "name")) },
+        };
       }
     } catch (error) {
       if (error instanceof HouseholdError) {

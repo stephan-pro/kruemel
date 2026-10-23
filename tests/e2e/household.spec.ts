@@ -89,7 +89,7 @@ test.describe("E2-2d Haushalt und Einladung", () => {
     );
 
     await tile.getByRole("button", { name: HOUSEHOLD_TEXTS.copy }).click();
-    await expect(tile.getByRole("status")).toHaveText(HOUSEHOLD_TEXTS.copied);
+    await expect(tile.getByRole("status").first()).toHaveText(HOUSEHOLD_TEXTS.copied);
     expect(await alex.evaluate(() => navigator.clipboard.readText())).toBe(link);
 
     await tile.getByRole("button", { name: HOUSEHOLD_TEXTS.showQr }).click();
@@ -248,5 +248,100 @@ test.describe("E2-2d Haushalt und Einladung", () => {
 
     await page.getByRole("button", { name: HOUSEHOLD_TEXTS.create }).click();
     await expectPageShown(page, greetingHeading("Alex"));
+  });
+});
+
+const householdNameField = (page: Page) =>
+  householdTile(page).getByLabel(HOUSEHOLD_TEXTS.householdNameLabel);
+const ownNameField = (page: Page) => householdTile(page).getByLabel(HOUSEHOLD_TEXTS.ownNameLabel);
+const saveNamesButton = (page: Page) =>
+  householdTile(page).getByRole("button", { name: HOUSEHOLD_TEXTS.saveNames });
+const namesStatus = (page: Page) =>
+  householdTile(page).getByRole("form", { name: HOUSEHOLD_TEXTS.namesTitle }).getByRole("status");
+
+test.describe("E2-3g Namen ändern", () => {
+  test("Eigenen Namen und Namen des Haushalts ändern; die andere Person sieht beides", async ({
+    browser,
+  }) => {
+    const alex = await founder(browser);
+    const dilan = await invited(browser, await inviteLink(alex));
+    await acceptButton(dilan.page).click();
+    await expectPageShown(dilan.page, greetingHeading("Dilan"));
+
+    await expect(householdNameField(alex)).toHaveValue("");
+    await expect(ownNameField(alex)).toHaveValue("Alex");
+    await householdNameField(alex).fill("  WG Sonnenweg ");
+    await ownNameField(alex).fill("Alexa");
+    await saveNamesButton(alex).click();
+    await expect(namesStatus(alex)).toHaveText(HOUSEHOLD_TEXTS.namesSaved);
+    await expect(householdNameField(alex)).toHaveValue("WG Sonnenweg");
+    // Die Kopfzeile (in den Einstellungen steht „Angemeldet als“ auch bei „Anmeldung“).
+    await expect(alex.locator(".app-person")).toHaveText(`${ACCOUNT_TEXTS.signedInAs} Alexa`);
+    await expect(householdTile(alex).locator('[data-person="personA"]')).toHaveText(
+      /Alexa \(du\)\s*dabei/,
+    );
+    await expectNoAccessibilityViolations(alex);
+
+    // Dilan sieht beides in den Einstellungen und ändert den eigenen Namen.
+    await goToPage(dilan.page, "Einstellungen");
+    await expect(householdNameField(dilan.page)).toHaveValue("WG Sonnenweg");
+    await expect(householdTile(dilan.page).locator('[data-person="personA"]')).toHaveText(
+      /Alexa\s*dabei/,
+    );
+    await ownNameField(dilan.page).fill("Dila");
+    await saveNamesButton(dilan.page).click();
+    await expect(namesStatus(dilan.page)).toHaveText(HOUSEHOLD_TEXTS.namesSaved);
+
+    // Alex sieht den neuen Namen ohne Neuladen; der eigene Name bleibt.
+    await expect(householdTile(alex).locator('[data-person="personB"]')).toHaveText(/Dila\s*dabei/);
+    await expect(ownNameField(alex)).toHaveValue("Alexa");
+  });
+
+  test("Namen ändern: Meldungen am Feld; ohne Netz wartet der eigene Name, der des Haushalts nicht", async ({
+    browser,
+  }) => {
+    const alex = await founder(browser);
+    await goToPage(alex, "Einstellungen");
+
+    await ownNameField(alex).fill(" ");
+    await saveNamesButton(alex).click();
+    await expect(ownNameField(alex)).toBeFocused();
+    await expect(ownNameField(alex)).toHaveAttribute("aria-invalid", "true");
+    await expect(ownNameField(alex)).toHaveAccessibleDescription(/Bitte einen Namen eingeben\./);
+
+    await ownNameField(alex).fill("dilan");
+    await saveNamesButton(alex).click();
+    await expect(ownNameField(alex)).toHaveAccessibleDescription(
+      /Die beiden Namen müssen sich unterscheiden\./,
+    );
+
+    await householdNameField(alex).fill("x".repeat(31));
+    await saveNamesButton(alex).click();
+    await expect(householdNameField(alex)).toBeFocused();
+    await expect(householdNameField(alex)).toHaveAccessibleDescription(
+      new RegExp(HOUSEHOLD_MESSAGES.invalidHouseholdName),
+    );
+    await expectNoAccessibilityViolations(alex);
+
+    await alex.context().setOffline(true);
+    await householdNameField(alex).fill("Zuhause");
+    await ownNameField(alex).fill("Alexa");
+    await saveNamesButton(alex).click();
+    const alert = householdTile(alex).getByRole("alert");
+    await expect(alert).toContainText(HOUSEHOLD_TEXTS.householdNameFailed);
+    await expect(alert).toContainText(HOUSEHOLD_MESSAGES.offline);
+    // Die Kopfzeile (in den Einstellungen steht „Angemeldet als“ auch bei „Anmeldung“).
+    await expect(alex.locator(".app-person")).toHaveText(`${ACCOUNT_TEXTS.signedInAs} Alexa`);
+    await expect(householdNameField(alex)).toHaveValue("Zuhause");
+
+    // Wieder mit Netz: derselbe Knopf speichert den Haushaltsnamen, der eigene ist übertragen.
+    await alex.context().setOffline(false);
+    await saveNamesButton(alex).click();
+    await expect(namesStatus(alex)).toHaveText(HOUSEHOLD_TEXTS.namesSaved);
+    await expect(alert).toHaveCount(0);
+    await alex.reload();
+    await expect(alex.getByRole("heading", { level: 1, name: "Einstellungen" })).toBeVisible();
+    await expect(householdNameField(alex)).toHaveValue("Zuhause");
+    await expect(ownNameField(alex)).toHaveValue("Alexa");
   });
 });

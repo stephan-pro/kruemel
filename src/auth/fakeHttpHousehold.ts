@@ -6,6 +6,7 @@ import type { PersonNames } from "../storage/appData";
 import type { KeyValueStore } from "../storage/localStorage";
 import { fakeAuthToken } from "./fakeHttpAuth";
 import {
+  checkedHouseholdName,
   checkedNames,
   type HouseholdApi,
   HouseholdError,
@@ -52,6 +53,13 @@ export class FakeHttpHousehold implements HouseholdApi {
     const answer = (await this.call("POST", "/household/accept", { token })) as {
       household: HouseholdInfo;
     };
+    return answer.household;
+  }
+
+  async rename(name: string): Promise<HouseholdInfo> {
+    const answer = (await this.call("POST", "/household/rename", {
+      name: checkedHouseholdName(name) ?? "",
+    })) as { household: HouseholdInfo };
     return answer.household;
   }
 

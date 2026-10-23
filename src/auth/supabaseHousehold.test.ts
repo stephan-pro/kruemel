@@ -12,6 +12,8 @@ interface Stub {
   readError?: { message: string; code?: string | undefined };
   rpcError?: { message: string; code?: string | undefined };
   rpcData?: unknown;
+  /** Filled with the calls of `rpc`. */
+  calls?: [string, unknown][];
 }
 
 function client(stub: Stub): SupabaseClient {
@@ -25,7 +27,10 @@ function client(stub: Stub): SupabaseClient {
       }),
     },
     from: () => ({ select: () => ({ returns: () => read }) }),
-    rpc: async () => ({ data: stub.rpcData ?? null, error: stub.rpcError ?? null }),
+    rpc: async (name: string, args: unknown) => {
+      stub.calls?.push([name, args]);
+      return { data: stub.rpcData ?? null, error: stub.rpcError ?? null };
+    },
   } as unknown as SupabaseClient;
 }
 
@@ -52,12 +57,36 @@ describe("SupabaseHousehold", () => {
       client({ userId: "u2", rows: [row("u2", "personB"), row("u1", "personA")] }),
     );
 
+    // Ohne Spalte `name` (Projekt noch ohne die Migration von E2-3g): kein Name, kein Fehler.
     expect(await api.current()).toEqual({
       id: "h1",
       me: "personB",
       names: { personA: "Alex", personB: "Robin" },
+      name: null,
       members: ["personA", "personB"],
     });
+  });
+
+  it("E2-3g Umbenennen prüft den Namen vorher, schickt ihn gekürzt (leer entfernt ihn) und liest den Haushalt neu", async () => {
+    const calls: [string, unknown][] = [];
+    const named = { ...row("u1", "personA"), households: { name: "Zuhause" } };
+    const api = new SupabaseHousehold(client({ userId: "u1", rows: [named], calls }));
+
+    expect((await api.rename(" Zuhause ")).name).toBe("Zuhause");
+    await api.rename("  ");
+    expect(calls).toEqual([
+      ["rename_household", { p_name: "Zuhause" }],
+      ["rename_household", { p_name: "" }],
+    ]);
+    expect(await failureOf(api.rename("x".repeat(31)))).toBe("invalidHouseholdName");
+    expect(calls).toHaveLength(2);
+    expect(
+      await failureOf(
+        new SupabaseHousehold(
+          client({ userId: "u1", rpcError: { message: "invalid_household_name", code: "P0001" } }),
+        ).rename("x"),
+      ),
+    ).toBe("invalidHouseholdName");
   });
 
   it("Ohne Anmeldung auf dem Gerät: „nicht angemeldet“; ohne eigene Zeile: kein Haushalt; ohne Namen: names ist null", async () => {

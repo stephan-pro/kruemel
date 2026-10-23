@@ -8,6 +8,7 @@ import { formatInviteEnd, HOUSEHOLD_TEXTS } from "../householdTexts";
 import { householdMessage } from "../pages/HouseholdPage";
 import { inviteHash } from "../route";
 import { ErrorAlert } from "./Alert";
+import { HouseholdNamesForm } from "./HouseholdNamesForm";
 import { QrCode } from "./QrCode";
 
 interface HouseholdTileProps {
@@ -16,6 +17,10 @@ interface HouseholdTileProps {
   readonly names: PersonNames;
   /** A new invite; earlier unused ones stop working. Throws `HouseholdError`. */
   readonly onCreateInvite: () => Promise<Invite>;
+  /** Saves the person's own name with the shared data (E2-3g). */
+  readonly onSaveOwnName: (name: string) => Promise<void>;
+  /** Sets the household's name (E2-3g); only online. Throws `HouseholdError`. */
+  readonly onRename: (name: string) => Promise<void>;
 }
 
 const PEOPLE: readonly Person[] = ["personA", "personB"];
@@ -30,9 +35,15 @@ export function inviteLink(token: string): string {
 /**
  * "Haushalt" in the settings (stage 2): who belongs to it and, while the second person is missing,
  * the invite link to pass on: copy (with "Kopiert." for eyes and screen readers), the phone's share
- * menu where there is one, and a QR code to scan from the screen.
+ * menu where there is one, and a QR code to scan from the screen. Below, the names (E2-3g).
  */
-export function HouseholdTile({ household, names, onCreateInvite }: HouseholdTileProps) {
+export function HouseholdTile({
+  household,
+  names,
+  onCreateInvite,
+  onSaveOwnName,
+  onRename,
+}: HouseholdTileProps) {
   const [invite, setInvite] = useState<Invite>();
   const [failed, setFailed] = useState<string>();
   const [busy, setBusy] = useState(false);
@@ -87,7 +98,7 @@ export function HouseholdTile({ household, names, onCreateInvite }: HouseholdTil
     try {
       await navigator.share({
         title: HOUSEHOLD_TEXTS.shareTitle,
-        text: HOUSEHOLD_TEXTS.shareText,
+        text: HOUSEHOLD_TEXTS.shareText(household.name),
         url: link,
       });
     } catch {
@@ -117,7 +128,6 @@ export function HouseholdTile({ household, names, onCreateInvite }: HouseholdTil
           </li>
         ))}
       </ul>
-      <p class="muted">{HOUSEHOLD_TEXTS.namesFixed}</p>
       {complete ? (
         <p class="muted">{HOUSEHOLD_TEXTS.bothJoined}</p>
       ) : (
@@ -186,6 +196,13 @@ export function HouseholdTile({ household, names, onCreateInvite }: HouseholdTil
           </div>
         </>
       )}
+      <HouseholdNamesForm
+        householdName={household.name}
+        names={names}
+        me={household.me}
+        onSaveOwnName={onSaveOwnName}
+        onRename={onRename}
+      />
     </section>
   );
 }

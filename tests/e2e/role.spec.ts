@@ -91,7 +91,7 @@ test.describe("E2-2e „Ich bin“ aus der Rolle", () => {
     // Keine Auswahl „Ich bin“ und keine eigenen Namen mehr; die E-Mail-Adresse steht bei „Anmeldung“.
     await expect(alex.getByLabel("Name der ersten Person")).toHaveCount(0);
     await expect(alex.getByRole("group", { name: /Ich bin/ })).toHaveCount(0);
-    await expect(householdTile(alex)).toContainText(HOUSEHOLD_TEXTS.namesFixed);
+    await expect(householdTile(alex).getByLabel(HOUSEHOLD_TEXTS.ownNameLabel)).toHaveValue("Alex");
     await expect(
       alex.getByRole("region", { name: ACCOUNT_TEXTS.accountTile, exact: true }),
     ).toContainText(email);

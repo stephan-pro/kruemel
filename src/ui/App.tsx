@@ -762,6 +762,8 @@ export function App({
                     household: {
                       info: joined,
                       onCreateInvite: () => householdApi.createInvite(),
+                      onRename: async (name: string) =>
+                        household.show(await householdApi.rename(name)),
                     },
                   }
                 : {})}

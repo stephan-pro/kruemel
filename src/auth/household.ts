@@ -14,6 +14,8 @@ export interface HouseholdInfo {
   readonly me: Person;
   /** Missing until the names were set. */
   readonly names: PersonNames | null;
+  /** The household's own name (E2-3g), e.g. "WG Sonnenweg"; `null` while it has none. */
+  readonly name: string | null;
   /** The people who have joined so far (one or two). */
   readonly members: readonly Person[];
 }
@@ -38,6 +40,7 @@ export type HouseholdFailure =
   /** Two people belong to the household already. */
   | "householdFull"
   | "invalidNames"
+  | "invalidHouseholdName"
   | "offline"
   | "unknown";
 
@@ -50,6 +53,7 @@ export const HOUSEHOLD_MESSAGES: Readonly<Record<HouseholdFailure, string>> = {
   inviteExpired: "Diese Einladung ist abgelaufen. Bitte nach einem neuen Link fragen.",
   householdFull: "In diesem Haushalt sind schon zwei Personen.",
   invalidNames: "Bitte beide Namen eingeben (höchstens 30 Zeichen).",
+  invalidHouseholdName: "Der Name des Haushalts darf höchstens 30 Zeichen lang sein.",
   offline: "Keine Verbindung zum Server. Bitte Internet prüfen und erneut versuchen.",
   unknown: "Das hat nicht geklappt. Bitte später erneut versuchen.",
 };
@@ -86,6 +90,15 @@ export function checkedNames(names: PersonNames): PersonNames {
   return { personA, personB };
 }
 
+/** The household's name trimmed, `null` for none; throws `invalidHouseholdName` if too long. */
+export function checkedHouseholdName(name: string): string | null {
+  const trimmed = name.trim();
+  if (trimmed.length > NAME_MAX) {
+    throw new HouseholdError("invalidHouseholdName");
+  }
+  return trimmed === "" ? null : trimmed;
+}
+
 export interface HouseholdApi {
   /** The household of the signed-in person, or `null` when there is none yet. */
   current(): Promise<HouseholdInfo | null>;
@@ -95,4 +108,6 @@ export interface HouseholdApi {
   createInvite(): Promise<Invite>;
   /** Joins the household the invite belongs to. Throws `HouseholdError`. */
   acceptInvite(token: string): Promise<HouseholdInfo>;
+  /** Sets the household's name, an empty one removes it; only online. Throws `HouseholdError`. */
+  rename(name: string): Promise<HouseholdInfo>;
 }

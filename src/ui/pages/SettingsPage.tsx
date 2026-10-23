@@ -49,6 +49,8 @@ interface SettingsPageProps {
   readonly household?: {
     readonly info: HouseholdInfo;
     readonly onCreateInvite: () => Promise<Invite>;
+    /** Sets the household's name (E2-3g); only online. Throws `HouseholdError`. */
+    readonly onRename: (name: string) => Promise<void>;
   };
   /** Where the shared data stand ("Übertragung", E2-3c); missing without shared data. */
   readonly sync?: {
@@ -140,6 +142,10 @@ export function SettingsPage({
             household={household.info}
             names={names}
             onCreateInvite={household.onCreateInvite}
+            onSaveOwnName={(name) =>
+              onSubmit({ ...names, [household.info.me]: name }, household.info.me)
+            }
+            onRename={household.onRename}
           />
         )}
         {account && (

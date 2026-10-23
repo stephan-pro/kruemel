@@ -1,10 +1,12 @@
 // Who belongs to which household and the invites, in memory, with the rules of the database
-// (`supabase/migrations/`, functions `create_household`, `create_invite`, `accept_invite`): one
+// (`supabase/migrations/`, functions `create_household`, `create_invite`, `accept_invite`,
+// `rename_household`): one
 // household per person, at most two people, the creator is `personA`, an invite works once for
 // seven days, a new invite makes the unused earlier ones invalid. For the fake server of the tests;
 // the app's side is `FakeHttpHousehold`.
 
 import {
+  checkedHouseholdName,
   checkedNames,
   HouseholdError,
   type HouseholdInfo,
@@ -20,6 +22,8 @@ interface Home {
   /** Also holds the names: like the database, one place for the names of the household. */
   readonly household: FakeHousehold;
   readonly members: Map<string, Person>; // user id → role
+  /** The household's own name (E2-3g), not part of the shared data. */
+  name: string | null;
 }
 
 interface StoredInvite {
@@ -49,8 +53,18 @@ export class FakeAccounts {
       id: home.id,
       me: home.members.get(userId) as Person,
       names: home.household.snapshot().settings.personNames ?? null,
+      name: home.name,
       members: [...home.members.values()].sort(),
     };
+  }
+
+  rename(userId: string, name: string): HouseholdInfo {
+    const home = this.homeOf.get(userId);
+    if (home === undefined) {
+      throw new HouseholdError("noHousehold");
+    }
+    home.name = checkedHouseholdName(name);
+    return this.info(userId) as HouseholdInfo;
   }
 
   create(userId: string, names: PersonNames): HouseholdInfo {
@@ -65,6 +79,7 @@ export class FakeAccounts {
         settings: { personNames: checked },
       }),
       members: new Map([[userId, "personA"]]),
+      name: null,
     };
     this.homeOf.set(userId, home);
     return this.info(userId) as HouseholdInfo;

@@ -1,11 +1,13 @@
 // `HouseholdApi` over the database functions and tables of the real project (through supabase-js).
 // Reading goes through the tables (row level security shows a person only their own household),
-// writing through the functions `create_household`, `create_invite` and `accept_invite`; their
+// writing through the functions `create_household`, `create_invite`, `accept_invite` and
+// `rename_household`; their
 // errors are the messages the functions raise (`supabase/migrations/`).
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Person } from "../domain/task";
 import {
+  checkedHouseholdName,
   checkedNames,
   type HouseholdApi,
   HouseholdError,
@@ -23,6 +25,7 @@ const RAISED: Readonly<Record<string, HouseholdFailure>> = {
   invite_used: "inviteUsed",
   invite_expired: "inviteExpired",
   household_full: "householdFull",
+  invalid_household_name: "invalidHouseholdName",
 };
 
 interface Failed {
@@ -46,6 +49,8 @@ interface MemberRow {
   readonly households: {
     readonly person_a_name: string | null;
     readonly person_b_name: string | null;
+    /** Missing in a project that does not have the migration of E2-3g yet. */
+    readonly name?: string | null;
   } | null;
 }
 
@@ -58,9 +63,11 @@ export class SupabaseHousehold implements HouseholdApi {
     if (userId === undefined) {
       throw new HouseholdError("notSignedIn");
     }
+    // All columns of the household rather than a list: an app that already knows `name` keeps
+    // working in a project where the migration of E2-3g is not in yet.
     const { data, error } = await this.client
       .from("household_members")
-      .select("user_id, household_id, role, households(person_a_name, person_b_name)")
+      .select("user_id, household_id, role, households(*)")
       .returns<MemberRow[]>();
     if (error) {
       throw failure(error);
@@ -69,11 +76,12 @@ export class SupabaseHousehold implements HouseholdApi {
     if (mine === undefined) {
       return null;
     }
-    const { person_a_name: personA, person_b_name: personB } = mine.households ?? {};
+    const { person_a_name: personA, person_b_name: personB, name } = mine.households ?? {};
     return {
       id: mine.household_id,
       me: mine.role,
       names: personA && personB ? { personA, personB } : null,
+      name: name ?? null,
       members: data
         .filter((row) => row.household_id === mine.household_id)
         .map((row) => row.role)
@@ -109,7 +117,17 @@ export class SupabaseHousehold implements HouseholdApi {
     return this.known();
   }
 
-  /** The household right after it was created or joined. */
+  async rename(name: string): Promise<HouseholdInfo> {
+    const { error } = await this.client.rpc("rename_household", {
+      p_name: checkedHouseholdName(name) ?? "",
+    });
+    if (error) {
+      throw failure(error);
+    }
+    return this.known();
+  }
+
+  /** The household right after it was created, joined or renamed. */
   private async known(): Promise<HouseholdInfo> {
     const info = await this.current();
     if (info === null) {
