@@ -261,12 +261,16 @@ test.describe("F4 Checkliste im Aufgabenformular", () => {
     await page.getByRole("button", { name: "Aufgabe anlegen" }).click();
 
     await expect(page.getByRole("heading", { level: 1, name: "Aufgaben" })).toBeFocused();
-    const saved = (await storedData(page)).tasks.find((task) => task.title === "Wocheneinkauf");
-    expect(saved?.checklist.map((item) => [item.text, item.checked])).toEqual([
-      ["Milch", false],
-      ["Brot", false],
-    ]);
-    expect(new Set(saved?.checklist.map((item) => item.id)).size).toBe(2);
+    // Der Speicher schreibt einen Moment nach der Anzeige.
+    const savedTask = async () =>
+      (await storedData(page)).tasks.find((task) => task.title === "Wocheneinkauf");
+    await expect
+      .poll(async () => (await savedTask())?.checklist.map((item) => [item.text, item.checked]))
+      .toEqual([
+        ["Milch", false],
+        ["Brot", false],
+      ]);
+    expect(new Set((await savedTask())?.checklist.map((item) => item.id)).size).toBe(2);
     await page.getByRole("link", { name: "Woche", exact: true }).click();
     await expectPageShown(page, "Diese Woche");
     await expect(todayTile(page)).toContainText("Wocheneinkauf");
