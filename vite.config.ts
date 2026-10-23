@@ -1,6 +1,6 @@
 import { loadEnv, type Plugin } from "vite";
 import { defineConfig } from "vitest/config";
-import { backendMode } from "./src/backend.ts";
+import { backendMode, checkPublishableKey } from "./src/backend.ts";
 import { contentSecurityPolicy, scriptHash, supabaseSources } from "./src/csp.ts";
 
 // Minimal Node typing instead of @types/node (N7), as in playwright.config.ts.
@@ -118,6 +118,9 @@ export default defineConfig(({ mode }) => {
   // The test build (`e2e`) never reads the setting from an .env file: a `.env.local` made for
   // trying the real project (`VITE_BACKEND=local`) must not turn the tests' fake backend off.
   const backend = backendMode(mode, mode === "e2e" ? process.env.VITE_BACKEND : env.VITE_BACKEND);
+  if (backend === "supabase") {
+    checkPublishableKey(env.VITE_SUPABASE_PUBLISHABLE_KEY);
+  }
   const connectTo =
     backend === "fake"
       ? [new URL(FAKE_SERVER).origin]

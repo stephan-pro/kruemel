@@ -41,6 +41,12 @@ jobs:
         env:
           # Shown under "Einstellungen → Version", so an installed app tells which build it runs.
           APP_COMMIT: ${{ github.event.workflow_run.head_sha || github.sha }}
+          # Shared storage with sign-in (E2-3f). Way back: repository variable VITE_BACKEND=local
+          # (Settings → Secrets and variables → Actions → Variables), then run this workflow again.
+          VITE_BACKEND: ${{ vars.VITE_BACKEND || 'supabase' }}
+          # Public values of the Supabase project (repository variables, not secrets).
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:
