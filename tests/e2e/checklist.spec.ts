@@ -371,12 +371,17 @@ test.describe("F4 Checkliste im Aufgabenformular", () => {
     await expect(
       page.getByRole("status").filter({ hasText: "Aufgabe „Bad putzen“ gespeichert." }),
     ).toBeVisible();
-    const saved = (await storedData(page)).tasks.find((task) => task.id === "demo-bad");
-    expect(saved?.checklist.map((item) => [item.text, item.checked])).toEqual([
-      ["Waschbecken", true],
-      ["Dusche", false],
-      ["Spiegel", false],
-    ]);
+    await expect
+      .poll(async () =>
+        (await storedData(page)).tasks
+          .find((task) => task.id === "demo-bad")
+          ?.checklist.map((item) => [item.text, item.checked]),
+      )
+      .toEqual([
+        ["Waschbecken", true],
+        ["Dusche", false],
+        ["Spiegel", false],
+      ]);
   });
 
   test("F4 Alle Einträge löschen leert die Checkliste der Aufgabe", async ({ page }) => {
@@ -388,9 +393,12 @@ test.describe("F4 Checkliste im Aufgabenformular", () => {
     await page.getByRole("button", { name: "Speichern" }).click();
 
     await expect(page.getByRole("heading", { level: 1, name: "Aufgaben" })).toBeFocused();
-    expect(
-      (await storedData(page)).tasks.find((task) => task.id === "demo-bad")?.checklist,
-    ).toEqual([]);
+    await expect
+      .poll(
+        async () =>
+          (await storedData(page)).tasks.find((task) => task.id === "demo-bad")?.checklist,
+      )
+      .toEqual([]);
   });
 
   test("F4 Ein voller Speicher wird gemeldet; die Einträge im Formular bleiben stehen", async ({
