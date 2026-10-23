@@ -62,7 +62,7 @@ test.describe("Ersteinrichtung (F5 Namen)", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: greetingHeading("Robin") }),
     ).toBeFocused();
-    await expect(page.getByText("Ich bin:")).toContainText("Robin");
+    await expect(page.getByText("Dieses Gerät:")).toContainText("Robin");
 
     const data = JSON.parse((await page.evaluate((k) => localStorage.getItem(k), dataKey)) ?? "");
     expect(data.schemaVersion).toBe(3);
@@ -87,7 +87,7 @@ test.describe("Ersteinrichtung (F5 Namen)", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: greetingHeading("Alex") }),
     ).toBeVisible();
-    await expect(page.getByText("Ich bin:")).toContainText("Alex");
+    await expect(page.getByText("Dieses Gerät:")).toContainText("Alex");
   });
 
   test("meldet einen vollen oder gesperrten Speicher und nimmt nichts als gespeichert an", async ({
@@ -125,7 +125,7 @@ test.describe("„Ich bin“ auf einem Gerät ohne Auswahl (F5)", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: greetingHeading(DEMO_NAMES.personB) }),
     ).toBeVisible();
-    await expect(page.getByText("Ich bin:")).toContainText(DEMO_NAMES.personB);
+    await expect(page.getByText("Dieses Gerät:")).toContainText(DEMO_NAMES.personB);
   });
 });
 
@@ -284,11 +284,11 @@ test.describe("Einstellungen (F5 Namen)", () => {
     await page.getByRole("button", { name: "Speichern" }).click();
 
     await expect(page.getByRole("status").filter({ hasText: "Gespeichert." })).toBeVisible();
-    await expect(page.getByText("Ich bin:")).toContainText("Sam");
+    await expect(page.getByText("Dieses Gerät:")).toContainText("Sam");
     await expectNoAccessibilityViolations(page);
 
     await page.reload();
-    await expect(page.getByText("Ich bin:")).toContainText("Sam");
+    await expect(page.getByText("Dieses Gerät:")).toContainText("Sam");
     // Die Aufgaben der Beispieldaten bleiben erhalten.
     const data = JSON.parse((await page.evaluate((k) => localStorage.getItem(k), dataKey)) ?? "");
     expect(data.settings.personNames).toEqual({ personA: DEMO_NAMES.personA, personB: "Sam" });

@@ -1,6 +1,7 @@
 // Wires the shared storage to the fake server in the browser. Only for the build mode `e2e`; the
-// tests put the secret of a person into the browser storage before the app starts (there is no
-// sign-in page before E2-2). Not covered by unit tests: it only connects parts that are.
+// tests put the secret of a person into the browser storage before the app starts (without it the
+// app shows the sign-in pages, see `main.tsx`). Not covered by unit tests: it only connects parts
+// that are.
 
 import type { KeyValueStore } from "../storage/localStorage";
 import type { AppStorage } from "../storage/storage";

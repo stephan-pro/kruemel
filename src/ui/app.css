@@ -120,6 +120,12 @@ textarea {
   color: var(--text);
 }
 
+/* A long e-mail address breaks instead of widening the column or the tile. */
+.app-person strong,
+.account-email {
+  overflow-wrap: anywhere;
+}
+
 .main-nav__list {
   margin: 0;
   padding: 0;

@@ -380,7 +380,7 @@ test.describe("F6 Filter alle / nur meine", () => {
     page,
   }) => {
     await openWeek(page, demo(), "personB");
-    await expect(page.getByText("Ich bin:")).toContainText("Robin");
+    await expect(page.getByText("Dieses Gerät:")).toContainText("Robin");
 
     await page.getByRole("button", { name: "Nur meine" }).click();
 

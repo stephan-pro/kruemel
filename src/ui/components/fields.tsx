@@ -64,8 +64,10 @@ function FieldFrame({
 interface TextFieldProps extends FieldProps {
   readonly value: string;
   readonly onInput: (value: string) => void;
-  readonly type?: "text" | "date";
+  readonly type?: "text" | "date" | "email";
   readonly inputMode?: "numeric";
+  /** What the browser may fill in ("email", "one-time-code"); default nothing. */
+  readonly autocomplete?: string;
   /** For `type="date"`: earliest and latest day the picker offers. */
   readonly min?: string;
   readonly max?: string;
@@ -74,13 +76,23 @@ interface TextFieldProps extends FieldProps {
 }
 
 export function TextField(props: TextFieldProps) {
-  const { id, value, onInput, type = "text", inputMode, min, max, narrow } = props;
+  const {
+    id,
+    value,
+    onInput,
+    type = "text",
+    inputMode,
+    autocomplete = "off",
+    min,
+    max,
+    narrow,
+  } = props;
   const common = {
     class: `input${narrow ? " input--narrow" : ""}`,
     id,
     value,
     inputMode,
-    autocomplete: "off",
+    autocomplete,
     "aria-invalid": props.error ? ("true" as const) : undefined,
     "aria-describedby": describedBy(props),
     onInput: (event: { currentTarget: HTMLInputElement }) => onInput(event.currentTarget.value),
@@ -89,6 +101,8 @@ export function TextField(props: TextFieldProps) {
     <FieldFrame field={props}>
       {type === "date" ? (
         <input {...common} type="date" min={min} max={max} />
+      ) : type === "email" ? (
+        <input {...common} type="email" spellcheck={false} />
       ) : (
         <input {...common} type="text" />
       )}

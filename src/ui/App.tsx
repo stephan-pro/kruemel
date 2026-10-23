@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "preact/hooks";
+import type { Auth, Session } from "../auth/auth";
 import type { DemoInfo } from "../demo/start";
 import type { TakeOverMode } from "../domain/assignment";
 import type { PersonNameInput } from "../domain/personNames";
@@ -20,6 +21,7 @@ import {
   type DeviceSettings,
   StorageError,
 } from "../storage/storage";
+import { ACCOUNT_TEXTS } from "./accountTexts";
 import { applyColorScheme } from "./colorScheme";
 import { InstallHint } from "./components/InstallHint";
 import { Navigation } from "./components/Navigation";
@@ -28,6 +30,7 @@ import { offersInstallHint, useInstallWay } from "./install";
 import { DonePage } from "./pages/DonePage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { SetupPage } from "./pages/SetupPage";
+import { SignInPage } from "./pages/SignInPage";
 import { StatisticsPage } from "./pages/StatisticsPage";
 import { StorageProblemPage } from "./pages/StorageProblemPage";
 import { TaskFormPage } from "./pages/TaskFormPage";
@@ -42,6 +45,36 @@ interface AppProps {
   readonly storage: AppStorage;
   /** Only set in demo mode (`npm run demo`). */
   readonly demo?: DemoInfo;
+  /** Sign-in (stage 2): with it the app opens only for a signed-in person. */
+  readonly auth?: Auth;
+}
+
+/**
+ * The session of `auth`: `undefined` while it is read, `null` when signed out. Without `auth`
+ * always `null`. A change reported by `auth` (signed out elsewhere, refused for good) wins over a
+ * read that is still on its way.
+ */
+function useSession(auth: Auth | undefined) {
+  const [session, setSession] = useState<Session | null | undefined>(
+    auth === undefined ? null : undefined,
+  );
+  useEffect(() => {
+    if (auth === undefined) {
+      return;
+    }
+    let changed = false;
+    const stop = auth.onChange((next) => {
+      changed = true;
+      setSession(next);
+    });
+    void auth.session().then((remembered) => {
+      if (!changed) {
+        setSession(remembered);
+      }
+    });
+    return stop;
+  }, [auth]);
+  return [session, setSession] as const;
 }
 
 type LoadState =
@@ -102,7 +135,8 @@ function useLocation(): PageLocation {
   return pageLocation;
 }
 
-export function App({ storage, demo }: AppProps) {
+export function App({ storage, demo, auth }: AppProps) {
+  const [session, setSession] = useSession(auth);
   const [state, setStateValue] = useState<LoadState>({ status: "loading" });
   /**
    * The newest state, also between two drawings. With the shared storage the other device's data
@@ -313,9 +347,23 @@ export function App({ storage, demo }: AppProps) {
     await load();
   }
 
+  /** "Abmelden": ends the session on this device; the data stay (until E2-3 they are local). */
+  async function signOut() {
+    await auth?.signOut();
+    setSession(null);
+  }
+
+  /** With sign-in: "waiting" while the session is read, "signIn" without one. */
+  const gate =
+    auth === undefined || (session !== undefined && session !== null)
+      ? "open"
+      : session === undefined
+        ? "waiting"
+        : "signIn";
   const names = state.status === "ready" ? state.data.settings.personNames : undefined;
   const person = state.status === "ready" ? state.device.currentPerson : undefined;
-  const inApp = state.status === "ready" && names !== undefined && person !== undefined;
+  const inApp =
+    gate === "open" && state.status === "ready" && names !== undefined && person !== undefined;
 
   return (
     <div class={`app${inApp ? " app--with-nav" : ""}`}>
@@ -333,7 +381,8 @@ export function App({ storage, demo }: AppProps) {
         {inApp && <Navigation current={route} />}
         {inApp && (
           <p class="app-person">
-            Ich bin: <strong>{names[person]}</strong>
+            {session ? ACCOUNT_TEXTS.signedInAs : ACCOUNT_TEXTS.thisDevice}{" "}
+            <strong>{session ? session.email : names[person]}</strong>
           </p>
         )}
       </header>
@@ -348,8 +397,11 @@ export function App({ storage, demo }: AppProps) {
           </aside>
         )}
         <main id="inhalt" tabIndex={-1}>
-          {state.status === "loading" && <p role="status">Wird geladen …</p>}
-          {state.status === "problem" && (
+          {(gate === "waiting" || (gate === "open" && state.status === "loading")) && (
+            <p role="status">Wird geladen …</p>
+          )}
+          {gate === "signIn" && auth && <SignInPage auth={auth} onSignedIn={setSession} />}
+          {gate === "open" && state.status === "problem" && (
             <StorageProblemPage
               message={state.message}
               details={state.details}
@@ -358,12 +410,13 @@ export function App({ storage, demo }: AppProps) {
               onRetry={() => void load()}
             />
           )}
-          {state.status === "ready" && names === undefined && (
+          {gate === "open" && state.status === "ready" && names === undefined && (
             <SetupPage onSubmit={saveNamesAndPerson} />
           )}
-          {state.status === "ready" && names !== undefined && person === undefined && (
-            <WhoAmIPage names={names} onSubmit={savePerson} />
-          )}
+          {gate === "open" &&
+            state.status === "ready" &&
+            names !== undefined &&
+            person === undefined && <WhoAmIPage names={names} onSubmit={savePerson} />}
           {inApp && route === "settings" && (
             <SettingsPage
               data={state.data}
@@ -376,6 +429,7 @@ export function App({ storage, demo }: AppProps) {
               onImport={saveData}
               installWay={install.way}
               onInstall={install.install}
+              {...(session ? { account: { email: session.email, onSignOut: signOut } } : {})}
             />
           )}
           {inApp && route === "tasks" && (

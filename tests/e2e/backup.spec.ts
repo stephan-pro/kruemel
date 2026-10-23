@@ -229,10 +229,10 @@ test.describe("F7 Import mit Rückfrage und automatischer Sicherung", () => {
     );
     await expect(importButton(page)).toBeFocused();
     expect(await storedData(page)).toEqual(JSON.parse(JSON.stringify(smallBackup())));
-    // Die Namen der Sicherung stehen im Formular und neben „Ich bin“.
+    // Die Namen der Sicherung stehen im Formular und neben „Dieses Gerät“.
     await expect(page.getByLabel("Name der ersten Person")).toHaveValue("Sam");
     await expect(page.getByLabel("Name der zweiten Person")).toHaveValue("Kim");
-    await expect(page.getByText("Ich bin:")).toContainText("Sam");
+    await expect(page.getByText("Dieses Gerät:")).toContainText("Sam");
     await expect(backupTile(page)).toContainText(
       "Jetzt auf diesem Gerät: 2 Aufgaben und 2 Erledigungen.",
     );

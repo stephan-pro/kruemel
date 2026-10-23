@@ -4,7 +4,10 @@
 /** The fake server (`scripts/fake-server.ts`): households, push, pull, server-sent events. */
 export const FAKE_SERVER = "http://localhost:4180";
 
-/** The app in the mode `e2e`: the shared storage against the fake server, no sign-in yet. */
+/**
+ * The app in the mode `e2e`: with a test session the shared storage against the fake server,
+ * without one the sign-in pages (`signin.spec.ts`).
+ */
 export const E2E_APP = "http://localhost:4175/kruemel/";
 
 /** Where the app looks for the secret of the person who uses this device. */

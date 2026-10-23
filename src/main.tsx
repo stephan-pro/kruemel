@@ -46,14 +46,33 @@ if (import.meta.env.MODE === "demo") {
   const storage = createLocalStorage({ store, namespace: DEMO_NAMESPACE });
   render(<App storage={storage} demo={demo} />, root);
 } else if (__BACKEND__ === "fake") {
-  // The end-to-end tests: shared storage against the fake server (build mode `e2e`), no service
-  // worker. `__BACKEND__` is fixed at build time, so none of this is in the real app.
-  const { createFakeBackendStorage } = await import("./sync/browserFake");
-  const storage = createFakeBackendStorage(store, createLocalStorage({ store }));
-  render(<App storage={storage} />, root);
-  storage.start();
+  // The end-to-end tests (build mode `e2e`), no service worker. `__BACKEND__` is fixed at build
+  // time, so none of this is in the real app. With a test session (`kruemel-fake:session`): the
+  // shared storage against the fake server. Without one: the sign-in pages against the fake
+  // server in front of the local storage, as in the mode `supabase` until E2-3.
+  const { createFakeBackendStorage, FAKE_SESSION_KEY } = await import("./sync/browserFake");
+  if (store.getItem(FAKE_SESSION_KEY) === null) {
+    const { FakeHttpAuth } = await import("./auth/fakeHttpAuth");
+    const auth = new FakeHttpAuth({ baseUrl: __FAKE_SERVER__, store });
+    render(<App storage={createLocalStorage({ store })} auth={auth} />, root);
+  } else {
+    const storage = createFakeBackendStorage(store, createLocalStorage({ store }));
+    render(<App storage={storage} />, root);
+    storage.start();
+  }
 } else if (__BACKEND__ === "supabase") {
-  throw new Error("Der Modus supabase ist noch nicht umgesetzt (kommt mit E2-1 bis E2-3).");
+  // Sign-in against the real project; the data stay in this browser until the shared storage
+  // follows (E2-3).
+  const { createSupabaseClient } = await import("./auth/supabaseClient");
+  const { SupabaseAuth } = await import("./auth/supabaseAuth");
+  const client = createSupabaseClient({
+    url: import.meta.env.VITE_SUPABASE_URL ?? "",
+    publishableKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "",
+    store,
+  });
+  const auth = new SupabaseAuth({ client, store });
+  render(<App storage={createLocalStorage({ store })} auth={auth} />, root);
+  registerServiceWorker();
 } else {
   render(<App storage={createLocalStorage({ store })} />, root);
   registerServiceWorker();

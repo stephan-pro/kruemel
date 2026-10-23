@@ -5,6 +5,7 @@ import type { Person } from "../../domain/task";
 import type { AppData, PersonNames } from "../../storage/appData";
 import type { ColorScheme } from "../../storage/storage";
 import { appAddress } from "../appInfo";
+import { AccountTile } from "../components/AccountTile";
 import { ErrorAlert } from "../components/Alert";
 import { BackupTile } from "../components/BackupTile";
 import { type Choice, RadioGroup } from "../components/fields";
@@ -32,6 +33,8 @@ interface SettingsPageProps {
   readonly installWay: InstallWay;
   /** The browser's own install question; resolves `true` if accepted. */
   readonly onInstall: () => Promise<boolean>;
+  /** Who is signed in and how to sign out (stage 2); missing when the app runs without sign-in. */
+  readonly account?: { readonly email: string; readonly onSignOut: () => Promise<void> };
 }
 
 const SCHEMES: readonly Choice<ColorScheme>[] = [
@@ -51,6 +54,7 @@ export function SettingsPage({
   onImport,
   installWay,
   onInstall,
+  account,
 }: SettingsPageProps) {
   const [schemeError, setSchemeError] = useState<string>();
   /** Counts the imported backups; the names form starts over after each one. */
@@ -117,6 +121,7 @@ export function SettingsPage({
           {schemeError && <ErrorAlert title="Nicht gespeichert">{schemeError}</ErrorAlert>}
         </section>
         <BackupTile data={data} today={today} onImport={importBackup} />
+        {account && <AccountTile email={account.email} onSignOut={account.onSignOut} />}
         <InstallTile way={installWay} onInstall={onInstall} />
         <OtherDeviceTile address={appAddress()} />
         <VersionTile />
