@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_ROUTE,
   editTaskHash,
+  inviteHash,
+  inviteTokenFrom,
   NAVIGATION,
   navigationRoute,
   newTaskHash,
@@ -93,5 +95,27 @@ describe("Navigation zu den Aufgabenformularen (F1, F3)", () => {
   it("Die Aufgabenliste behält ihre eigene Adresse", () => {
     expect(parseRoute("#/aufgaben")).toBe("tasks");
     expect(parseRoute("#/aufgaben/unbekannt")).toBe("today");
+  });
+});
+
+describe("Einladungslink (E2-2d)", () => {
+  const token = "Ab3_-xYz0123456789abcdefGHIJKLMN";
+
+  it("Der Schlüssel steckt im Link, im Adressteil, in eingefügtem Text oder steht allein", () => {
+    expect(inviteHash(token)).toBe(`#/einladung/${token}`);
+    expect(inviteTokenFrom(inviteHash(token))).toBe(token);
+    expect(inviteTokenFrom(`https://beispiel.de/kruemel/#/einladung/${token}`)).toBe(token);
+    expect(inviteTokenFrom(`Komm in unseren Haushalt: https://x.de/#/einladung/${token}.`)).toBe(
+      token,
+    );
+    expect(inviteTokenFrom(`  ${token}\n`)).toBe(token);
+  });
+
+  it("Anderer Text ist kein Einladungslink", () => {
+    expect(inviteTokenFrom("")).toBeUndefined();
+    expect(inviteTokenFrom("https://beispiel.de/kruemel/")).toBeUndefined();
+    expect(inviteTokenFrom("#/einladung/")).toBeUndefined();
+    expect(inviteTokenFrom("kurz")).toBeUndefined();
+    expect(inviteTokenFrom("mit Leerzeichen dazwischen 1234")).toBeUndefined();
   });
 });

@@ -250,5 +250,5 @@ export function BackupTile({ data, today, onImport }: BackupTileProps) {
 
 /** Says that nothing was changed: the first thing to know after a failed import. */
 function unchanged(reason: string): string {
-  return `${reason} Ihre Daten auf diesem Gerät sind unverändert.`;
+  return `${reason} Deine Daten auf diesem Gerät sind unverändert.`;
 }

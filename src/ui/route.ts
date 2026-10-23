@@ -103,6 +103,29 @@ export function newTaskHash(): string {
   return `#/${NEW_TASK_PATH}`;
 }
 
+const INVITE_PREFIX = "#/einladung/";
+
+/** An invite token as the database and the fake server make them (letters, digits, - and _). */
+const TOKEN = "[A-Za-z0-9_-]{16,}";
+
+/** The part of an invite link after the app's address, e.g. "#/einladung/abc…". */
+export function inviteHash(token: string): string {
+  return `${INVITE_PREFIX}${token}`;
+}
+
+/**
+ * The token of an invite: from the whole link as pasted from a message (also with text around
+ * it), from the address part alone, or the token by itself. `undefined` for anything else.
+ */
+export function inviteTokenFrom(text: string): string | undefined {
+  const inLink = new RegExp(`${INVITE_PREFIX}(${TOKEN})`).exec(text);
+  if (inLink !== null) {
+    return inLink[1];
+  }
+  const alone = text.trim();
+  return new RegExp(`^${TOKEN}$`).test(alone) ? alone : undefined;
+}
+
 /** The link target of the form for changing a task. */
 export function editTaskHash(taskId: string): string {
   return `#/${EDIT_TASK_PREFIX}${encodeURIComponent(taskId)}`;

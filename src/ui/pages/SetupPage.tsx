@@ -14,9 +14,9 @@ export function SetupPage({ onSubmit }: SetupPageProps) {
       <PageTitle title="Ersteinrichtung" />
       <div class="tile tile--narrow">
         <p class="intro">
-          Willkommen bei Krümel. Tragen Sie die Namen der beiden Personen ein, die den Haushalt
-          gemeinsam organisieren, und wählen Sie, wer dieses Gerät benutzt. Beides lässt sich später
-          in den Einstellungen ändern.
+          Willkommen bei Krümel. Trag die Namen der beiden Personen ein, die den Haushalt gemeinsam
+          organisieren, und wähle, wer dieses Gerät benutzt. Beides kannst du später in den
+          Einstellungen ändern.
         </p>
         <NamesForm
           initialNames={{ personA: "", personB: "" }}

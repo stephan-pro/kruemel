@@ -53,25 +53,29 @@ if (import.meta.env.MODE === "demo") {
   const { createFakeBackendStorage, FAKE_SESSION_KEY } = await import("./sync/browserFake");
   if (store.getItem(FAKE_SESSION_KEY) === null) {
     const { FakeHttpAuth } = await import("./auth/fakeHttpAuth");
+    const { FakeHttpHousehold } = await import("./auth/fakeHttpHousehold");
     const auth = new FakeHttpAuth({ baseUrl: __FAKE_SERVER__, store });
-    render(<App storage={createLocalStorage({ store })} auth={auth} />, root);
+    const household = new FakeHttpHousehold({ baseUrl: __FAKE_SERVER__, store });
+    render(<App storage={createLocalStorage({ store })} auth={auth} household={household} />, root);
   } else {
     const storage = createFakeBackendStorage(store, createLocalStorage({ store }));
     render(<App storage={storage} />, root);
     storage.start();
   }
 } else if (__BACKEND__ === "supabase") {
-  // Sign-in against the real project; the data stay in this browser until the shared storage
-  // follows (E2-3).
+  // Sign-in and household against the real project; the data stay in this browser until the
+  // shared storage follows (E2-3).
   const { createSupabaseClient } = await import("./auth/supabaseClient");
   const { SupabaseAuth } = await import("./auth/supabaseAuth");
+  const { SupabaseHousehold } = await import("./auth/supabaseHousehold");
   const client = createSupabaseClient({
     url: import.meta.env.VITE_SUPABASE_URL ?? "",
     publishableKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "",
     store,
   });
   const auth = new SupabaseAuth({ client, store });
-  render(<App storage={createLocalStorage({ store })} auth={auth} />, root);
+  const household = new SupabaseHousehold(client);
+  render(<App storage={createLocalStorage({ store })} auth={auth} household={household} />, root);
   registerServiceWorker();
 } else {
   render(<App storage={createLocalStorage({ store })} />, root);

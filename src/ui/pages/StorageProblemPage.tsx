@@ -72,8 +72,8 @@ export function StorageProblemPage({
           <>
             <p>
               Die Krümel-App hat nichts verändert und überschreibt die Daten nicht von selbst.
-              Sichern Sie sie zuerst als Datei, damit sich der Fehler später reparieren lässt.
-              Danach können Sie neu beginnen.
+              Sichere sie zuerst als Datei, damit sich der Fehler später reparieren lässt. Danach
+              kannst du neu beginnen.
             </p>
             <section class="tile form" aria-labelledby="schritt-1">
               <h2 class="tile__title" id="schritt-1">
@@ -86,7 +86,7 @@ export function StorageProblemPage({
               </div>
               <p class="form-status" role="status">
                 {downloaded
-                  ? "Die Rohdaten wurden als Datei heruntergeladen. Bewahren Sie die Datei auf."
+                  ? "Die Rohdaten wurden als Datei heruntergeladen. Bewahre die Datei auf."
                   : ""}
               </p>
             </section>
@@ -110,8 +110,8 @@ export function StorageProblemPage({
           </>
         ) : (
           <p>
-            Der Browser-Speicher lässt sich gerade nicht lesen. Prüfen Sie, ob das Speichern von
-            Website-Daten erlaubt ist (z. B. nicht im privaten Fenster), und versuchen Sie es dann
+            Der Browser-Speicher lässt sich gerade nicht lesen. Prüfe, ob das Speichern von
+            Website-Daten erlaubt ist (z. B. nicht im privaten Fenster), und versuche es dann
             erneut.
           </p>
         )}

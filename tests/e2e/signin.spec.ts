@@ -2,6 +2,16 @@ import { expect, type Page, test } from "@playwright/test";
 import { AUTH_MESSAGES } from "../../src/auth/auth";
 import { demoData } from "../../src/demo/demoData";
 import { ACCOUNT_TEXTS } from "../../src/ui/accountTexts";
+import { HOUSEHOLD_TEXTS } from "../../src/ui/householdTexts";
+import {
+  codeField,
+  createHousehold,
+  emailField,
+  enterCode,
+  mailedCode,
+  newAddress,
+  requestCode,
+} from "./account";
 import { expectNoAccessibilityViolations } from "./axe";
 import {
   dataKey,
@@ -17,12 +27,7 @@ import { E2E_APP, FAKE_SERVER } from "./shared";
 // Package E2-2c: the sign-in pages against the fake server. The app in the mode `e2e` without a
 // test session (`kruemel-fake:session`) asks for a sign-in first, as the mode `supabase` does; the
 // data stay in this browser until E2-3. The fake server hands out the code instead of a mail
-// (`/test/code`). It runs once for all tests, so every test signs in with an address of its own.
-
-/** An address no other test uses (the fake server allows one code a minute per address). */
-function newAddress(): string {
-  return `person-${Date.now()}-${Math.floor(Math.random() * 1e6)}@beispiel.de`;
-}
+// (`/test/code`). Helpers for signing in: `account.ts`.
 
 /** Opens the app with the demo data on this device (local storage), not signed in. */
 async function openSignedOut(page: Page) {
@@ -43,30 +48,13 @@ async function openSignedOut(page: Page) {
   await expect(page.getByRole("heading", { level: 1, name: "Anmelden" })).toBeVisible();
 }
 
-const emailField = (page: Page) => page.getByLabel(ACCOUNT_TEXTS.emailLabel);
-const codeField = (page: Page) => page.getByLabel(ACCOUNT_TEXTS.codeLabel);
-
-async function requestCode(page: Page, email: string) {
-  await emailField(page).fill(email);
-  await page.getByRole("button", { name: ACCOUNT_TEXTS.sendCode }).click();
-  await expectPageShown(page, ACCOUNT_TEXTS.codeTitle);
-}
-
-/** The code the fake server "mailed" to the address. */
-async function mailedCode(page: Page, email: string): Promise<string> {
-  const response = await page.request.get(`${FAKE_SERVER}/test/code`, { params: { email } });
-  return ((await response.json()) as { code: string }).code;
-}
-
-async function enterCode(page: Page, code: string) {
-  await codeField(page).fill(code);
-  await page.getByRole("button", { name: ACCOUNT_TEXTS.verifyCode, exact: true }).click();
-}
-
+/** Signs in and creates a household (E2-2d); the names on this device stay as they are. */
 async function signIn(page: Page, email: string) {
   await openSignedOut(page);
   await requestCode(page, email);
   await enterCode(page, await mailedCode(page, email));
+  await expectPageShown(page, HOUSEHOLD_TEXTS.createTitle);
+  await createHousehold(page, "Alex", "Sam");
   await expectPageShown(page, greetingHeading("Alex"));
 }
 
@@ -108,6 +96,8 @@ test.describe("E2-2c Anmelden mit Code", () => {
     ).toBeVisible();
 
     await enterCode(page, await mailedCode(page, email));
+    await expectPageShown(page, HOUSEHOLD_TEXTS.createTitle);
+    await createHousehold(page, "Alex", "Sam");
 
     await expectPageShown(page, greetingHeading("Alex"));
     await expect(page.getByText(ACCOUNT_TEXTS.signedInAs)).toContainText(email);

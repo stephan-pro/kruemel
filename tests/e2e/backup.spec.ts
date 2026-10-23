@@ -128,7 +128,7 @@ test.describe("F7 Export", () => {
     await Promise.all([page.waitForEvent("download"), downloadButton(page).click()]);
 
     await expect(status(page)).toHaveText(
-      `Die Sicherung „${EXPORT_NAME}“ wurde heruntergeladen. Bewahren Sie die Datei sicher auf.`,
+      `Die Sicherung „${EXPORT_NAME}“ wurde heruntergeladen. Bewahre die Datei sicher auf.`,
     );
     await expectNoAccessibilityViolations(page);
   });
@@ -372,7 +372,7 @@ test.describe("F7 Fehlerhafte Dateien", () => {
 
       await expect(problem(page)).toContainText("Sicherung nicht eingespielt");
       await expect(problem(page)).toContainText(message);
-      await expect(problem(page)).toContainText("Ihre Daten auf diesem Gerät sind unverändert.");
+      await expect(problem(page)).toContainText("Deine Daten auf diesem Gerät sind unverändert.");
       await expect(question(page)).toBeHidden();
       expect(await storedText(page)).toBe(before);
       await expectNoAccessibilityViolations(page);
@@ -408,7 +408,7 @@ test.describe("F7 Fehlerhafte Dateien", () => {
 
     await expect(problem(page)).toContainText("Sicherung nicht eingespielt");
     await expect(problem(page)).toContainText("Speichern nicht möglich");
-    await expect(problem(page)).toContainText("Ihre Daten auf diesem Gerät sind unverändert.");
+    await expect(problem(page)).toContainText("Deine Daten auf diesem Gerät sind unverändert.");
     await expect(status(page)).toHaveText("");
     expect(await storedText(page)).toBe(before);
     await expectNoAccessibilityViolations(page);

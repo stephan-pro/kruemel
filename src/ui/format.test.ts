@@ -200,7 +200,7 @@ describe("Anzeige von „Erledigt“ und „Sicherung“ (F3, F7)", () => {
 
   it("F7 Nach dem Herunterladen steht der Dateiname da", () => {
     expect(exportNotice("kruemel-2026-10-21.json")).toBe(
-      "Die Sicherung „kruemel-2026-10-21.json“ wurde heruntergeladen. Bewahren Sie die Datei sicher auf.",
+      "Die Sicherung „kruemel-2026-10-21.json“ wurde heruntergeladen. Bewahre die Datei sicher auf.",
     );
   });
 

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { Auth, Session } from "../auth/auth";
+import { type HouseholdApi, HouseholdError, type HouseholdInfo } from "../auth/household";
 import type { DemoInfo } from "../demo/start";
 import type { TakeOverMode } from "../domain/assignment";
 import type { PersonNameInput } from "../domain/personNames";
@@ -12,7 +13,7 @@ import {
   takeOverInData,
   undoInData,
 } from "../domain/taskManagement";
-import type { AppData } from "../storage/appData";
+import type { AppData, PersonNames } from "../storage/appData";
 import { requestPersistentStorage } from "../storage/localStorage";
 import {
   type AppStorage,
@@ -26,8 +27,11 @@ import { applyColorScheme } from "./colorScheme";
 import { InstallHint } from "./components/InstallHint";
 import { Navigation } from "./components/Navigation";
 import { APP_NAME } from "./components/PageTitle";
+import { pendingInvite, rememberInvite } from "./householdMemory";
 import { offersInstallHint, useInstallWay } from "./install";
 import { DonePage } from "./pages/DonePage";
+import { HouseholdPage, HouseholdUnavailablePage } from "./pages/HouseholdPage";
+import { InvitePage } from "./pages/InvitePage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { SetupPage } from "./pages/SetupPage";
 import { SignInPage } from "./pages/SignInPage";
@@ -38,7 +42,8 @@ import { TasksPage } from "./pages/TasksPage";
 import { TodayPage } from "./pages/TodayPage";
 import { WeekPage } from "./pages/WeekPage";
 import { WhoAmIPage } from "./pages/WhoAmIPage";
-import { type PageLocation, parseLocation, routeHash } from "./route";
+import { inviteHash, inviteTokenFrom, type PageLocation, parseLocation, routeHash } from "./route";
+import { useHousehold } from "./useHousehold";
 import { useToday } from "./useToday";
 
 interface AppProps {
@@ -47,6 +52,8 @@ interface AppProps {
   readonly demo?: DemoInfo;
   /** Sign-in (stage 2): with it the app opens only for a signed-in person. */
   readonly auth?: Auth;
+  /** The household (stage 2, with `auth`): the app opens only for a person who has one. */
+  readonly household?: HouseholdApi;
 }
 
 /**
@@ -125,18 +132,39 @@ function focusPageHeading() {
   document.querySelector<HTMLElement>("main h1")?.focus();
 }
 
-function useLocation(): PageLocation {
+/**
+ * The invite of an opened link (`#/einladung/<token>`): remembered on the device (with
+ * `household` only) and replaced by the start page, so it survives signing in and a reload but is
+ * not opened twice from the history.
+ */
+function takeInvite(keep: boolean): string | undefined {
+  if (location.hash.startsWith(inviteHash(""))) {
+    const token = inviteTokenFrom(location.hash);
+    history.replaceState(null, "", `${location.pathname}${location.search}${routeHash("today")}`);
+    if (keep && token !== undefined) {
+      rememberInvite(token);
+    }
+  }
+  return keep ? pendingInvite() : undefined;
+}
+
+function useLocation(onInvite: () => void): PageLocation {
   const [pageLocation, setPageLocation] = useState(() => parseLocation(location.hash));
   useEffect(() => {
-    const update = () => setPageLocation(parseLocation(location.hash));
+    const update = () => {
+      onInvite();
+      setPageLocation(parseLocation(location.hash));
+    };
     addEventListener("hashchange", update);
     return () => removeEventListener("hashchange", update);
   }, []);
   return pageLocation;
 }
 
-export function App({ storage, demo, auth }: AppProps) {
+export function App({ storage, demo, auth, household: householdApi }: AppProps) {
   const [session, setSession] = useSession(auth);
+  const [invite, setInvite] = useState(() => takeInvite(householdApi !== undefined));
+  const household = useHousehold(householdApi, session?.userId);
   const [state, setStateValue] = useState<LoadState>({ status: "loading" });
   /**
    * The newest state, also between two drawings. With the shared storage the other device's data
@@ -152,7 +180,7 @@ export function App({ storage, demo, auth }: AppProps) {
   }
   /** What just happened to a task; the task list shows and announces it, then forgets it. */
   const [notice, setNotice] = useState<string>();
-  const { route, taskId } = useLocation();
+  const { route, taskId } = useLocation(() => setInvite(takeInvite(householdApi !== undefined)));
   const today = useToday();
   const install = useInstallWay();
 
@@ -350,16 +378,99 @@ export function App({ storage, demo, auth }: AppProps) {
   /** "Abmelden": ends the session on this device; the data stay (until E2-3 they are local). */
   async function signOut() {
     await auth?.signOut();
+    household.forget();
     setSession(null);
   }
 
-  /** With sign-in: "waiting" while the session is read, "signIn" without one. */
+  /** "Haushalt anlegen": the new household is shown and its names taken over (see below). */
+  async function createHousehold(names: PersonNames): Promise<HouseholdInfo> {
+    if (householdApi === undefined) {
+      throw new HouseholdError("unknown");
+    }
+    try {
+      const created = await householdApi.create(names);
+      household.show(created);
+      return created;
+    } catch (error) {
+      if (error instanceof HouseholdError && error.failure === "alreadyMember") {
+        // Created meanwhile on another device: the message shows, then the app opens.
+        void household.refresh();
+      }
+      throw error;
+    }
+  }
+
+  /** An invite link pasted on "Haushalt anlegen". */
+  function openInvite(token: string) {
+    rememberInvite(token);
+    setInvite(token);
+  }
+
+  /** "Haushalt beitreten": the invite is used up; the app opens for the new member. */
+  async function acceptInvite(): Promise<HouseholdInfo> {
+    if (householdApi === undefined || invite === undefined) {
+      throw new HouseholdError("unknown");
+    }
+    const joined = await householdApi.acceptInvite(invite);
+    dismissInvite();
+    household.show(joined);
+    return joined;
+  }
+
+  function dismissInvite() {
+    rememberInvite(undefined);
+    setInvite(undefined);
+  }
+
+  const joined = household.state.status === "ready" ? household.state.household : null;
+
+  // A device without names (a new phone, the invited person): it takes the household's names and
+  // "Ich bin" from the role instead of asking for them in the first-time setup. Devices that
+  // already have data keep them (the shared storage of E2-3 decides about those).
+  const [adoptFailed, setAdoptFailed] = useState(false);
+  const adopting =
+    householdApi !== undefined &&
+    joined?.names != null &&
+    state.status === "ready" &&
+    state.data.settings.personNames === undefined &&
+    !adoptFailed;
+  useEffect(() => {
+    if (adopting && joined?.names) {
+      saveNamesAndPerson(joined.names, joined.me).catch(() => setAdoptFailed(true));
+    }
+  }, [adopting]);
+
+  // The other person may have joined meanwhile: the settings show the household as it is now.
+  useEffect(() => {
+    if (route === "settings" && joined !== null) {
+      void household.refresh();
+    }
+  }, [route, joined !== null]);
+
+  /**
+   * With sign-in: "waiting" while the session is read, "signIn" without one; with a household
+   * interface then "invite" for an opened invite and "household" until the person has one.
+   */
   const gate =
-    auth === undefined || (session !== undefined && session !== null)
+    auth === undefined
       ? "open"
       : session === undefined
         ? "waiting"
-        : "signIn";
+        : session === null
+          ? "signIn"
+          : householdApi === undefined
+            ? "open"
+            : household.state.status === "loading"
+              ? "waiting"
+              : household.state.status === "failed"
+                ? "unavailable"
+                : invite !== undefined
+                  ? "invite"
+                  : joined === null
+                    ? "household"
+                    : adopting
+                      ? "waiting"
+                      : "open";
   const names = state.status === "ready" ? state.data.settings.personNames : undefined;
   const person = state.status === "ready" ? state.device.currentPerson : undefined;
   const inApp =
@@ -401,6 +512,21 @@ export function App({ storage, demo, auth }: AppProps) {
             <p role="status">Wird geladen …</p>
           )}
           {gate === "signIn" && auth && <SignInPage auth={auth} onSignedIn={setSession} />}
+          {gate === "unavailable" && household.state.status === "failed" && (
+            <HouseholdUnavailablePage message={household.state.message} onRetry={household.retry} />
+          )}
+          {gate === "invite" && session && (
+            <InvitePage
+              email={session.email}
+              hasHousehold={joined !== null}
+              onAccept={acceptInvite}
+              onDismiss={dismissInvite}
+              onSignOut={signOut}
+            />
+          )}
+          {gate === "household" && (
+            <HouseholdPage onCreate={createHousehold} onInvite={openInvite} />
+          )}
           {gate === "open" && state.status === "problem" && (
             <StorageProblemPage
               message={state.message}
@@ -430,6 +556,14 @@ export function App({ storage, demo, auth }: AppProps) {
               installWay={install.way}
               onInstall={install.install}
               {...(session ? { account: { email: session.email, onSignOut: signOut } } : {})}
+              {...(householdApi && joined
+                ? {
+                    household: {
+                      info: joined,
+                      onCreateInvite: () => householdApi.createInvite(),
+                    },
+                  }
+                : {})}
             />
           )}
           {inApp && route === "tasks" && (

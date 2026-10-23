@@ -31,7 +31,7 @@ export function InstallSteps({ way }: InstallStepsProps) {
         </ol>
         <p class="install-note">
           <strong>Wichtig:</strong> Die App vom Home-Bildschirm hat eigene Daten, getrennt von
-          Safari. Was Sie schon in Safari eingetragen haben, nehmen Sie über „Sicherung“ mit: hier
+          Safari. Was du schon in Safari eingetragen hast, nimmst du über „Sicherung“ mit: hier
           herunterladen, in der App einspielen.
         </p>
       </>
@@ -56,7 +56,7 @@ export function InstallSteps({ way }: InstallStepsProps) {
   return (
     <>
       <p>
-        Bietet Ihr Browser es an, steht im Browsermenü <strong>App installieren</strong> oder{" "}
+        Bietet dein Browser es an, steht im Browsermenü <strong>App installieren</strong> oder{" "}
         <strong>Zum Startbildschirm hinzufügen</strong>. Am einfachsten geht es auf dem iPhone in
         Safari und auf Android-Handys in Chrome oder Firefox; Firefox am PC kann keine Apps
         installieren.

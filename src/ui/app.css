@@ -120,6 +120,28 @@ textarea {
   color: var(--text);
 }
 
+/* "Haushalt" in the settings: one line per person, the state next to the name. */
+.member-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.member-list__item {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 16px;
+}
+
+.member-list__name {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
 /* A long e-mail address breaks instead of widening the column or the tile. */
 .app-person strong,
 .account-email {

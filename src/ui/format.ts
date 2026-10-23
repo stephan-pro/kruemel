@@ -395,7 +395,7 @@ export function undoNotice(title: string, dueDate: CalendarDay): string {
 
 /** What the settings say after the backup file was downloaded (F7). */
 export function exportNotice(fileName: string): string {
-  return `Die Sicherung „${fileName}“ wurde heruntergeladen. Bewahren Sie die Datei sicher auf.`;
+  return `Die Sicherung „${fileName}“ wurde heruntergeladen. Bewahre die Datei sicher auf.`;
 }
 
 /** What the settings say after a backup was put in place (F7): what it holds and where the old data is. */

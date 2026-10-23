@@ -74,7 +74,7 @@ export function TasksPage({
 
         {groups.recurring.length === 0 && groups.oneOff.length === 0 && (
           <div class="tile">
-            <p>Es gibt noch keine Aufgaben. Legen Sie die erste an.</p>
+            <p>Es gibt noch keine Aufgaben. Leg die erste an.</p>
           </div>
         )}
         <TaskGroup

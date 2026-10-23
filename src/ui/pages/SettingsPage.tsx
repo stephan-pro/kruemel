@@ -1,4 +1,5 @@
 import { useState } from "preact/hooks";
+import type { HouseholdInfo, Invite } from "../../auth/household";
 import type { CalendarDay } from "../../domain/date";
 import type { PersonNameInput } from "../../domain/personNames";
 import type { Person } from "../../domain/task";
@@ -9,6 +10,7 @@ import { AccountTile } from "../components/AccountTile";
 import { ErrorAlert } from "../components/Alert";
 import { BackupTile } from "../components/BackupTile";
 import { type Choice, RadioGroup } from "../components/fields";
+import { HouseholdTile } from "../components/HouseholdTile";
 import { InstallTile } from "../components/InstallTile";
 import { NamesForm } from "../components/NamesForm";
 import { OtherDeviceTile } from "../components/OtherDeviceTile";
@@ -35,6 +37,11 @@ interface SettingsPageProps {
   readonly onInstall: () => Promise<boolean>;
   /** Who is signed in and how to sign out (stage 2); missing when the app runs without sign-in. */
   readonly account?: { readonly email: string; readonly onSignOut: () => Promise<void> };
+  /** The household and how to invite the second person (stage 2); missing without sign-in. */
+  readonly household?: {
+    readonly info: HouseholdInfo;
+    readonly onCreateInvite: () => Promise<Invite>;
+  };
 }
 
 const SCHEMES: readonly Choice<ColorScheme>[] = [
@@ -55,6 +62,7 @@ export function SettingsPage({
   installWay,
   onInstall,
   account,
+  household,
 }: SettingsPageProps) {
   const [schemeError, setSchemeError] = useState<string>();
   /** Counts the imported backups; the names form starts over after each one. */
@@ -121,6 +129,13 @@ export function SettingsPage({
           {schemeError && <ErrorAlert title="Nicht gespeichert">{schemeError}</ErrorAlert>}
         </section>
         <BackupTile data={data} today={today} onImport={importBackup} />
+        {household && (
+          <HouseholdTile
+            household={household.info}
+            names={household.info.names ?? names}
+            onCreateInvite={household.onCreateInvite}
+          />
+        )}
         {account && <AccountTile email={account.email} onSignOut={account.onSignOut} />}
         <InstallTile way={installWay} onInstall={onInstall} />
         <OtherDeviceTile address={appAddress()} />
