@@ -46,7 +46,7 @@ npx supabase db push
 |---|---|---|
 | `20261020120000_household.sql` (E2-1) | Tabellen, Zeilenschutz, Schreibfunktionen, `pull_changes`, `ping` | eingespielt |
 | `20261023120000_sync.sql` (E2-3a) | Versionsschutz (ältere App → `outdated`), `pull_changes` mit Version des Haushalts, Übernahme `add_household_data` | eingespielt (E2-3f) |
-| `20261024120000_household_name.sql` (E2-3g) | Spalte `households.name`, Funktion `rename_household` (nur Mitglieder, eigener Haushalt) | vom PO einzuspielen; bis dahin läuft die App, nur „Name des Haushalts“ speichert nicht |
+| `20261024120000_household_name.sql` (E2-3g) | Spalte `households.name`, Funktion `rename_household` (nur Mitglieder, eigener Haushalt) | eingespielt (23.10.2026) |
 
 ## Kostenloser Tarif: Grenzen
 
