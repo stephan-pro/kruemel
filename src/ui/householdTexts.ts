@@ -87,6 +87,8 @@ export const SHARED_TEXTS = {
   newVersion:
     "Es gibt eine neue Version von Krümel. Lade die App neu, damit deine Änderungen übertragen werden und du alles siehst.",
   reload: "Neu laden",
+  /** A new build of the app is installed while this page still runs the old one. */
+  appUpdated: "Es gibt eine neue Version von Krümel. Lade die App neu, um sie zu nutzen.",
 
   signOutExplained:
     "Eure gemeinsamen Daten werden von diesem Gerät gelöscht, im Haushalt bleiben sie erhalten. Zum Weitermachen meldest du dich wieder mit einem Code an.",

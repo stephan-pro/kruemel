@@ -44,7 +44,15 @@
     </script>
   </head>
   <body>
-    <div id="app"></div>
+    <!-- The loading picture: drawn with the page, before any script runs; the first drawing of the
+         app replaces it (main.tsx). Styled in app.css (`.splash`), announced as a status. -->
+    <div id="app">
+      <div class="splash" role="status">
+        <img class="splash__icon" src="%BASE_URL%icon.svg" alt="" width="96" height="96" />
+        <p class="splash__name">Krümel</p>
+        <p class="splash__text">Wird geladen …</p>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

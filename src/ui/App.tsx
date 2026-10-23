@@ -13,6 +13,7 @@ import {
   takeOverInData,
   undoInData,
 } from "../domain/taskManagement";
+import { onNewVersion } from "../registerServiceWorker";
 import type { AppData, PersonNames } from "../storage/appData";
 import { exportData, rejectedFileName, signOutBackupFileName } from "../storage/exportImport";
 import { requestPersistentStorage } from "../storage/localStorage";
@@ -222,6 +223,9 @@ export function App({
   const storage = shared === undefined ? deviceStorage : sharedStorage;
   /** The household holds data of a newer app ("Neue Version verfügbar – Neu laden"). */
   const [outdated, setOutdated] = useState(false);
+  /** A new build of the app has been installed meanwhile ("Neu laden" to use it). */
+  const [appUpdated, setAppUpdated] = useState(false);
+  useEffect(() => onNewVersion(() => setAppUpdated(true)), []);
   /** Where the shared data stand, how many changes were refused for good, open conflicts (E2-3c). */
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({ state: "synced" });
   const [rejectedCount, setRejectedCount] = useState(0);
@@ -661,9 +665,9 @@ export function App({
             </p>
           </aside>
         )}
-        {outdated && (
+        {(outdated || appUpdated) && (
           <aside class="demo-hint update-hint" aria-label={SHARED_TEXTS.newVersionLabel}>
-            <p role="status">{SHARED_TEXTS.newVersion}</p>
+            <p role="status">{outdated ? SHARED_TEXTS.newVersion : SHARED_TEXTS.appUpdated}</p>
             <div class="button-row">
               <button class="btn btn--primary" type="button" onClick={() => location.reload()}>
                 {SHARED_TEXTS.reload}

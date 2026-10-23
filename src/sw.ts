@@ -1,6 +1,6 @@
 // The service worker: keeps the app's own files on the device, so it opens and works without
 // internet (N3) and the installed app starts at once. The data is not handled here; it lives in
-// the browser storage and never leaves the device.
+// the browser storage (stage 2: and the household's server, which this worker never touches).
 //
 // The build (`serviceWorker()` in vite.config.ts) emits this file as `sw.js` and fills in
 // `__BUILD_INFO__`: the list of all files of the build (hashed names) and a version derived from
@@ -57,8 +57,17 @@ async function dropOldCaches(): Promise<void> {
   );
 }
 
-/** The page: from the server when it answers in time (so updates arrive), otherwise the kept copy. */
+/**
+ * The page: the kept copy at once, so the app starts without waiting for the network. Updates
+ * still arrive: the browser checks `sw.js` on every start, a new build installs a new worker with
+ * the new page, and the open app offers "Neu laden" (`registerServiceWorker.ts`). Only without a
+ * kept copy the server is asked, and a bad connection is not taken as offline.
+ */
 async function page(request: Request): Promise<Response> {
+  const kept = await caches.match(SCOPE, MATCH);
+  if (kept !== undefined) {
+    return kept;
+  }
   try {
     return await new Promise<Response>((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error("timeout")), NAVIGATION_TIMEOUT_MS);
@@ -74,7 +83,7 @@ async function page(request: Request): Promise<Response> {
       );
     });
   } catch {
-    return (await caches.match(SCOPE, MATCH)) ?? Response.error();
+    return Response.error();
   }
 }
 

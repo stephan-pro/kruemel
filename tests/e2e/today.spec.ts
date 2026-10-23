@@ -304,7 +304,7 @@ test.describe("N1 Navigation: Heute · Woche · Plus · Statistik · Einstellung
     await expect(page.getByRole("heading", { level: 1, name: /^Hallo, / })).toBeFocused();
   });
 
-  test("N1 „Aufgaben“ und „Erledigt“ sind aus „Woche“ und aus den Einstellungen erreichbar", async ({
+  test("N1 „Aufgaben“ und „Erledigt“ sind aus „Woche“ erreichbar, nicht doppelt aus den Einstellungen", async ({
     page,
   }) => {
     await openToday(page);
@@ -330,12 +330,11 @@ test.describe("N1 Navigation: Heute · Woche · Plus · Statistik · Einstellung
       .click();
     await expect(page.getByRole("heading", { level: 1, name: "Erledigt" })).toBeFocused();
 
+    // Die Einstellungen haben keinen zweiten Weg dahin mehr (Korrektur nach E2-3f).
     await nav.getByRole("link", { name: "Einstellungen" }).click();
-    await page.getByRole("link", { name: "Aufgaben", exact: true }).click();
-    await expect(page.getByRole("heading", { level: 1, name: "Aufgaben" })).toBeFocused();
-    await nav.getByRole("link", { name: "Einstellungen" }).click();
-    await page.getByRole("link", { name: "Erledigt", exact: true }).click();
-    await expect(page.getByRole("heading", { level: 1, name: "Erledigt" })).toBeFocused();
+    await expect(page.getByRole("heading", { level: 1, name: "Einstellungen" })).toBeFocused();
+    await expect(page.getByRole("link", { name: "Aufgaben", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Erledigt", exact: true })).toHaveCount(0);
   });
 
   test("N1 Am Handy zeigt nur die aktuelle Seite ihren Namen, die übrigen nur das Symbol", async ({

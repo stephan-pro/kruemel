@@ -105,6 +105,34 @@ textarea {
   padding: calc(14px + env(safe-area-inset-top, 0px)) var(--gutter-right) 0 var(--gutter-left);
 }
 
+/* The loading picture of index.html, until the app has drawn itself. */
+.splash {
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text);
+  font-family: var(--font);
+}
+
+.splash__icon {
+  border-radius: var(--radius-tile);
+}
+
+.splash__name {
+  margin: 8px 0 0;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.splash__text {
+  margin: 0;
+  color: var(--text-muted);
+}
+
 .app-name {
   font-size: 20px;
   font-weight: 800;

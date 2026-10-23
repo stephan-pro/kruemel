@@ -2,7 +2,7 @@
 import "@fontsource-variable/archivo/wght.css";
 import "./ui/tokens.css";
 import "./ui/app.css";
-import { render } from "preact";
+import { type ComponentChild, render } from "preact";
 import { registerServiceWorker } from "./registerServiceWorker";
 import { createLocalStorage, type KeyValueStore } from "./storage/localStorage";
 import { App } from "./ui/App";
@@ -32,6 +32,13 @@ if (!root) {
 }
 
 const store = browserStore();
+const container: HTMLElement = root;
+
+/** Draws the app in place of the loading picture of index.html. */
+function show(app: ComponentChild): void {
+  container.replaceChildren();
+  render(app, container);
+}
 
 // `npm run demo` builds in mode "demo". Vite replaces the condition at build time, so the demo
 // code is not part of the real app.
@@ -44,7 +51,7 @@ if (import.meta.env.MODE === "demo") {
     history.replaceState(null, "", location.pathname);
   }
   const storage = createLocalStorage({ store, namespace: DEMO_NAMESPACE });
-  render(<App storage={storage} demo={demo} />, root);
+  show(<App storage={storage} demo={demo} />);
 } else if (__BACKEND__ === "fake") {
   // The end-to-end tests (build mode `e2e`), no service worker. `__BACKEND__` is fixed at build
   // time, so none of this is in the real app. With a test session (`kruemel-fake:session`): the
@@ -66,20 +73,29 @@ if (import.meta.env.MODE === "demo") {
         local,
         account,
       );
-    render(<App storage={local} auth={auth} household={household} shared={shared} />, root);
+    show(<App storage={local} auth={auth} household={household} shared={shared} />);
   } else {
     const storage = createFakeBackendStorage(store, createLocalStorage({ store }));
-    render(<App storage={storage} />, root);
+    show(<App storage={storage} />);
     storage.start();
   }
 } else if (__BACKEND__ === "supabase") {
   // Sign-in, household and the household's shared data against the real project (E2-3b). The
   // local storage only keeps the device settings; the data of stage 1 stay untouched (E2-3d).
-  const { createSupabaseClient } = await import("./auth/supabaseClient");
-  const { SupabaseAuth } = await import("./auth/supabaseAuth");
-  const { SupabaseHousehold } = await import("./auth/supabaseHousehold");
-  const { SupabaseRemote } = await import("./sync/supabaseRemote");
-  const { createBrowserSharedStorage } = await import("./sync/browserShared");
+  // All at once: one after the other, each file would wait for the one before.
+  const [
+    { createSupabaseClient },
+    { SupabaseAuth },
+    { SupabaseHousehold },
+    { SupabaseRemote },
+    { createBrowserSharedStorage },
+  ] = await Promise.all([
+    import("./auth/supabaseClient"),
+    import("./auth/supabaseAuth"),
+    import("./auth/supabaseHousehold"),
+    import("./sync/supabaseRemote"),
+    import("./sync/browserShared"),
+  ]);
   const client = createSupabaseClient({
     url: import.meta.env.VITE_SUPABASE_URL ?? "",
     publishableKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "",
@@ -90,9 +106,9 @@ if (import.meta.env.MODE === "demo") {
   const local = createLocalStorage({ store });
   const shared = (account: { householdId: string; userId: string }) =>
     createBrowserSharedStorage(new SupabaseRemote(client), store, local, account);
-  render(<App storage={local} auth={auth} household={household} shared={shared} />, root);
+  show(<App storage={local} auth={auth} household={household} shared={shared} />);
   registerServiceWorker();
 } else {
-  render(<App storage={createLocalStorage({ store })} />, root);
+  show(<App storage={createLocalStorage({ store })} />);
   registerServiceWorker();
 }

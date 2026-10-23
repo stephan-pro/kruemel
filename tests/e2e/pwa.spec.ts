@@ -318,6 +318,48 @@ test.describe("N3 Service Worker und Nutzung ohne Internet", () => {
     await expect(page.getByRole("img", { name: /^QR-Code mit der Adresse / })).toBeVisible();
   });
 
+  test("N3 Schneller Start: die Seite kommt sofort vom Gerät, ein Ladebild steht bis zum ersten Bild der App", async ({
+    page,
+    context,
+    browserName,
+  }) => {
+    await startInstalled(page);
+    // Ein Server, der nie antwortet: die gehaltene Seite darf nicht auf ihn warten. Nur Chromium
+    // leitet Anfragen des Service Workers durch `route`; WebKit hielte damit die Seite selbst an.
+    if (browserName === "chromium") {
+      await context.route("**/kruemel/", () => undefined);
+    }
+
+    const started = Date.now();
+    await page.reload();
+    await expect(page.getByRole("heading", { level: 1, name: "Diese Woche" })).toBeVisible();
+    expect(Date.now() - started).toBeLessThan(3000);
+
+    // Das Ladebild steht in der Seite selbst (vor jedem Skript) und ist danach ersetzt.
+    const splash = await page.evaluate(async () => {
+      const html = await caches.match(location.href.split("#")[0] as string, { ignoreVary: true });
+      const parsed = new DOMParser().parseFromString(await (html as Response).text(), "text/html");
+      return parsed.querySelector('#app [role="status"]')?.textContent?.replace(/\s+/g, " ").trim();
+    });
+    expect(splash).toBe("Krümel Wird geladen …");
+    await expect(page.locator(".splash")).toHaveCount(0);
+  });
+
+  test("N3 Kommt eine neue Version, bietet die offene App „Neu laden“ an", async ({ page }) => {
+    await startInstalled(page);
+    const hint = page.getByRole("complementary", { name: "Neue Version" });
+    await expect(hint).toHaveCount(0);
+
+    // So meldet der Browser, dass ein neuer Service Worker (neuer Build) übernommen hat.
+    await page.evaluate(() => navigator.serviceWorker.dispatchEvent(new Event("controllerchange")));
+
+    await expect(hint).toContainText("Es gibt eine neue Version von Krümel.");
+    await expectNoAccessibilityViolations(page);
+    await hint.getByRole("button", { name: "Neu laden" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Diese Woche" })).toBeVisible();
+    await expect(hint).toHaveCount(0);
+  });
+
   test("N3 Der Speicher des Service Workers enthält nur Dateien der App, auch nach einem Download", async ({
     page,
   }) => {

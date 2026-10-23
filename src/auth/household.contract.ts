@@ -39,6 +39,9 @@ export function describeHouseholdContract(
 
       expect(created).toMatchObject({ me: "personA", names: NAMES, members: ["personA"] });
       expect(await alex.current()).toEqual(created);
+      // The second place stays free until someone accepts: inviting works, nobody joins by it.
+      await alex.createInvite();
+      expect(await alex.current()).toEqual(created);
     });
 
     it("Leere oder zu lange Namen werden abgelehnt und legen nichts an; ein zweiter Haushalt geht nicht", async () => {
