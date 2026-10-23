@@ -76,6 +76,23 @@ describe("Sync: Anzeigen und Speichern gehen lokal, auch offline", () => {
     expect((await a.storage.load()).tasks).toHaveLength(1);
   });
 
+  it("Übertragen, dann keine Verbindung mehr: die Kopie zeigt die Änderung, auch ohne den Abruf danach", async () => {
+    const { device } = household(dataWith([]));
+    const a = device("a");
+    await a.storage.load();
+    await a.storage.save(dataWith([weekly()]));
+    // The change reaches the server, the pull right after it does not get through.
+    a.remote.pull = async () => {
+      throw new RemoteError("Keine Verbindung zum Server.");
+    };
+
+    await a.storage.sync();
+    a.remote.online = false;
+
+    expect(a.remote.pushed).toHaveLength(1);
+    expect((await a.storage.load()).tasks.map((task) => task.id)).toEqual(["t-bad"]);
+  });
+
   it("Speichern gleicher Daten tut nichts", async () => {
     const { device } = household(dataWith([weekly()]));
     const a = device("a");

@@ -30,7 +30,7 @@ import {
   type StorageUpdate,
   type SyncStatus,
 } from "../storage/storage";
-import { type Change, diffData, isDeepEqual, type PushResult } from "./changes";
+import { applyChange, type Change, diffData, isDeepEqual, type PushResult } from "./changes";
 import { browserLocker, type Locker } from "./locks";
 import { mergeDelta, viewOf } from "./merge";
 import { type RejectedChange, type SyncState, SyncStateStore } from "./outbox";
@@ -265,10 +265,17 @@ export function createSyncedStorage(options: SyncedStorageOptions): SyncedStorag
           outdated = true;
           break;
         }
+        // The server took the change over exactly like `applyChange`: it moves from the outbox into
+        // the base in one step. Otherwise the copy would show the old state until the next pull,
+        // and for good if that pull fails (no connection right after sending).
         await inState(() => {
           const state = states.read();
           if (state !== null) {
-            states.write({ ...state, outbox: state.outbox.filter((c) => c.id !== next.id) });
+            states.write({
+              ...state,
+              base: result.status === "applied" ? applyChange(state.base, next).data : state.base,
+              outbox: state.outbox.filter((c) => c.id !== next.id),
+            });
           }
         });
         if (result.status === "rejected") {
