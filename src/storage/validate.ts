@@ -359,6 +359,32 @@ function parseSettings(value: unknown, path: string, context: Context): Settings
     : { personNames: { personA: personA.trim(), personB: personB.trim() } satisfies PersonNames };
 }
 
+/** One value checked on its own; `undefined` if anything about it is wrong, also an optional field. */
+function checked<T>(
+  parse: (value: unknown, path: string, context: Context) => T | undefined,
+  value: unknown,
+): T | undefined {
+  const context: Context = { errors: [] };
+  const result = parse(value, "", context);
+  return context.errors.length === 0 ? result : undefined;
+}
+
+/**
+ * A task, a completion or the settings as the server sends them (stage 2, K2b), checked like those
+ * of a backup: the server stores what a member sends without looking inside.
+ */
+export function checkTask(value: unknown): Task | undefined {
+  return checked(parseTask, value);
+}
+
+export function checkCompletion(value: unknown): Completion | undefined {
+  return checked(parseCompletion, value);
+}
+
+export function checkSettings(value: unknown): Settings | undefined {
+  return checked(parseSettings, value);
+}
+
 /**
  * Checks the whole structure and the references between tasks and completions. Data of an older
  * version is migrated first; the result is always in the current version.

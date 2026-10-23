@@ -1,4 +1,5 @@
 import type { ComponentChildren } from "preact";
+import { useId } from "preact/hooks";
 import { Modal } from "./Modal";
 
 interface ConfirmDialogProps {
@@ -33,14 +34,20 @@ export function ConfirmDialog({
   onCancel,
   children,
 }: ConfirmDialogProps) {
+  // The focus starts on a button: without this, a screen reader would read the title and
+  // "Abbrechen" only, not what the question is about.
+  const bodyId = useId();
   return (
     <Modal
       open={open}
       title={title}
       onCancel={onCancel}
+      descriptionId={bodyId}
       {...(initialFocusId === undefined ? {} : { initialFocusId })}
     >
-      <div class="dialog__body">{children}</div>
+      <div class="dialog__body" id={bodyId}>
+        {children}
+      </div>
       <div class="button-row">
         <button
           class="btn btn--secondary"

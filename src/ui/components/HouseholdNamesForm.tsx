@@ -3,10 +3,11 @@ import { HOUSEHOLD_MESSAGES, NAME_MAX } from "../../auth/household";
 import { checkPersonNames } from "../../domain/personNames";
 import type { Person } from "../../domain/task";
 import type { PersonNames } from "../../storage/appData";
+import { errorText } from "../errorText";
 import { HOUSEHOLD_TEXTS } from "../householdTexts";
 import { householdMessage } from "../pages/HouseholdPage";
 import { ErrorAlert } from "./Alert";
-import { TextField } from "./fields";
+import { TextField, useFieldErrorFocus } from "./fields";
 
 interface HouseholdNamesFormProps {
   /** The household's name, `null` while it has none. */
@@ -48,6 +49,7 @@ export function HouseholdNamesForm({
   const [saveError, setSaveError] = useState<{ title: string; message: string }>();
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const { report, status } = useFieldErrorFocus();
 
   // A change by the other person (or after saving): shown unless something is being typed.
   useEffect(() => {
@@ -81,8 +83,12 @@ export function HouseholdNamesForm({
     setErrors(found);
     setSaveError(undefined);
     setSaved(false);
-    if (found.household !== undefined || found.own !== undefined) {
-      document.getElementById(found.household ? HOUSEHOLD_FIELD : OWN_FIELD)?.focus();
+    if (found.household !== undefined) {
+      report(HOUSEHOLD_FIELD, found.household);
+      return;
+    }
+    if (found.own !== undefined) {
+      report(OWN_FIELD, found.own);
       return;
     }
     setSaving(true);
@@ -109,7 +115,7 @@ export function HouseholdNamesForm({
     } catch (error) {
       setSaveError({
         title: HOUSEHOLD_TEXTS.ownNameFailed,
-        message: error instanceof Error ? error.message : String(error),
+        message: errorText(error),
       });
     } finally {
       setSaving(false);
@@ -117,35 +123,38 @@ export function HouseholdNamesForm({
   }
 
   return (
-    <form class="form" onSubmit={submit} noValidate aria-labelledby="haushalt-namen">
-      <h3 class="tile__subtitle" id="haushalt-namen">
-        {HOUSEHOLD_TEXTS.namesTitle}
-      </h3>
-      <TextField
-        id={HOUSEHOLD_FIELD}
-        label={HOUSEHOLD_TEXTS.householdNameLabel}
-        hint={HOUSEHOLD_TEXTS.householdNameHint}
-        value={household}
-        error={errors.household}
-        onInput={(value) => edit(() => setHousehold(value))}
-      />
-      <TextField
-        id={OWN_FIELD}
-        label={HOUSEHOLD_TEXTS.ownNameLabel}
-        hint={HOUSEHOLD_TEXTS.ownNameHint}
-        value={own}
-        error={errors.own}
-        onInput={(value) => edit(() => setOwn(value))}
-      />
-      {saveError && <ErrorAlert title={saveError.title}>{saveError.message}</ErrorAlert>}
-      <div class="button-row">
-        <button class="btn btn--secondary" type="submit">
-          {HOUSEHOLD_TEXTS.saveNames}
-        </button>
-      </div>
-      <p class="form-status" role="status">
-        {saved ? HOUSEHOLD_TEXTS.namesSaved : ""}
-      </p>
-    </form>
+    <>
+      <form class="form" onSubmit={submit} noValidate aria-labelledby="haushalt-namen">
+        <h3 class="tile__subtitle" id="haushalt-namen">
+          {HOUSEHOLD_TEXTS.namesTitle}
+        </h3>
+        <TextField
+          id={HOUSEHOLD_FIELD}
+          label={HOUSEHOLD_TEXTS.householdNameLabel}
+          hint={HOUSEHOLD_TEXTS.householdNameHint}
+          value={household}
+          error={errors.household}
+          onInput={(value) => edit(() => setHousehold(value))}
+        />
+        <TextField
+          id={OWN_FIELD}
+          label={HOUSEHOLD_TEXTS.ownNameLabel}
+          hint={HOUSEHOLD_TEXTS.ownNameHint}
+          value={own}
+          error={errors.own}
+          onInput={(value) => edit(() => setOwn(value))}
+        />
+        {saveError && <ErrorAlert title={saveError.title}>{saveError.message}</ErrorAlert>}
+        <div class="button-row">
+          <button class="btn btn--secondary" type="submit">
+            {HOUSEHOLD_TEXTS.saveNames}
+          </button>
+        </div>
+        <p class="form-status" role="status">
+          {saved ? HOUSEHOLD_TEXTS.namesSaved : ""}
+        </p>
+      </form>
+      {status}
+    </>
   );
 }

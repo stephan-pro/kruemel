@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AppData } from "../storage/appData";
+import { parseAppData } from "../storage/validate";
 import type { Change } from "./changes";
 import { mergeDelta, viewOf } from "./merge";
 import type { PullResult } from "./remote";
@@ -99,6 +100,46 @@ describe("Sync: Serverstand zusammenführen (mergeDelta)", () => {
     expect(twice).toEqual(once);
     expect(twice.tasks).toHaveLength(1);
     expect(twice.completions).toHaveLength(1);
+  });
+
+  it("K2b Unlesbare Zeilen des Servers bleiben draußen; die Kopie bleibt lesbar und behält den alten Stand", () => {
+    const base = dataWith([weekly()], [completion()]);
+    const names = base.settings;
+
+    const merged = mergeDelta(
+      base,
+      delta({
+        tasks: [
+          // Kaputt: falsche Zuständigkeit; Kennung passt nicht zur Zeile; ganz ohne Aufbau.
+          live({ ...weekly({ title: "Kaputt" }), assignee: "personC" } as never),
+          { id: "t-anders", schemaVersion: 3, deleted: false, task: weekly() },
+          { id: "t-text", schemaVersion: 3, deleted: false, task: "kein Objekt" as never },
+        ],
+        completions: [
+          // Eine Erledigung ohne Aufgabe und eine mit kaputtem Datum.
+          {
+            id: "c-weg",
+            taskId: "t-gibtsnicht",
+            schemaVersion: 3,
+            deleted: false,
+            completion: completion({ id: "c-weg", taskId: "t-gibtsnicht" }),
+          },
+          {
+            id: "c-1",
+            taskId: "t-bad",
+            schemaVersion: 3,
+            deleted: false,
+            completion: { ...completion(), completedOn: "gestern" } as never,
+          },
+        ],
+        settings: { personNames: { personA: "", personB: "B" } },
+      }),
+    );
+
+    expect(merged.tasks).toEqual([weekly()]);
+    expect(merged.completions).toEqual([completion()]);
+    expect(merged.settings).toBe(names);
+    expect(parseAppData(merged).ok).toBe(true);
   });
 
   it("Ein erster Abruf auf leeren Daten baut den Stand auf", () => {

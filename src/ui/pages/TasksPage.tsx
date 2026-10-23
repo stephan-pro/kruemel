@@ -7,6 +7,7 @@ import { ErrorAlert } from "../components/Alert";
 import { DeleteTaskDialog } from "../components/DeleteTaskDialog";
 import { PageTitle } from "../components/PageTitle";
 import { TaskSymbol } from "../components/TaskSymbol";
+import { errorText } from "../errorText";
 import { describeRecurrence, describeResponsibility, formatDay } from "../format";
 import { editTaskHash, routeInfo } from "../route";
 
@@ -59,7 +60,7 @@ export function TasksPage({
       await onDelete(task.id);
       setFocusHeading((count) => count + 1);
     } catch (error) {
-      setDeleteError(error instanceof Error ? error.message : String(error));
+      setDeleteError(errorText(error));
     }
   }
 

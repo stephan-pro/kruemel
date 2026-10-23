@@ -8,6 +8,7 @@ import { ErrorAlert } from "../components/Alert";
 import { DeleteTaskDialog } from "../components/DeleteTaskDialog";
 import { PageTitle } from "../components/PageTitle";
 import { TaskForm } from "../components/TaskForm";
+import { errorText } from "../errorText";
 import { routeHash, routeInfo } from "../route";
 
 interface TaskFormPageProps {
@@ -69,7 +70,7 @@ export function TaskFormPage({
       setDeleteError(undefined);
       await onDelete(shown.id);
     } catch (error) {
-      setDeleteError(error instanceof Error ? error.message : String(error));
+      setDeleteError(errorText(error));
     }
   }
 

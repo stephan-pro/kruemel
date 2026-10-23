@@ -7,6 +7,7 @@ import type { PersonNames } from "../storage/appData";
 import { ErrorAlert } from "./components/Alert";
 import { TakeOverDialog } from "./components/TakeOverDialog";
 import { TaskDetailDialog } from "./components/TaskDetailDialog";
+import { errorText } from "./errorText";
 import { completionNotice, takeOverNotice, undoNotice } from "./format";
 
 /** What the page just did, with the way back for a completion. */
@@ -44,10 +45,6 @@ export function targetOf(entry: WeekEntry): DetailTarget {
     taskId: entry.task.id,
     completionId: entry.kind === "done" ? entry.completion.id : undefined,
   };
-}
-
-function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }
 
 interface TaskActionsInput {
@@ -122,7 +119,7 @@ export function useTaskActions(input: TaskActionsInput) {
       setNotice(await action());
       setNoticeCount((count) => count + 1);
     } catch (failure) {
-      setError(messageOf(failure));
+      setError(errorText(failure));
     } finally {
       busy.current = false;
     }
@@ -197,7 +194,7 @@ export function useTaskActions(input: TaskActionsInput) {
       setError(undefined);
       await input.onChecklistItem(task.id, itemId, checked);
     } catch (failure) {
-      setError(messageOf(failure));
+      setError(errorText(failure));
     }
   }
 

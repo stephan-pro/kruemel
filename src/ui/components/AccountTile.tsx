@@ -1,6 +1,7 @@
 import { LogOut, UserX } from "lucide-preact";
 import { useRef, useState } from "preact/hooks";
 import { ACCOUNT_TEXTS, DELETE_ACCOUNT_TEXTS } from "../accountTexts";
+import { errorText } from "../errorText";
 import { SHARED_TEXTS } from "../householdTexts";
 import { householdMessage } from "../pages/HouseholdPage";
 import { ErrorAlert } from "./Alert";
@@ -76,7 +77,7 @@ export function AccountTile({
     try {
       await onSignOut();
     } catch (failed) {
-      setError(failed instanceof Error ? failed.message : String(failed));
+      setError(errorText(failed));
       opener.current?.focus();
     }
   }

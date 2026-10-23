@@ -146,12 +146,12 @@ export const SHARED_TEXTS = {
   unchanged: "Eure gemeinsamen Daten sind unverändert.",
 
   problemIntro:
-    "Die Krümel-App hat nichts verändert. Sichere die Kopie zuerst als Datei, denn darin stehen auch Änderungen, die noch nicht übertragen waren. Danach holst du die Daten neu vom Server.",
-  fromServerTitle: "2. Neu vom Server laden",
+    "Die Krümel-App hat nichts verändert. Sichere die Kopie zuerst als Datei, denn darin stehen auch Änderungen, die noch nicht übertragen waren. Danach holst du die Daten neu aus eurem Haushalt.",
+  fromServerTitle: "2. Neu aus dem Haushalt laden",
   fromServerText:
-    "Dabei wird die Kopie auf diesem Gerät gelöscht und neu vom Server geholt. Was noch nicht übertragen war, steht dann nur noch in der heruntergeladenen Datei.",
-  fromServer: "Neu vom Server laden …",
-  fromServerQuestion: "Daten neu vom Server laden?",
+    "Dabei wird die Kopie auf diesem Gerät gelöscht und neu aus eurem Haushalt geholt. Was noch nicht übertragen war, steht dann nur noch in der heruntergeladenen Datei.",
+  fromServer: "Neu aus dem Haushalt laden …",
+  fromServerQuestion: "Daten neu aus dem Haushalt laden?",
   fromServerConfirm: "Ja, neu laden",
   fromServerDialog:
     "Die Kopie auf diesem Gerät wird gelöscht. Im Haushalt bleiben eure Daten erhalten, die heruntergeladene Datei auch.",

@@ -58,19 +58,21 @@ export type HouseholdFailure =
 
 export const HOUSEHOLD_MESSAGES: Readonly<Record<HouseholdFailure, string>> = {
   notSignedIn: "Bitte zuerst anmelden.",
-  alreadyMember: "Du gehörst schon zu einem Haushalt.",
+  alreadyMember:
+    "Du gehörst schon zu einem Haushalt. Willst du wechseln, verlass zuerst deinen Haushalt (Einstellungen → Haushalt) und öffne den Link dann noch einmal.",
   noHousehold: "Du hast noch keinen Haushalt.",
   inviteUnknown: "Diese Einladung gibt es nicht. Bitte nach einem neuen Link fragen.",
   inviteUsed: "Diese Einladung wurde schon benutzt. Bitte nach einem neuen Link fragen.",
   inviteExpired: "Diese Einladung ist abgelaufen. Bitte nach einem neuen Link fragen.",
-  householdFull: "In diesem Haushalt sind schon zwei Personen.",
+  householdFull:
+    "In diesem Haushalt sind schon zwei Personen. Frag nach, ob jemand Platz macht, und lass dir dann einen neuen Link schicken.",
   invalidNames: "Bitte beide Namen eingeben (höchstens 30 Zeichen).",
   invalidHouseholdName: "Der Name des Haushalts darf höchstens 30 Zeichen lang sein.",
   invalidMember: "Dich selbst kannst du nicht entfernen. Nimm dafür „Haushalt verlassen“.",
   friendInvitesOpen: `Du hast schon ${FRIEND_INVITES_OPEN} offene Links. Zieh einen zurück oder warte, bis jemand einen benutzt.`,
   friendInvitesToday: `Du hast in den letzten 24 Stunden schon ${FRIEND_INVITES_PER_DAY} Links erzeugt. Bitte versuch es morgen wieder.`,
-  offline: "Keine Verbindung zum Server. Bitte Internet prüfen und erneut versuchen.",
-  unknown: "Das hat nicht geklappt. Bitte später erneut versuchen.",
+  offline: "Keine Verbindung zu Krümel. Prüf dein Internet und versuch es noch einmal.",
+  unknown: "Das hat nicht geklappt. Versuch es später noch einmal.",
 };
 
 /** How long an invite works (the same in the database and the fake). */

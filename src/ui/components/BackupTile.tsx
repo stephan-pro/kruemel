@@ -10,9 +10,10 @@ import {
   importSizeError,
 } from "../../storage/exportImport";
 import { downloadTextFile } from "../download";
+import { errorText } from "../errorText";
 import { describeContents, exportNotice, importNotice } from "../format";
 import { SHARED_TEXTS } from "../householdTexts";
-import { ErrorAlert } from "./Alert";
+import { ErrorAlert, ErrorDetails } from "./Alert";
 import { ConfirmDialog } from "./ConfirmDialog";
 
 interface BackupTileProps {
@@ -43,10 +44,6 @@ interface ImportProblem {
 
 function contentsOf(data: AppData): string {
   return describeContents(data.tasks.length, data.completions.length);
-}
-
-function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }
 
 /**
@@ -84,7 +81,7 @@ export function BackupTile({ data, today, shared = false, onImport }: BackupTile
       setStatus("");
       setProblem({
         title: "Sicherung nicht heruntergeladen",
-        message: messageOf(error),
+        message: errorText(error),
         details: [],
       });
     }
@@ -124,10 +121,10 @@ export function BackupTile({ data, today, shared = false, onImport }: BackupTile
     let text: string;
     try {
       text = await file.text();
-    } catch (error) {
+    } catch {
       setProblem({
         title: "Sicherung nicht eingespielt",
-        message: unchanged(`Die Datei lässt sich nicht lesen (${messageOf(error)}).`),
+        message: unchanged("Die Datei lässt sich nicht lesen."),
         details: [],
       });
       reset();
@@ -166,7 +163,7 @@ export function BackupTile({ data, today, shared = false, onImport }: BackupTile
     } catch (error) {
       setProblem({
         title: "Sicherung nicht eingespielt",
-        message: unchanged(messageOf(error)),
+        message: unchanged(errorText(error)),
         details: [],
       });
     } finally {
@@ -229,13 +226,7 @@ export function BackupTile({ data, today, shared = false, onImport }: BackupTile
       {problem && (
         <ErrorAlert title={problem.title}>
           <p>{problem.message}</p>
-          {problem.details.length > 0 && (
-            <ul class="bullet-list">
-              {problem.details.map((detail) => (
-                <li key={detail}>{detail}</li>
-              ))}
-            </ul>
-          )}
+          <ErrorDetails details={problem.details} />
         </ErrorAlert>
       )}
       <p class="form-status" role="status">

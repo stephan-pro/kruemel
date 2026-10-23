@@ -354,7 +354,7 @@ test.describe("F7 Fehlerhafte Dateien", () => {
     {
       name: "Text, der kein JSON ist",
       file: () => textFile("kaputt.json", "das ist kein json"),
-      message: "Die Datei ist kein gültiges JSON.",
+      message: "Die Datei ist keine Krümel-Sicherung.",
     },
     {
       name: "ein Fehler im Aufbau, mit Fundstelle",
@@ -390,6 +390,24 @@ test.describe("F7 Fehlerhafte Dateien", () => {
       await expectNoAccessibilityViolations(page);
     });
   }
+
+  test("K2b Die Fundstelle steht eingeklappt unter „Details für die Fehlersuche“, ein neuerer Stand sagt, was zu tun ist", async ({
+    page,
+  }) => {
+    await openSettings(page);
+    const placed = "tasks[0].assignee: ungültig, erwartet personA, personB oder both";
+
+    await chooseBackup(page, textFile("fehler.json", JSON.stringify(broken)));
+
+    const folded = problem(page).locator("details");
+    await expect(problem(page).getByText(placed)).toBeHidden();
+    await folded.getByText("Details für die Fehlersuche").click();
+    await expect(problem(page).getByText(placed)).toBeVisible();
+
+    await chooseBackup(page, textFile("neu.json", JSON.stringify(newer)));
+    await expect(problem(page).getByText("Lade die App neu")).toBeVisible();
+    await expect(problem(page).locator("details")).toHaveCount(0);
+  });
 
   test("F7 Nach einer fehlerhaften Datei geht eine gute: die Meldung verschwindet, die Frage kommt", async ({
     page,

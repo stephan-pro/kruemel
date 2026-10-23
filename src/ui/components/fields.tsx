@@ -4,6 +4,7 @@
 
 import { ChevronDown, CircleAlert } from "lucide-preact";
 import type { ComponentChildren } from "preact";
+import { useEffect, useState } from "preact/hooks";
 
 interface FieldProps {
   /** Id of the control; hint and error derive their ids from it. */
@@ -34,6 +35,48 @@ export function ErrorMessage({ id, message }: { readonly id: string; readonly me
       <span>{message}</span>
     </span>
   );
+}
+
+interface FieldFailure {
+  readonly fieldId: string;
+  readonly message: string;
+  /** Counts the refused submits, so the same message twice is read twice. */
+  readonly count: number;
+}
+
+/**
+ * After a submit with errors: `report` moves the focus to the field with the (first) error once
+ * the message is drawn, so it is read with the field. If that field has the focus already (Enter
+ * in the field), a focus that does not move is not read again: the hidden `status` line reads the
+ * message out instead. Put `status` into the form once.
+ */
+export function useFieldErrorFocus() {
+  const [failure, setFailure] = useState<FieldFailure>();
+  const [announced, setAnnounced] = useState<string>();
+
+  useEffect(() => {
+    if (failure === undefined) {
+      return;
+    }
+    const field = document.getElementById(failure.fieldId);
+    if (field !== null && document.activeElement === field) {
+      setAnnounced(failure.message);
+    } else {
+      setAnnounced(undefined);
+      field?.focus();
+    }
+  }, [failure]);
+
+  function report(fieldId: string, message: string) {
+    setFailure((last) => ({ fieldId, message, count: (last?.count ?? 0) + 1 }));
+  }
+
+  const status = (
+    <p class="visually-hidden" role="status">
+      {announced && <span key={failure?.count}>{announced}</span>}
+    </p>
+  );
+  return { report, status };
 }
 
 /** Label, hint and error above the control, so they are read and seen before it. */

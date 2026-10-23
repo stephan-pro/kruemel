@@ -345,6 +345,9 @@ test.describe("Unlesbare Daten (Speicher)", () => {
       [dataKey]: JSON.stringify({ schemaVersion: 1, settings: {}, tasks: 5, completions: [] }),
     });
 
+    // K2b: die Fundstelle steht eingeklappt unter „Details für die Fehlersuche“.
+    await expect(page.getByText("tasks: erwartet eine Liste")).toBeHidden();
+    await page.getByText("Details für die Fehlersuche").click();
     await expect(page.getByText("tasks: erwartet eine Liste")).toBeVisible();
   });
 

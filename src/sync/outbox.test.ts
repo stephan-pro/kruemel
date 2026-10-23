@@ -63,7 +63,9 @@ describe("Sync: Warteschlange und lokale Kopie im Browser-Speicher (Outbox)", ()
     const store = new FakeStore();
     store.items.set(KEY, "{kaputt");
 
-    expect(() => new SyncStateStore(store, KEY).read()).toThrow(/kein gültiges JSON/);
+    expect(() => new SyncStateStore(store, KEY).read()).toThrow(
+      /Kopie der gemeinsamen Daten ist beschädigt/,
+    );
   });
 
   it("Eine fehlerhafte Kopie wird mit Fundstelle gemeldet", () => {

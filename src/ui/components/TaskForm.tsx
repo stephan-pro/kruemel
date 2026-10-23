@@ -17,6 +17,7 @@ import {
 } from "../../domain/taskForm";
 import { DEFAULT_TASK_SYMBOL } from "../../domain/taskSymbols";
 import type { PersonNames } from "../../storage/appData";
+import { errorText } from "../errorText";
 import { routeHash } from "../route";
 import { ErrorAlert } from "./Alert";
 import { ChecklistEditor } from "./ChecklistEditor";
@@ -27,6 +28,7 @@ import {
   SelectField,
   TextAreaField,
   TextField,
+  useFieldErrorFocus,
 } from "./fields";
 import { SymbolField } from "./SymbolField";
 
@@ -95,10 +97,6 @@ function withoutError(errors: TaskFormErrors, field: TaskFormField): TaskFormErr
   return rest;
 }
 
-function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
 /**
  * Creates or changes a task (F1, F3, symbol F8, checklist F4). Every field has a visible label; a
  * message about a field stands at that field. A submit with errors puts the focus on the first
@@ -112,6 +110,7 @@ export function TaskForm({ task, names, today, currentPerson, onSubmit, onDelete
   const [draft, setDraft] = useState("");
   const [draftError, setDraftError] = useState<string>();
   const [errors, setErrors] = useState<TaskFormErrors>({});
+  const { report, status } = useFieldErrorFocus();
   const [saveError, setSaveError] = useState<string>();
   const [saving, setSaving] = useState(false);
   const creating = task === undefined;
@@ -149,11 +148,10 @@ export function TaskForm({ task, names, today, currentPerson, onSubmit, onDelete
       setErrors(found);
       setDraftError(pendingError);
       // A draft that cannot be added is a problem of the checklist field, the last of the form.
-      const first = firstTaskFormError(
-        pendingError === undefined ? found : { ...found, checklist: pendingError },
-      );
+      const all = pendingError === undefined ? found : { ...found, checklist: pendingError };
+      const first = firstTaskFormError(all);
       if (first !== undefined) {
-        document.getElementById(FOCUS_TARGET[first])?.focus();
+        report(FOCUS_TARGET[first], all[first] ?? "");
       }
       return;
     }
@@ -165,7 +163,7 @@ export function TaskForm({ task, names, today, currentPerson, onSubmit, onDelete
     try {
       await onSubmit(kind, checked.values);
     } catch (error) {
-      setSaveError(messageOf(error));
+      setSaveError(errorText(error));
     } finally {
       setSaving(false);
     }
@@ -299,6 +297,7 @@ export function TaskForm({ task, names, today, currentPerson, onSubmit, onDelete
           </button>
         )}
       </div>
+      {status}
     </form>
   );
 }

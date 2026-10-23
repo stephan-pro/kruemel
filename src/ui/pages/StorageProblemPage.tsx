@@ -1,10 +1,11 @@
 import { useState } from "preact/hooks";
 import { dayFromDate } from "../../domain/date";
 import { rawDataFileName } from "../../storage/exportImport";
-import { ErrorAlert } from "../components/Alert";
+import { ErrorAlert, ErrorDetails } from "../components/Alert";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { PageTitle } from "../components/PageTitle";
 import { downloadTextFile } from "../download";
+import { errorText } from "../errorText";
 import { SHARED_TEXTS } from "../householdTexts";
 
 interface StorageProblemPageProps {
@@ -51,7 +52,7 @@ export function StorageProblemPage({
     try {
       await onDiscard();
     } catch (error) {
-      setDiscardError(error instanceof Error ? error.message : String(error));
+      setDiscardError(errorText(error));
     }
   }
 
@@ -63,13 +64,7 @@ export function StorageProblemPage({
       <div class="page-stack page-stack--narrow">
         <ErrorAlert title="Die Daten werden nicht angezeigt">
           <p>{message}</p>
-          {details.length > 0 && (
-            <ul class="bullet-list">
-              {details.map((detail) => (
-                <li key={detail}>{detail}</li>
-              ))}
-            </ul>
-          )}
+          <ErrorDetails details={details} />
         </ErrorAlert>
 
         {canRescue ? (

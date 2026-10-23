@@ -1,7 +1,7 @@
 import { useEffect, useState } from "preact/hooks";
 import { DELETE_ACCOUNT_TEXTS, DELETE_WORD } from "../accountTexts";
 import { LEAVE_TEXTS } from "../householdTexts";
-import { TextField } from "./fields";
+import { TextField, useFieldErrorFocus } from "./fields";
 import { BackupOffer } from "./HouseholdLeave";
 import { Modal } from "./Modal";
 
@@ -34,6 +34,7 @@ export function DeleteAccountDialog({
 }: DeleteAccountDialogProps) {
   const [word, setWord] = useState("");
   const [error, setError] = useState<string>();
+  const { report, status } = useFieldErrorFocus();
 
   // Every question starts with an empty field.
   useEffect(() => {
@@ -47,7 +48,7 @@ export function DeleteAccountDialog({
     event.preventDefault();
     if (word.trim().toLocaleLowerCase("de-DE") !== DELETE_WORD) {
       setError(DELETE_ACCOUNT_TEXTS.wordMissing);
-      document.getElementById(WORD_FIELD)?.focus();
+      report(WORD_FIELD, DELETE_ACCOUNT_TEXTS.wordMissing);
       return;
     }
     onConfirm();
@@ -87,6 +88,7 @@ export function DeleteAccountDialog({
             {DELETE_ACCOUNT_TEXTS.confirm}
           </button>
         </div>
+        {status}
       </form>
     </Modal>
   );

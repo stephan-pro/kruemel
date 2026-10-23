@@ -8,6 +8,40 @@ interface ErrorAlertProps {
   readonly children: ComponentChildren;
 }
 
+/** A finding with the place it refers to ("tasks[0].assignee: …", "Kopie: …"). */
+const PLACED = /^[\w.[\]]+: /;
+
+/**
+ * The findings of a check: sentences for the person stay in sight (a newer version, not a
+ * backup); where exactly a file or the stored data are wrong is for whoever helps and is folded
+ * away under "Details für die Fehlersuche" (K2b).
+ */
+export function ErrorDetails({ details }: { readonly details: readonly string[] }) {
+  const plain = details.filter((detail) => !PLACED.test(detail));
+  const placed = details.filter((detail) => PLACED.test(detail));
+  return (
+    <>
+      {plain.length > 0 && (
+        <ul class="bullet-list">
+          {plain.map((detail) => (
+            <li key={detail}>{detail}</li>
+          ))}
+        </ul>
+      )}
+      {placed.length > 0 && (
+        <details class="error-details">
+          <summary>Details für die Fehlersuche</summary>
+          <ul class="bullet-list">
+            {placed.map((detail) => (
+              <li key={detail}>{detail}</li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </>
+  );
+}
+
 /** A problem the user should know about right away; announced by screen readers (`role="alert"`). */
 export function ErrorAlert({ title, children }: ErrorAlertProps) {
   return (

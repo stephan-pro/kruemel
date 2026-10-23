@@ -126,6 +126,27 @@ test.describe("F1 Wiederkehrende Aufgabe anlegen", () => {
     await expectNoAccessibilityViolations(page);
   });
 
+  test("K2b Enter im leeren Titel: der Fokus bleibt, die Meldung wird angesagt – auch ein zweites Mal", async ({
+    page,
+  }) => {
+    await openNewTask(page);
+    const title = page.getByLabel("Titel");
+    const said = page.getByRole("status").filter({ hasText: "Bitte einen Titel eingeben." });
+
+    await title.focus();
+    await page.keyboard.press("Enter");
+
+    await expect(title).toBeFocused();
+    await expect(title).toHaveAccessibleDescription(/Bitte einen Titel eingeben/);
+    await expect(said).toHaveCount(1);
+
+    // Ein neuer Versuch setzt die Ansage neu ein (neues Element), statt sie still stehen zu lassen.
+    const first = await said.locator("span").elementHandle();
+    await page.keyboard.press("Enter");
+    await expect.poll(() => first?.evaluate((element) => element.isConnected)).toBe(false);
+    await expect(said).toHaveCount(1);
+  });
+
   test("F1 Jedes Feld hat eine sichtbare Beschriftung", async ({ page }) => {
     await openNewTask(page);
 
@@ -540,6 +561,18 @@ test.describe("F1 Aufgabe löschen: nur nach Rückfrage", () => {
     await expectNoAccessibilityViolations(page);
     // Gelöscht wird erst nach der Antwort.
     expect((await storedData(page)).tasks).toHaveLength(demo().tasks.length);
+  });
+
+  test("K2b Die Rückfrage liest ihre Erklärung mit vor, obwohl der Fokus auf „Abbrechen“ steht", async ({
+    page,
+  }) => {
+    await openTasks(page);
+
+    await askToDelete(page, "Bad putzen");
+
+    const dialog = page.getByRole("dialog", { name: "Aufgabe „Bad putzen“ löschen?" });
+    await expect(dialog.getByRole("button", { name: "Abbrechen" })).toBeFocused();
+    await expect(dialog).toHaveAccessibleDescription(/nicht rückgängig/);
   });
 
   test("F1 Eine Aufgabe ohne Erledigungen sagt das in der Rückfrage", async ({ page }) => {

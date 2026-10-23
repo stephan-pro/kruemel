@@ -75,7 +75,7 @@ export function importData(text: string): ParseResult {
   try {
     parsed = JSON.parse(text);
   } catch {
-    return { ok: false, errors: ["Die Datei ist kein gültiges JSON."] };
+    return { ok: false, errors: ["Die Datei ist keine Krümel-Sicherung."] };
   }
   return parseAppData(parsed);
 }

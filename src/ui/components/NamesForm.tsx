@@ -5,8 +5,9 @@ import {
   type PersonNameInput,
 } from "../../domain/personNames";
 import type { Person } from "../../domain/task";
+import { errorText } from "../errorText";
 import { ErrorAlert } from "./Alert";
-import { TextField } from "./fields";
+import { TextField, useFieldErrorFocus } from "./fields";
 import { PersonChoice } from "./PersonChoice";
 
 interface NamesFormProps {
@@ -23,10 +24,6 @@ interface FieldErrors extends PersonNameErrors {
   person?: string;
 }
 
-function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
 /** The two names plus "Ich bin"; used for the first-time setup and on the settings page. */
 export function NamesForm({
   initialNames,
@@ -38,6 +35,7 @@ export function NamesForm({
   const [names, setNames] = useState(initialNames);
   const [person, setPerson] = useState(initialPerson);
   const [errors, setErrors] = useState<FieldErrors>({});
+  const { report, status } = useFieldErrorFocus();
   const [saveError, setSaveError] = useState<string>();
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -60,12 +58,13 @@ export function NamesForm({
     setErrors(found);
     setSaveError(undefined);
     if (!checked.ok || person === undefined) {
-      const first = found.personA
-        ? "name-personA"
-        : found.personB
-          ? "name-personB"
-          : "ich-bin-personA";
-      document.getElementById(first)?.focus();
+      if (found.personA) {
+        report("name-personA", found.personA);
+      } else if (found.personB) {
+        report("name-personB", found.personB);
+      } else {
+        report("ich-bin-personA", found.person ?? "");
+      }
       return;
     }
     setSaving(true);
@@ -74,7 +73,7 @@ export function NamesForm({
       setNames(checked.names);
       setSaved(true);
     } catch (error) {
-      setSaveError(messageOf(error));
+      setSaveError(errorText(error));
     } finally {
       setSaving(false);
     }
@@ -86,36 +85,39 @@ export function NamesForm({
   };
 
   return (
-    <form class="form" onSubmit={submit} noValidate>
-      <TextField
-        id="name-personA"
-        label="Name der ersten Person"
-        value={names.personA}
-        error={errors.personA}
-        onInput={(value) => edit(() => setNames({ ...names, personA: value }))}
-      />
-      <TextField
-        id="name-personB"
-        label="Name der zweiten Person"
-        value={names.personB}
-        error={errors.personB}
-        onInput={(value) => edit(() => setNames({ ...names, personB: value }))}
-      />
-      <PersonChoice
-        labels={labels}
-        value={person}
-        error={errors.person}
-        onChange={(chosen) => edit(() => setPerson(chosen))}
-      />
-      {saveError && <ErrorAlert title="Nicht gespeichert">{saveError}</ErrorAlert>}
-      <div class="button-row">
-        <button class="btn btn--primary" type="submit">
-          {submitLabel}
-        </button>
-      </div>
-      <p class="form-status" role="status">
-        {saved ? savedMessage : ""}
-      </p>
-    </form>
+    <>
+      <form class="form" onSubmit={submit} noValidate>
+        <TextField
+          id="name-personA"
+          label="Name der ersten Person"
+          value={names.personA}
+          error={errors.personA}
+          onInput={(value) => edit(() => setNames({ ...names, personA: value }))}
+        />
+        <TextField
+          id="name-personB"
+          label="Name der zweiten Person"
+          value={names.personB}
+          error={errors.personB}
+          onInput={(value) => edit(() => setNames({ ...names, personB: value }))}
+        />
+        <PersonChoice
+          labels={labels}
+          value={person}
+          error={errors.person}
+          onChange={(chosen) => edit(() => setPerson(chosen))}
+        />
+        {saveError && <ErrorAlert title="Nicht gespeichert">{saveError}</ErrorAlert>}
+        <div class="button-row">
+          <button class="btn btn--primary" type="submit">
+            {submitLabel}
+          </button>
+        </div>
+        <p class="form-status" role="status">
+          {saved ? savedMessage : ""}
+        </p>
+      </form>
+      {status}
+    </>
   );
 }

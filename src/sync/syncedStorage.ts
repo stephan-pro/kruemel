@@ -359,7 +359,7 @@ export function createSyncedStorage(options: SyncedStorageOptions): SyncedStorag
         state = await inState(() => states.read());
         if (state === null) {
           throw new StorageUnavailableError(
-            "Die gemeinsamen Daten sind auf diesem Gerät noch nicht da, und der Server ist gerade nicht erreichbar.",
+            "Die gemeinsamen Daten sind auf diesem Gerät noch nicht da, und Krümel ist gerade nicht erreichbar.",
           );
         }
       } else {
@@ -421,7 +421,7 @@ export function createSyncedStorage(options: SyncedStorageOptions): SyncedStorag
       await sync();
       if (pending() > 0 || connection !== "ok") {
         throw new StorageError(
-          "Das Einspielen einer Sicherung geht nur mit Internet, wenn alle Änderungen übertragen sind.",
+          "Einspielen geht erst, wenn alle Änderungen übertragen sind. Prüf dein Internet und versuch es gleich noch einmal.",
         );
       }
       const result = await attempt(() => remote.push({ type: "replaceAll", data, id: newId() }));

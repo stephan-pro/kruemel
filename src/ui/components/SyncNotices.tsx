@@ -97,12 +97,31 @@ export function SyncNotices({
     }
   }, [rejected]);
 
-  const announced = [
-    waiting ?? (cleared ? SYNC_TEXTS.allSent : undefined),
-    rejected > 0 ? SYNC_TEXTS.rejected(rejected) : undefined,
-    rejected > 0 && downloaded ? SYNC_TEXTS.downloaded : undefined,
-    ...conflicts.map((conflict) => conflict.text),
-  ].filter((text) => text !== undefined);
+  // What the hints say now, by kind; the waiting hint is one kind whatever its number.
+  const messages: (readonly [string, string])[] = [];
+  if (waiting !== undefined) {
+    messages.push(["waiting", waiting]);
+  } else if (cleared) {
+    messages.push(["cleared", SYNC_TEXTS.allSent]);
+  }
+  if (rejected > 0) {
+    messages.push([`rejected-${rejected}`, SYNC_TEXTS.rejected(rejected)]);
+    if (downloaded) {
+      messages.push(["downloaded", SYNC_TEXTS.downloaded]);
+    }
+  }
+  for (const conflict of conflicts) {
+    messages.push([`conflict-${conflict.id}`, conflict.text]);
+  }
+  // The status line holds one entry per kind with the text it had when it came (K2b): a new entry
+  // is read out, an entry already there is not read again (`aria-atomic="false"`), so going offline
+  // is said once and not with every further change that waits.
+  const said = useRef(new Map<string, string>());
+  const announced = new Map<string, string>();
+  for (const [kind, text] of messages) {
+    announced.set(kind, said.current.get(kind) ?? text);
+  }
+  said.current = announced;
 
   function cancel() {
     setAsking(false);
@@ -122,8 +141,10 @@ export function SyncNotices({
 
   return (
     <>
-      <p class="visually-hidden" role="status">
-        {announced.join(" ")}
+      <p class="visually-hidden" role="status" aria-atomic="false">
+        {[...announced].map(([kind, text]) => (
+          <span key={kind}>{text} </span>
+        ))}
       </p>
       {waiting !== undefined && (
         <aside class="demo-hint sync-hint" aria-label={SYNC_TEXTS.waitingLabel}>

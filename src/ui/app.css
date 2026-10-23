@@ -614,6 +614,16 @@ main:focus {
   padding-left: 1.25em;
 }
 
+/* "Details für die Fehlersuche": folded away, the summary a full-size tap target. */
+.error-details {
+  margin-top: 8px;
+}
+
+.error-details summary {
+  padding: 10px 0;
+  cursor: pointer;
+}
+
 .success-note {
   padding: 14px 16px;
   border-radius: var(--radius-control);

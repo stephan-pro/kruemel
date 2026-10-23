@@ -75,9 +75,11 @@ test.describe("E2-3c Abgleichsstand und Fehlerhinweise", () => {
     await a.context().setOffline(true);
     await tick(a, "Bad putzen");
     await expect(waitingHint(a)).toHaveText(SYNC_TEXTS.waitingOffline(1));
+    await expect(announced(a, SYNC_TEXTS.waitingOffline(1))).toHaveCount(1);
     await tick(a, "Müll rausbringen");
     await expect(waitingHint(a)).toHaveText(SYNC_TEXTS.waitingOffline(2));
-    await expect(announced(a, SYNC_TEXTS.waitingOffline(2))).toHaveCount(1);
+    // K2b: only the step to offline is read out, not every further change that waits.
+    await expect(announced(a, SYNC_TEXTS.waitingOffline(2))).toHaveCount(0);
     await goToPage(a, "Einstellungen");
     await expect(syncTile(a)).toContainText(SYNC_TEXTS.waitingOffline(2));
     await expectNoAccessibilityViolations(a);

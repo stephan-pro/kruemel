@@ -4,6 +4,7 @@ import { effectiveAssignee } from "../../domain/assignment";
 import { type CalendarDay, daysBetween } from "../../domain/date";
 import type { Completion, Person, Task } from "../../domain/task";
 import type { PersonNames } from "../../storage/appData";
+import { errorText } from "../errorText";
 import {
   describeChecklist,
   describeCompletedBy,
@@ -43,10 +44,6 @@ function Detail({ label, value }: { readonly label: string; readonly value: stri
   );
 }
 
-function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
 /**
  * The details of a task (F6): everything about it, with the checklist to tick, "Bearbeiten" and
  * "Übernehmen". It opens when a task of the week is chosen; Escape closes it.
@@ -75,7 +72,7 @@ export function TaskDetailDialog({
     try {
       await action();
     } catch (failure) {
-      setError(messageOf(failure));
+      setError(errorText(failure));
     }
   }
 

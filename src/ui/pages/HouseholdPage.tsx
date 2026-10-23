@@ -4,7 +4,7 @@ import { checkPersonNames, type PersonNameErrors } from "../../domain/personName
 import type { PersonNames } from "../../storage/appData";
 import { ACCOUNT_TEXTS } from "../accountTexts";
 import { ErrorAlert } from "../components/Alert";
-import { TextField } from "../components/fields";
+import { TextField, useFieldErrorFocus } from "../components/fields";
 import { PageTitle } from "../components/PageTitle";
 import { HOUSEHOLD_TEXTS, LEAVE_TEXTS } from "../householdTexts";
 import { inviteTokenFrom } from "../route";
@@ -39,6 +39,7 @@ export function HouseholdPage({ onCreate, onInvite, notice }: HouseholdPageProps
   const [busy, setBusy] = useState(false);
   const [link, setLink] = useState("");
   const [linkError, setLinkError] = useState<string>();
+  const { report, status } = useFieldErrorFocus();
 
   async function create(event: Event) {
     event.preventDefault();
@@ -49,7 +50,8 @@ export function HouseholdPage({ onCreate, onInvite, notice }: HouseholdPageProps
     setErrors(checked.ok ? {} : checked.errors);
     setFailed(undefined);
     if (!checked.ok) {
-      document.getElementById(checked.errors.personA ? OWN_NAME_FIELD : OTHER_NAME_FIELD)?.focus();
+      const { personA, personB } = checked.errors;
+      report(personA ? OWN_NAME_FIELD : OTHER_NAME_FIELD, personA ?? personB ?? "");
       return;
     }
     setBusy(true);
@@ -67,7 +69,7 @@ export function HouseholdPage({ onCreate, onInvite, notice }: HouseholdPageProps
     const token = inviteTokenFrom(link);
     if (token === undefined) {
       setLinkError(HOUSEHOLD_TEXTS.notAnInvite);
-      document.getElementById(LINK_FIELD)?.focus();
+      report(LINK_FIELD, HOUSEHOLD_TEXTS.notAnInvite);
       return;
     }
     onInvite(token);
@@ -131,6 +133,7 @@ export function HouseholdPage({ onCreate, onInvite, notice }: HouseholdPageProps
             </div>
           </form>
         </section>
+        {status}
       </div>
     </>
   );

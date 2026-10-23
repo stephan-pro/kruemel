@@ -19,9 +19,9 @@ export const ACCOUNT_TEXTS = {
     "Melde dich mit deiner E-Mail-Adresse an. Wir schicken dir einen Code, ein Passwort brauchst du nicht.",
   /** Above the form when an invite link was opened (E2-5b). */
   invitedFriend:
-    "Du bist zu Krümel eingeladen. Melde dich mit deiner E-Mail-Adresse an. Danach legst du deinen eigenen Haushalt an.",
+    "Du bist zu Krümel eingeladen. Nach der Anmeldung legst du deinen eigenen Haushalt an.",
   invitedHousehold:
-    "Du bist zu einem Haushalt bei Krümel eingeladen. Melde dich mit deiner E-Mail-Adresse an. Danach trittst du dem Haushalt bei.",
+    "Du bist zu einem Haushalt bei Krümel eingeladen. Nach der Anmeldung trittst du dem Haushalt bei.",
   emailLabel: "E-Mail-Adresse",
   sendCode: "Code schicken",
 

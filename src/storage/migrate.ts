@@ -40,14 +40,14 @@ export function migrateAppData(raw: unknown): MigrationResult {
   if (typeof version !== "number" || !Number.isInteger(version) || version < 1) {
     return {
       ok: false,
-      errors: ["schemaVersion fehlt oder ist ungültig – das ist keine Krümel-Sicherung."],
+      errors: ["Die Datei ist keine Krümel-Sicherung (die Angabe der Version fehlt)."],
     };
   }
   if (version > SCHEMA_VERSION) {
     return {
       ok: false,
       errors: [
-        `Die Datei stammt aus einer neueren Version der App (schemaVersion ${version}). Diese App kennt bis Version ${SCHEMA_VERSION}.`,
+        "Die Daten stammen aus einer neueren Version von Krümel. Lade die App neu und versuch es dann noch einmal.",
       ],
     };
   }

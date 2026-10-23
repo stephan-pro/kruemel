@@ -6,6 +6,7 @@ import type { PersonNames } from "../../storage/appData";
 import { ErrorAlert } from "../components/Alert";
 import { PageTitle } from "../components/PageTitle";
 import { TaskSymbol } from "../components/TaskSymbol";
+import { errorText } from "../errorText";
 import { countEntries, describeCompletedBy, undoNotice } from "../format";
 import { routeInfo } from "../route";
 
@@ -15,10 +16,6 @@ interface DonePageProps {
   readonly names: PersonNames;
   /** Takes the completion back and gives the task as it is now; rejects with an `Error` whose message is shown. */
   readonly onUndo: (completionId: string) => Promise<Task>;
-}
-
-function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }
 
 /**
@@ -52,7 +49,7 @@ export function DonePage({ tasks, completions, names, onUndo }: DonePageProps) {
       setNotice(undoNotice(title, task.dueDate));
       setNoticeCount((count) => count + 1);
     } catch (failure) {
-      setError(messageOf(failure));
+      setError(errorText(failure));
     } finally {
       busy.current = false;
     }

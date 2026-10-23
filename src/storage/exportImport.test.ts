@@ -192,7 +192,7 @@ describe("F8 Import alter Sicherungen (schemaVersion 1)", () => {
 describe("F7 Import prüft die Datei", () => {
   it("F7 Text, der kein JSON ist, wird abgelehnt", () => {
     expect(errorsOf(importData("das ist kein json"))).toEqual([
-      "Die Datei ist kein gültiges JSON.",
+      "Die Datei ist keine Krümel-Sicherung.",
     ]);
   });
 
@@ -215,7 +215,7 @@ describe("F7 Import prüft die Datei", () => {
       file.schemaVersion = version;
     });
 
-    expect(errorsOf(result)[0]).toContain("schemaVersion fehlt oder ist ungültig");
+    expect(errorsOf(result)[0]).toContain("die Angabe der Version fehlt");
   });
 
   it("F7 Eine Datei aus einer neueren App-Version wird mit klarer Meldung abgelehnt", () => {

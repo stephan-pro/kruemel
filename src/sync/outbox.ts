@@ -96,9 +96,7 @@ export class SyncStateStore {
     try {
       parsed = JSON.parse(text);
     } catch {
-      throw new StorageError(
-        "Die lokale Kopie der gemeinsamen Daten ist beschädigt (kein gültiges JSON).",
-      );
+      throw new StorageError("Die lokale Kopie der gemeinsamen Daten ist beschädigt.");
     }
     const { base, cursor, outbox, rejected } = (parsed ?? {}) as Record<string, unknown>;
     const result = parseAppData(base);

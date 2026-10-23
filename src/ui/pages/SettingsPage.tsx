@@ -19,6 +19,7 @@ import { OtherDeviceTile } from "../components/OtherDeviceTile";
 import { PageTitle } from "../components/PageTitle";
 import { SyncTile } from "../components/SyncTile";
 import { VersionTile } from "../components/VersionTile";
+import { errorText } from "../errorText";
 import type { InstallWay } from "../install";
 import { routeInfo } from "../route";
 
@@ -126,7 +127,7 @@ export function SettingsPage({
       setSchemeError(undefined);
       await onLogoMotion(moving);
     } catch (error) {
-      setSchemeError(error instanceof Error ? error.message : String(error));
+      setSchemeError(errorText(error));
     }
   }
 
@@ -135,7 +136,7 @@ export function SettingsPage({
       setSchemeError(undefined);
       await onColorScheme(scheme);
     } catch (error) {
-      setSchemeError(error instanceof Error ? error.message : String(error));
+      setSchemeError(errorText(error));
     }
   }
 

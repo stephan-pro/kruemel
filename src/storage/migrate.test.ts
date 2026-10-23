@@ -164,7 +164,7 @@ describe("Datenmodell v3: Migration von schemaVersion 2 auf 3", () => {
 describe("F8 Migration lehnt unbekannte Versionen ab", () => {
   it("F8 Eine neuere Version wird mit klarer Meldung abgelehnt", () => {
     expect(errorsOf({ ...sampleData(), schemaVersion: 4 })).toEqual([
-      "Die Datei stammt aus einer neueren Version der App (schemaVersion 4). Diese App kennt bis Version 3.",
+      "Die Daten stammen aus einer neueren Version von Krümel. Lade die App neu und versuch es dann noch einmal.",
     ]);
   });
 
@@ -175,7 +175,7 @@ describe("F8 Migration lehnt unbekannte Versionen ab", () => {
     ["ist keine ganze Zahl", 1.5],
   ])("F8 Eine schemaVersion, die %s, wird abgelehnt", (_name, schemaVersion) => {
     expect(errorsOf({ ...sampleData(), schemaVersion })).toEqual([
-      "schemaVersion fehlt oder ist ungültig – das ist keine Krümel-Sicherung.",
+      "Die Datei ist keine Krümel-Sicherung (die Angabe der Version fehlt).",
     ]);
   });
 

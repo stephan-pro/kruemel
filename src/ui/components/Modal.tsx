@@ -12,6 +12,8 @@ interface ModalProps {
   readonly focusTitle?: boolean;
   /** Puts the focus on the element with this id instead (the first field of a question). */
   readonly initialFocusId?: string;
+  /** Id of the explanation, read out with the title when the dialog opens (`aria-describedby`). */
+  readonly descriptionId?: string;
   readonly children: ComponentChildren;
 }
 
@@ -27,6 +29,7 @@ export function Modal({
   onCancel,
   focusTitle,
   initialFocusId,
+  descriptionId,
   children,
 }: ModalProps) {
   const dialog = useRef<HTMLDialogElement>(null);
@@ -61,6 +64,7 @@ export function Modal({
       class="dialog"
       ref={dialog}
       aria-labelledby={titleId}
+      aria-describedby={descriptionId}
       onCancel={(event) => {
         event.preventDefault();
         onCancel();

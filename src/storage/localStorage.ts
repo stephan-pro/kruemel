@@ -76,7 +76,7 @@ export function createLocalStorage(options: LocalStorageOptions): AppStorage {
       try {
         parsed = JSON.parse(text);
       } catch {
-        throw new StorageError("Die gespeicherten Daten sind beschädigt (kein gültiges JSON).");
+        throw new StorageError("Die gespeicherten Daten sind beschädigt.");
       }
       const result = parseAppData(parsed);
       if (!result.ok) {

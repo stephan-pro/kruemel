@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 import { AUTH_MESSAGES, type Auth, AuthError, emailAddress, type Session } from "../../auth/auth";
 import { ACCOUNT_TEXTS, CODE_DIGITS, RESEND_AFTER_SECONDS } from "../accountTexts";
-import { TextField } from "../components/fields";
+import { TextField, useFieldErrorFocus } from "../components/fields";
 import { PageTitle } from "../components/PageTitle";
 import { type CodeStep, rememberedStep, rememberStep } from "../signInStep";
 
@@ -39,10 +39,8 @@ export function SignInPage({ auth, onSignedIn, notice: farewell, invite }: SignI
   const [notice, setNotice] = useState<string>();
   const [busy, setBusy] = useState(false);
   const [canResend, setCanResend] = useState(false);
-  /** Counts the refusals; each one moves the focus to its field or is read out once. */
-  const [failures, setFailures] = useState(0);
-  const [announced, setAnnounced] = useState<string>();
-  const failedField = useRef<string>(EMAIL_FIELD);
+  /** Each refusal moves the focus to its field or is read out once. */
+  const { report, status } = useFieldErrorFocus();
 
   // A new code may be asked for a minute after the last one; until then a hint says so.
   useEffect(() => {
@@ -58,24 +56,10 @@ export function SignInPage({ auth, onSignedIn, notice: farewell, invite }: SignI
     return () => clearTimeout(timer);
   }, [step]);
 
-  useEffect(() => {
-    if (failures === 0) {
-      return;
-    }
-    const field = document.getElementById(failedField.current);
-    if (field !== null && document.activeElement === field) {
-      setAnnounced(error);
-    } else {
-      setAnnounced(undefined);
-      field?.focus();
-    }
-  }, [failures]);
-
   function fail(message: string, fieldId: string) {
-    failedField.current = fieldId;
     setError(message);
     setNotice(undefined);
-    setFailures((count) => count + 1);
+    report(fieldId, message);
   }
 
   /** Runs one step at a time; a second tap while it runs does nothing. */
@@ -145,12 +129,6 @@ export function SignInPage({ auth, onSignedIn, notice: farewell, invite }: SignI
     setError(undefined);
     setNotice(undefined);
   }
-
-  const status = (
-    <p class="visually-hidden" role="status">
-      {announced && <span key={failures}>{announced}</span>}
-    </p>
-  );
 
   if (step === undefined) {
     return (
