@@ -9,6 +9,11 @@
 // - Ticking off the same pass of a task twice counts once (the second one is rejected).
 // - Undo only works for the last completion of a task.
 // - Deleting wins against editing: a deleted task is not brought back by an edit.
+// - Taking over the data of stage 1 (`addAll`) only adds what the household does not have yet: no
+//   task whose id it knows (also deleted ones) or whose title it already has (`titleKey`).
+//
+// One more rule sits on the server only (`FakeHousehold`, the database): a change from an app with
+// an older `schemaVersion` than the household's is refused as `outdated`.
 //
 // Pure: no storage, no network, no clock.
 
@@ -37,7 +42,13 @@ export type ChangeBody =
   /** Takes back a completion and gives the task its earlier state back. */
   | { readonly type: "undo"; readonly completionId: string; readonly patch: TaskPatch }
   /** Replaces everything (restoring a backup); only works online. */
-  | { readonly type: "replaceAll"; readonly data: AppData };
+  | { readonly type: "replaceAll"; readonly data: AppData }
+  /** Takes over tasks and completions kept before the household existed (in their order). */
+  | {
+      readonly type: "addAll";
+      readonly tasks: readonly Task[];
+      readonly completions: readonly Completion[];
+    };
 
 /** A change with the id the server uses to recognise a repeated delivery. */
 export type Change = ChangeBody & { readonly id: string };
@@ -48,7 +59,17 @@ export type PushResult =
   | {
       readonly status: "rejected";
       readonly reason: Exclude<ConflictReason, "alreadyDone">;
-    };
+    }
+  /** The household holds data of a newer app version; this device has to load it first. */
+  | { readonly status: "rejected"; readonly reason: "outdated" };
+
+/** The answer of the server when the change comes from an older app version than the household's. */
+export const OUTDATED: PushResult = { status: "rejected", reason: "outdated" };
+
+/** A title for comparing (the same as `private.title_key` in the database). */
+export function titleKey(title: string): string {
+  return title.replace(/\s+/g, " ").trim().toLowerCase();
+}
 
 const APPLIED: PushResult = { status: "applied" };
 
@@ -288,5 +309,35 @@ export function applyChange(
 
     case "replaceAll":
       return { data: change.data, result: APPLIED };
+
+    case "addAll": {
+      // Compared with the household as it was before: tasks of the data with the same title stay.
+      const takenTitles = new Set(data.tasks.map((task) => titleKey(task.title)));
+      const knownIds = new Set([...data.tasks.map((task) => task.id), ...deletedTaskIds]);
+      const added: Task[] = [];
+      for (const task of change.tasks) {
+        if (!knownIds.has(task.id) && !takenTitles.has(titleKey(task.title))) {
+          knownIds.add(task.id);
+          added.push(task);
+        }
+      }
+      const addedIds = new Set(added.map((task) => task.id));
+      const completions = [...data.completions];
+      for (const completion of change.completions) {
+        const taken = completions.some(
+          (candidate) =>
+            candidate.id === completion.id ||
+            (candidate.taskId === completion.taskId &&
+              candidate.previousDueDate === completion.previousDueDate),
+        );
+        if (addedIds.has(completion.taskId) && !taken) {
+          completions.push(completion);
+        }
+      }
+      return {
+        data: { ...data, tasks: [...data.tasks, ...added], completions },
+        result: APPLIED,
+      };
+    }
   }
 }

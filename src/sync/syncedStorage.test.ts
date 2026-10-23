@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { completeInData, undoInData } from "../domain/taskManagement";
-import { emptyAppData } from "../storage/appData";
+import { emptyAppData, SCHEMA_VERSION } from "../storage/appData";
 import { StorageError } from "../storage/storage";
 import { FakeStore } from "../storage/storage.fixtures";
 import { FakeRemote } from "./fakeRemote";
@@ -433,6 +433,49 @@ describe("Sync: Konflikte auf zwei Geräten", () => {
     const seen = await b.storage.load();
     expect(seen.tasks).toEqual([]);
     expect(seen.completions).toEqual([]);
+  });
+});
+
+describe("Sync: Versionsschutz", () => {
+  /** A household that a device with a newer app already wrote to. */
+  async function writtenByNewerApp() {
+    const { device, server } = household(dataWith([weekly()]));
+    const newer = device("n");
+    newer.remote.schemaVersion = SCHEMA_VERSION + 1;
+    await newer.storage.load();
+    await newer.storage.save(dataWith([weekly({ title: "Neu" })]));
+    await newer.storage.sync();
+    return { device, server };
+  }
+
+  it("Versionsschutz: Hat der Haushalt Daten einer neueren App, warten die Änderungen (kein Konflikt) und gehen nach dem Neuladen durch", async () => {
+    const { device, server } = await writtenByNewerApp();
+    const a = device("a");
+    const start = await a.storage.load();
+
+    await a.storage.save({ ...start, tasks: [...start.tasks, once()] });
+    await a.storage.sync();
+
+    expect(server.snapshot().tasks.map((task) => task.id)).toEqual(["t-bad"]);
+    expect(a.storage.syncStatus()).toEqual({ state: "syncing", pending: 1 });
+    expect(a.updates.some((update) => update.type === "conflict")).toBe(false);
+    expect((await a.storage.load()).tasks.map((task) => task.title)).toEqual([
+      "Neu",
+      "Paket abholen",
+    ]);
+
+    a.remote.schemaVersion = SCHEMA_VERSION + 1;
+    await a.storage.sync();
+    expect(server.snapshot().tasks.map((task) => task.id)).toEqual(["t-bad", "t-paket"]);
+  });
+
+  it("Versionsschutz: Einspielen wird abgelehnt und ersetzt nichts", async () => {
+    const { device, server } = await writtenByNewerApp();
+    const a = device("a");
+    await a.storage.load();
+
+    await expect(a.storage.replaceAll(dataWith([once()]))).rejects.toThrow("neueren Version");
+    expect(server.snapshot().tasks.map((task) => task.title)).toEqual(["Neu"]);
   });
 });
 

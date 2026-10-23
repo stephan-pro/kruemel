@@ -6,7 +6,7 @@ import type { PullResult } from "./remote";
 import { completion, dataWith, once, weekly } from "./sync.fixtures";
 
 function delta(parts: Partial<PullResult> = {}): PullResult {
-  return { cursor: "1", tasks: [], completions: [], ...parts };
+  return { cursor: "1", schemaVersion: 3, tasks: [], completions: [], ...parts };
 }
 
 const live = (task: ReturnType<typeof weekly> | ReturnType<typeof once>) => ({

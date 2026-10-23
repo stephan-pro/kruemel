@@ -12,7 +12,7 @@ import { AuthError } from "../auth/auth";
 import { FakeAuth, type FakeAuthOptions } from "../auth/fakeAuth";
 import { HouseholdError, type HouseholdFailure } from "../auth/household";
 import type { Person } from "../domain/task";
-import type { AppData, PersonNames } from "../storage/appData";
+import { type AppData, type PersonNames, SCHEMA_VERSION } from "../storage/appData";
 import type { Change } from "./changes";
 import { FakeAccounts } from "./fakeAccounts";
 import { FakeHousehold } from "./fakeHousehold";
@@ -112,8 +112,9 @@ export class FakeServer {
       return { status: 200, body: household.pull(request.query.cursor ?? null) };
     }
     if (method === "POST" && path === "/push") {
-      return isChange(request.body)
-        ? { status: 200, body: household.push(request.body) }
+      const version = Number(request.query.schemaVersion ?? SCHEMA_VERSION);
+      return isChange(request.body) && Number.isInteger(version)
+        ? { status: 200, body: household.push(request.body, version) }
         : { status: 400, body: { error: "Keine Änderung" } };
     }
     if (method === "GET" && path === "/test/data") {

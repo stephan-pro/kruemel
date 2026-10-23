@@ -3,6 +3,7 @@
 // change can be lost (`loseNextAnswer`), the way a bad connection does it: the server got the
 // change, the device does not know.
 
+import { SCHEMA_VERSION } from "../storage/appData";
 import type { Change, PushResult } from "./changes";
 import type { FakeHousehold } from "./fakeHousehold";
 import { type PullResult, type Remote, RemoteError } from "./remote";
@@ -10,6 +11,8 @@ import { type PullResult, type Remote, RemoteError } from "./remote";
 export class FakeRemote implements Remote {
   /** When false, every call fails with a `RemoteError`, as without a connection. */
   online = true;
+  /** The `schemaVersion` of the app on this device (a test can play an older or newer one). */
+  schemaVersion: number = SCHEMA_VERSION;
   /** The next `push` reaches the server, but its answer is lost (`RemoteError`). */
   loseNextAnswer = false;
   /** Every change handed over, also those that were lost on the way back. */
@@ -25,7 +28,7 @@ export class FakeRemote implements Remote {
   async push(change: Change): Promise<PushResult> {
     this.requireOnline();
     this.pushed.push(change);
-    const result = this.household.push(change);
+    const result = this.household.push(change, this.schemaVersion);
     if (this.loseNextAnswer) {
       this.loseNextAnswer = false;
       throw new RemoteError("Die Antwort des Servers ist nicht angekommen.");

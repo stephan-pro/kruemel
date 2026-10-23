@@ -71,7 +71,10 @@ function emptyState(): SyncState {
   return { base: emptyAppData(), cursor: null, outbox: [] };
 }
 
-function conflictOf(change: Change, result: Extract<PushResult, { status: "rejected" }>) {
+function conflictOf(
+  change: Change,
+  result: Exclude<Extract<PushResult, { status: "rejected" }>, { reason: "outdated" }>,
+) {
   const taskId =
     change.type === "complete"
       ? change.completion.taskId
@@ -170,6 +173,10 @@ export function createSyncedStorage(options: SyncedStorageOptions): SyncedStorag
         const result = await attempt(() => remote.push(next));
         if (result === undefined) {
           reachable = false;
+          break;
+        }
+        if (result.status === "rejected" && result.reason === "outdated") {
+          // The household holds data of a newer app: the changes wait until this app is updated.
           break;
         }
         await inState(() => {
@@ -299,6 +306,11 @@ export function createSyncedStorage(options: SyncedStorageOptions): SyncedStorag
       const result = await attempt(() => remote.push({ type: "replaceAll", data, id: newId() }));
       if (result === undefined) {
         throw new StorageError("Das Einspielen einer Sicherung geht nur mit Internet.");
+      }
+      if (result.status === "rejected") {
+        throw new StorageError(
+          "Eure Daten stammen aus einer neueren Version der App. Lade die App neu und versuche es dann noch einmal.",
+        );
       }
       await sync();
     },

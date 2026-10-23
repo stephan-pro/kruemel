@@ -15,6 +15,12 @@ describeRemoteContract("FakeHttpRemote (über den Fake-Server)", async () => {
   return {
     a: createFakeHttpRemote({ ...options, token: tokens.personA }),
     b: createFakeHttpRemote({ ...options, token: tokens.personB }),
+    device: (person, schemaVersion) =>
+      createFakeHttpRemote({
+        ...options,
+        token: person === "a" ? tokens.personA : tokens.personB,
+        schemaVersion,
+      }),
   };
 });
 
@@ -63,14 +69,15 @@ describe("Fake-Server (Test-Hilfe)", () => {
     expect(server.householdFor(undefined)).toBeUndefined();
   });
 
-  it("Ein Senden ohne Änderung wird abgelehnt (400), eine unbekannte Adresse nicht gefunden (404)", () => {
+  it("Ein Senden ohne Änderung oder mit unlesbarer Version wird abgelehnt (400), eine unbekannte Adresse nicht gefunden (404)", () => {
     const server = new FakeServer();
     const { tokens } = server.createHousehold();
+    const push = (body: unknown, query = {}) =>
+      server.handle(request({ method: "POST", path: "/push", token: tokens.personA, body, query }))
+        .status;
 
-    expect(
-      server.handle(request({ method: "POST", path: "/push", token: tokens.personA, body: 5 }))
-        .status,
-    ).toBe(400);
+    expect(push(5)).toBe(400);
+    expect(push({ id: "x", type: "deleteTask", taskId: "t" }, { schemaVersion: "neu" })).toBe(400);
     expect(server.handle(request({ path: "/gibtsnicht", token: tokens.personA })).status).toBe(404);
   });
 

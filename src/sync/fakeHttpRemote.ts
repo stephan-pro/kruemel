@@ -2,6 +2,7 @@
 // over HTTP and the hints as server-sent events. This is what the app runs on in the mode `e2e`,
 // so a real browser can play through two devices, offline work and parallel ticking off.
 
+import { SCHEMA_VERSION } from "../storage/appData";
 import type { Change, PushResult } from "./changes";
 import { type PullResult, type Remote, RemoteError } from "./remote";
 
@@ -20,6 +21,8 @@ export interface FakeHttpRemoteOptions {
   readonly fetch?: typeof fetch;
   /** Default: the browser's `EventSource`. */
   readonly eventSource?: (url: string) => EventSourceLike;
+  /** The app's `schemaVersion`; default `SCHEMA_VERSION` (tests play other versions). */
+  readonly schemaVersion?: number;
 }
 
 export function createFakeHttpRemote(options: FakeHttpRemoteOptions): Remote {
@@ -54,7 +57,7 @@ export function createFakeHttpRemote(options: FakeHttpRemoteOptions): Remote {
       }),
 
     push: (change: Change) =>
-      call<PushResult>("/push", {
+      call<PushResult>(`/push?schemaVersion=${options.schemaVersion ?? SCHEMA_VERSION}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(change),

@@ -2,10 +2,11 @@
 // (stage 2). `FakeRemote` uses it directly, the fake server of the end-to-end tests puts HTTP in
 // front of it. The rules themselves are `applyChange`; this class adds what only a server does:
 // it numbers every change in order of arrival (the "server time" the last-writer rule goes by),
-// remembers deleted rows as tombstones, and recognises a change that arrives a second time.
+// remembers deleted rows as tombstones, recognises a change that arrives a second time, and refuses
+// changes from an app older than the newest one that wrote to the household (`outdated`).
 
 import { type AppData, emptyAppData, SCHEMA_VERSION } from "../storage/appData";
-import { applyChange, type Change, isDeepEqual, type PushResult } from "./changes";
+import { applyChange, type Change, isDeepEqual, OUTDATED, type PushResult } from "./changes";
 import type { CompletionRow, PullResult, TaskRow } from "./remote";
 
 export class FakeHousehold {
@@ -17,6 +18,8 @@ export class FakeHousehold {
   private readonly taskGraves = new Map<string, number>();
   private readonly completionGraves = new Map<string, { clock: number; taskId: string }>();
   private settingsClock = 0;
+  /** The newest `schemaVersion` that wrote to the household. */
+  private schemaVersion: number = SCHEMA_VERSION;
   private readonly answers = new Map<string, PushResult>();
   private readonly listeners = new Set<() => void>();
 
@@ -31,11 +34,16 @@ export class FakeHousehold {
     return this.data;
   }
 
-  push(change: Change): PushResult {
+  /** `schemaVersion` is that of the sending app. */
+  push(change: Change, schemaVersion: number = SCHEMA_VERSION): PushResult {
     const known = this.answers.get(change.id);
     if (known !== undefined) {
       return known;
     }
+    if (schemaVersion < this.schemaVersion) {
+      return OUTDATED; // not remembered: the same change goes through once the app is newer
+    }
+    this.schemaVersion = schemaVersion;
     const { data, result } = applyChange(this.data, change, new Set(this.taskGraves.keys()));
     if (result.status === "applied") {
       this.replace(data);
@@ -80,6 +88,7 @@ export class FakeHousehold {
     }
     return {
       cursor: String(this.clock),
+      schemaVersion: this.schemaVersion,
       tasks,
       completions,
       ...(this.settingsClock > since ? { settings: this.data.settings } : {}),

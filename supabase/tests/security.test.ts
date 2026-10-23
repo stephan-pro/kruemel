@@ -84,6 +84,14 @@ describe("S5 Ohne Anmeldung", () => {
       ["pull_changes", { p_cursor: null }],
       ["accept_invite", { p_token: open.token }],
       ["create_invite", {}],
+      [
+        "add_household_data",
+        {
+          p_change_id: crypto.randomUUID(),
+          p_schema_version: SCHEMA_VERSION,
+          p_data: { tasks: [task], completions: [] },
+        },
+      ],
     ] as const) {
       expect(await failure(call(stranger, name, args)), name).toMatch(/permission denied/);
     }
@@ -154,14 +162,21 @@ describe("S5 Fremder Haushalt", () => {
       p_change_id: crypto.randomUUID(),
       p_data: { schemaVersion: SCHEMA_VERSION, settings: {}, tasks: [], completions: [] },
     });
+    await call(other, "add_household_data", {
+      ...change(),
+      p_data: {
+        tasks: [{ ...task, title: "Fremd übernommen" }],
+        completions: [{ ...completion, id: "c-fremd" }],
+      },
+    });
 
-    const own = await call<{ tasks: { task: { title: string } }[]; completions: unknown[] }>(
-      a,
-      "pull_changes",
-      { p_cursor: null },
-    );
+    type Pulled = { tasks: { task: { title: string } }[]; completions: { id: string }[] };
+    const own = await call<Pulled>(a, "pull_changes", { p_cursor: null });
     expect(own.tasks.map((row) => row.task.title)).toEqual(["Bad putzen"]);
-    expect(own.completions).toHaveLength(1);
+    expect(own.completions.map((row) => row.id)).toEqual(["c-1"]);
+    // The taking over landed in the caller's own household (same task id, no clash).
+    const theirs = await call<Pulled>(other, "pull_changes", { p_cursor: null });
+    expect(theirs.tasks.map((row) => row.task.title)).toEqual(["Fremd übernommen"]);
     const names = (await readable(a.client, "households")) as { person_a_name: string }[];
     expect(names[0]?.person_a_name).toBe("Alex");
   });
@@ -342,10 +357,19 @@ describe("S5 Einladungen", () => {
     ).toBe("already_member");
   });
 
-  it("Ohne Haushalt gibt es keinen Abruf und keine Einladung", async () => {
+  it("Ohne Haushalt gibt es keinen Abruf, keine Einladung und keine Übernahme", async () => {
     const lonely = await signedIn();
 
     expect(await failure(call(lonely, "pull_changes", { p_cursor: null }))).toBe("no_household");
     expect(await failure(invite(lonely))).toBe("no_household");
+    expect(
+      await failure(
+        call(lonely, "add_household_data", {
+          p_change_id: crypto.randomUUID(),
+          p_schema_version: SCHEMA_VERSION,
+          p_data: { tasks: [task], completions: [] },
+        }),
+      ),
+    ).toBe("no_household");
   });
 });

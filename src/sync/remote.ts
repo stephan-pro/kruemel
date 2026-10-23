@@ -1,7 +1,7 @@
 // The server as the sync sees it. Implementations: `FakeRemote` (in memory, for unit tests),
-// `FakeHttpRemote` (against the fake server of the end-to-end tests) and, from E2-3, the one for
-// Supabase. They all follow the same rules (`changes.ts`), and one series of contract tests runs
-// against each of them.
+// `FakeHttpRemote` (against the fake server of the end-to-end tests) and `SupabaseRemote` (E2-3).
+// They all follow the same rules (`changes.ts`), and one series of contract tests runs against
+// each of them. Each sends the `schemaVersion` of the app it runs in (version protection).
 
 import type { Completion, Task } from "../domain/task";
 import type { Settings } from "../storage/appData";
@@ -31,6 +31,8 @@ export interface CompletionRow {
 export interface PullResult {
   /** Opaque; pass it to the next `pull`. */
   readonly cursor: string;
+  /** The newest `schemaVersion` that wrote to the household; newer than the app's = app is behind. */
+  readonly schemaVersion: number;
   readonly tasks: readonly TaskRow[];
   /** Oldest first. */
   readonly completions: readonly CompletionRow[];
@@ -38,9 +40,16 @@ export interface PullResult {
   readonly settings?: Settings;
 }
 
-/** The server could not be reached or failed; whatever was asked can be tried again later. */
+/**
+ * The server could not be reached or failed; whatever was asked can be tried again later. With
+ * `permanent` the server refused the call itself (invalid data, not allowed): trying the same again
+ * will not help (from E2-3c such a change is moved aside).
+ */
 export class RemoteError extends Error {
-  constructor(message: string) {
+  constructor(
+    message: string,
+    readonly permanent = false,
+  ) {
     super(message);
     this.name = "RemoteError";
   }

@@ -40,7 +40,12 @@ npx supabase link --project-ref <ref>
 npx supabase db push
 ```
 
-`login` öffnet den Browser, `link` fragt das Datenbank-Passwort ab (nur einmal pro Rechner), `db push` zeigt die neuen Migrationen und spielt sie nach Rückfrage ein. Docker ist dafür nicht nötig.
+`login` öffnet den Browser, `link` fragt das Datenbank-Passwort ab (nur einmal pro Rechner), `db push` zeigt die neuen Migrationen und spielt sie nach Rückfrage ein. Docker ist dafür nicht nötig. `npx supabase migration list` zeigt danach je Migration „Local“ und „Remote“; stehen in beiden Spalten dieselben Zeitstempel, ist alles eingespielt.
+
+| Migration | Inhalt | Im echten Projekt |
+|---|---|---|
+| `20261020120000_household.sql` (E2-1) | Tabellen, Zeilenschutz, Schreibfunktionen, `pull_changes`, `ping` | eingespielt |
+| `20261023120000_sync.sql` (E2-3a) | Versionsschutz (ältere App → `outdated`), `pull_changes` mit Version des Haushalts, Übernahme `add_household_data` | vom PO einzuspielen (vor E2-3f) |
 
 ## Kostenloser Tarif: Grenzen
 

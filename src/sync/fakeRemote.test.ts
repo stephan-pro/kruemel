@@ -7,7 +7,11 @@ import { completion, dataWith, weekly } from "./sync.fixtures";
 
 describeRemoteContract("FakeRemote (im Speicher)", async () => {
   const household = new FakeHousehold();
-  return { a: new FakeRemote(household), b: new FakeRemote(household) };
+  return {
+    a: new FakeRemote(household),
+    b: new FakeRemote(household),
+    device: (_person, schemaVersion) => Object.assign(new FakeRemote(household), { schemaVersion }),
+  };
 });
 
 describe("FakeRemote und FakeHousehold", () => {

@@ -18,7 +18,15 @@ export interface SyncState {
   readonly outbox: readonly Change[];
 }
 
-const CHANGE_TYPES = ["setNames", "saveTask", "deleteTask", "complete", "undo", "replaceAll"];
+const CHANGE_TYPES = [
+  "setNames",
+  "saveTask",
+  "deleteTask",
+  "complete",
+  "undo",
+  "replaceAll",
+  "addAll",
+];
 
 function isChange(value: unknown): value is Change {
   if (typeof value !== "object" || value === null) {

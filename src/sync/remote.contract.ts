@@ -1,20 +1,25 @@
-// One series of tests that every `Remote` must pass: the fake in memory today, the one for
-// Supabase against a local database from E2-1/E2-3 (`npm run check:db`, in CI). If both pass
-// the same series, the fake does not drift away from the real rules. Not a test file by itself:
-// a test file calls `describeRemoteContract`.
+// One series of tests that every `Remote` must pass: the fakes (in memory and over HTTP) and
+// `SupabaseRemote` against a local database (`npm run check:db`, in CI). If all pass the same
+// series, the fakes do not drift away from the real rules. Not a test file by itself: a test file
+// calls `describeRemoteContract`.
 
 import { describe, expect, it } from "vitest";
 import type { Task } from "../domain/task";
-import type { Change, ChangeBody } from "./changes";
+import { SCHEMA_VERSION } from "../storage/appData";
+import { type Change, type ChangeBody, OUTDATED } from "./changes";
 import { mergeDelta } from "./merge";
 import type { PullResult, Remote } from "./remote";
-import { completion, dataWith, once, weekly } from "./sync.fixtures";
+import { completion, d, dataWith, once, weekly } from "./sync.fixtures";
 
 /** Two devices of one fresh, empty household. */
 export interface ContractSetup {
   readonly a: Remote;
   readonly b: Remote;
+  /** Another connection of person A or B, from an app with another `schemaVersion`. */
+  readonly device: (person: "a" | "b", schemaVersion: number) => Remote;
 }
+
+const APPLIED = { status: "applied" };
 
 let counter = 0;
 /** A change with an id nobody used before in this run. */
@@ -45,12 +50,14 @@ function ids(result: PullResult): string[] {
   return result.tasks.filter((row) => !row.deleted).map((row) => row.id);
 }
 
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export interface ContractOptions {
   /**
-   * `false` leaves out the test of `subscribe`: the database functions of E2-1 are tested before
-   * their `Remote` with realtime exists (E2-3).
+   * The connection hints once as soon as it is ready (Realtime): the test of `subscribe` waits
+   * for that hint before it changes anything.
    */
-  readonly hints?: boolean;
+  readonly hintOnConnect?: boolean;
 }
 
 export function describeRemoteContract(
@@ -66,6 +73,7 @@ export function describeRemoteContract(
 
       expect(result.tasks).toEqual([]);
       expect(result.completions).toEqual([]);
+      expect(result.schemaVersion).toBe(SCHEMA_VERSION);
     });
 
     it("Namen und Aufgaben, die A schickt, holt B ab", async () => {
@@ -266,23 +274,141 @@ export function describeRemoteContract(
       ]);
     });
 
-    it.skipIf(options.hints === false)(
-      "Die Verbindung meldet eine Änderung des anderen Geräts",
-      async () => {
-        const { a, b } = await setup();
-        let hints = 0;
-        const stop = b.subscribe(() => {
-          hints++;
-        });
+    it("Versionsschutz: Ein Gerät mit älterer App überschreibt keine Daten im neueren Format", async () => {
+      const { a, device } = await setup();
+      await a.push(create(weekly()));
+      await a.push(tick("c-1", "2026-10-19"));
+      const before = await a.pull(null);
 
-        await a.push(create(weekly()));
-        await new Promise((resolve) => setTimeout(resolve, 50));
-        stop();
-        await a.push(create(once()));
-        await new Promise((resolve) => setTimeout(resolve, 50));
+      const newer = await device("b", SCHEMA_VERSION + 1).push(edit("t-bad", { title: "Neu" }));
+      const late: Change[] = [
+        change({ type: "setNames", names: { personA: "Alt", personB: "Alt" } }),
+        edit("t-bad", { title: "Alt" }),
+        create(once()),
+        tick("c-2", "2026-10-28"),
+        change({ type: "undo", completionId: "c-1", patch: { set: {}, unset: [] } }),
+        change({ type: "deleteTask", taskId: "t-bad" }),
+        change({ type: "replaceAll", data: dataWith([]) }),
+        change({ type: "addAll", tasks: [once()], completions: [] }),
+      ];
 
-        expect(hints).toBe(1);
-      },
-    );
+      expect(newer).toEqual(APPLIED);
+      for (const refused of late) {
+        expect(await a.push(refused), refused.type).toEqual(OUTDATED);
+      }
+      const after = await a.pull(null);
+      expect(after.schemaVersion).toBe(SCHEMA_VERSION + 1);
+      expect(after.tasks.map((row) => row.task?.title)).toEqual(["Neu"]);
+      expect(after.completions.map((row) => row.id)).toEqual(["c-1"]);
+      expect(after.settings).toEqual(before.settings);
+    });
+
+    it("Versionsschutz: Nach dem Neuladen der App geht dieselbe Änderung durch", async () => {
+      const { a, device } = await setup();
+      await device("b", SCHEMA_VERSION + 1).push(create(weekly()));
+      const late = edit("t-bad", { title: "Nach dem Neuladen" });
+
+      const refused = await a.push(late);
+      const accepted = await device("a", SCHEMA_VERSION + 1).push(late);
+
+      expect(refused).toEqual(OUTDATED);
+      expect(accepted).toEqual(APPLIED);
+      expect((await a.pull(null)).tasks[0]?.task?.title).toBe("Nach dem Neuladen");
+    });
+
+    it("Übernahme: Aufgaben samt Erledigungen kommen in einem Schritt und in ihrer Reihenfolge an", async () => {
+      const { a, b } = await setup();
+
+      const result = await a.push(
+        change({
+          type: "addAll",
+          tasks: [weekly(), once()],
+          completions: [
+            completion({ id: "c-1" }),
+            completion({ id: "c-2", previousDueDate: d("2026-10-28") }),
+          ],
+        }),
+      );
+      const pulled = await b.pull(null);
+      const undoLast = await b.push(
+        change({ type: "undo", completionId: "c-2", patch: { set: {}, unset: [] } }),
+      );
+
+      expect(result).toEqual(APPLIED);
+      expect(ids(pulled)).toEqual(["t-bad", "t-paket"]);
+      expect(pulled.completions.map((row) => row.id)).toEqual(["c-1", "c-2"]);
+      expect(undoLast).toEqual(APPLIED);
+    });
+
+    it("Übernahme: Aufgaben mit vorhandenem Titel oder bekannter Kennung entfallen samt Erledigungen", async () => {
+      const { a, b } = await setup();
+      await a.push(create(weekly()));
+      await a.push(create(once({ id: "t-weg", title: "Weg" })));
+      await a.push(change({ type: "deleteTask", taskId: "t-weg" }));
+
+      await b.push(
+        change({
+          type: "addAll",
+          tasks: [
+            weekly({ id: "t-bad-b", title: "  bad   PUTZEN " }),
+            once({ id: "t-weg", title: "Wieder da" }),
+            once(),
+            once({ id: "t-paket-2" }),
+          ],
+          completions: [
+            completion({ id: "c-b", taskId: "t-bad-b" }),
+            completion({ id: "c-p", taskId: "t-paket", previousDueDate: d("2026-10-22") }),
+          ],
+        }),
+      );
+      const pulled = await a.pull(null);
+
+      // Two tasks of the same title in the taken-over data both stay: the device had them so.
+      expect(ids(pulled)).toEqual(["t-bad", "t-paket", "t-paket-2"]);
+      expect(pulled.completions.map((row) => row.id)).toEqual(["c-p"]);
+    });
+
+    it("Übernahme: wiederholt (dieselbe oder eine neue Änderung, auch vom anderen Gerät) – nichts doppelt", async () => {
+      const { a, b } = await setup();
+      const data = { tasks: [weekly(), once()], completions: [completion()] };
+      const first = change({ type: "addAll", ...data });
+
+      await a.push(first);
+      const repeated = await a.push(first);
+      const again = await a.push(change({ type: "addAll", ...data }));
+      const other = await b.push(
+        change({
+          type: "addAll",
+          tasks: [weekly({ id: "t-bad-b" }), once({ id: "t-paket-b", title: "paket abholen" })],
+          completions: [completion({ id: "c-b", taskId: "t-bad-b" })],
+        }),
+      );
+      const pulled = await a.pull(null);
+
+      expect([repeated, again, other]).toEqual([APPLIED, APPLIED, APPLIED]);
+      expect(ids(pulled)).toEqual(["t-bad", "t-paket"]);
+      expect(pulled.completions.map((row) => row.id)).toEqual(["c-1"]);
+    });
+
+    it("Die Verbindung meldet eine Änderung des anderen Geräts", async () => {
+      const { a, b } = await setup();
+      let hints = 0;
+      const stop = b.subscribe(() => {
+        hints++;
+      });
+      if (options.hintOnConnect === true) {
+        await expect.poll(() => hints, { timeout: 15_000 }).toBeGreaterThan(0);
+      }
+      const ready = hints;
+
+      await a.push(create(weekly()));
+      await expect.poll(() => hints, { timeout: 15_000 }).toBeGreaterThan(ready);
+      stop();
+      const seen = hints;
+      await a.push(create(once()));
+      await wait(options.hintOnConnect === true ? 1000 : 50);
+
+      expect(hints).toBe(seen);
+    });
   });
 }
