@@ -195,14 +195,17 @@ test.describe("F2 Rückgängig über „Erledigt“", () => {
     // Bad putzen (überfällig, Checkliste mit einem Häkchen) abhaken: die Häkchen werden zurückgesetzt.
     await page.getByRole("button", { name: "Abhaken: Bad putzen" }).click();
     await goToPage(page, "Erledigt");
-    const ticked = (await storedData(page)).tasks.find((task) => task.id === "demo-bad");
-    expect(ticked?.checklist.map((item) => item.checked)).toEqual([false, false, false]);
+    // Der Speicher schreibt einen Moment nach der Anzeige.
+    const checked = async () =>
+      (await storedData(page)).tasks
+        .find((task) => task.id === "demo-bad")
+        ?.checklist.map((item) => item.checked);
+    await expect.poll(checked).toEqual([false, false, false]);
 
     await undoButton(rows(page).first(), "Bad putzen").click();
     await expect(notice(page)).toBeFocused();
 
-    const restored = (await storedData(page)).tasks.find((task) => task.id === "demo-bad");
-    expect(restored?.checklist.map((item) => item.checked)).toEqual([true, false, false]);
+    await expect.poll(checked).toEqual([true, false, false]);
   });
 
   test("F2 Nach „Rückgängig“ bekommt die Meldung den Fokus und wird beim nächsten Mal ersetzt", async ({
