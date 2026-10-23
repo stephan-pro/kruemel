@@ -11,6 +11,8 @@ interface InstallHintProps {
   readonly onInstall: () => void;
   /** "Hinweis schließen": the hint does not come back on this device. */
   readonly onDismiss: () => void;
+  /** The data are the household's shared data (`InstallSteps`). */
+  readonly shared?: boolean;
 }
 
 /**
@@ -18,7 +20,7 @@ interface InstallHintProps {
  * installs (where the browser can) or shows how; the cross closes it for good. Never in the way:
  * it stands below the tiles and does not take the focus.
  */
-export function InstallHint({ way, onInstall, onDismiss }: InstallHintProps) {
+export function InstallHint({ way, onInstall, onDismiss, shared = false }: InstallHintProps) {
   const titleId = useId();
   const [guideOpen, setGuideOpen] = useState(false);
   const [returnFocusCount, setReturnFocusCount] = useState(0);
@@ -79,7 +81,7 @@ export function InstallHint({ way, onInstall, onDismiss }: InstallHintProps) {
       {(way === "ios" || way === "firefoxAndroid") && (
         <Modal open={guideOpen} title="Krümel installieren" onCancel={closeGuide} focusTitle>
           <div class="dialog__body">
-            <InstallSteps way={way} />
+            <InstallSteps way={way} shared={shared} />
           </div>
           <div class="button-row">
             <button class="btn btn--secondary" type="button" onClick={closeGuide}>

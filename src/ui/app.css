@@ -403,6 +403,11 @@ main:focus {
 /* Phones: the pages begin with their own heading; the name of the app and "Ich bin" sit in the
    column of wide screens only. */
 @media (max-width: 899px) {
+  /* Tabbing scrolls the focused element above the floating bar, never under it (WCAG 2.4.11). */
+  html:has(.app--with-nav) {
+    scroll-padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px));
+  }
+
   .app--with-nav .app-person {
     display: none;
   }

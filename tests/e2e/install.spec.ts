@@ -1,6 +1,6 @@
 import { expect, type Page, test } from "@playwright/test";
 import { expectNoAccessibilityViolations } from "./axe";
-import { deviceKey, expectPageShown, goToPage, openWeek } from "./helpers";
+import { deviceKey, expectPageShown, goToPage, openWeek, startLocal } from "./helpers";
 
 // Package 13: help with installing (N3). A test cannot install an app; it plays the browser's
 // part: the install question (`beforeinstallprompt`, offered by Chromium browsers), the browser
@@ -181,7 +181,9 @@ test.describe("N3 iPhone: bebilderte Anleitung", () => {
     await expect(steps.nth(2)).toContainText("Hinzufügen");
     // Every step has its picture; for screen readers it is decoration.
     await expect(guide(page).locator(".install-steps__picture[aria-hidden='true']")).toHaveCount(3);
-    await expect(guide(page)).toContainText("eigene Daten, getrennt von Safari");
+    // Shared data: signing in brings them; a backup would replace them for both (K2a).
+    await expect(guide(page)).toContainText("Melde dich dort einmal mit deiner E-Mail-Adresse an");
+    await expect(guide(page)).not.toContainText("Sicherung");
     await expectNoAccessibilityViolations(page);
 
     await page.keyboard.press("Escape");
@@ -247,7 +249,8 @@ test.describe("N3 Auf anderem Gerät öffnen", () => {
     await expect(code).toBeVisible();
     await expect(code).toHaveAttribute("data-address", address);
     await expect(tile).toContainText(address);
-    await expect(tile).toContainText("Die Daten kommen nicht mit");
+    await expect(tile).toContainText("mit derselben E-Mail-Adresse an, dann sind eure Daten da");
+    await expect(tile).not.toContainText("Sicherung");
     // Big enough for a camera, and dark on light in both colour schemes.
     expect((await code.boundingBox())?.width).toBeGreaterThanOrEqual(150);
     await expectNoAccessibilityViolations(page);
@@ -259,6 +262,22 @@ test.describe("N3 Auf anderem Gerät öffnen", () => {
       "aria-expanded",
       "false",
     );
+  });
+});
+
+test.describe("K2a Ohne Konto (Modus local) bleiben die Daten auf dem Gerät", () => {
+  test.use({ userAgent: IPHONE });
+
+  test("K2a Anderes Gerät und iPhone-Anleitung nennen dort weiter die Sicherung", async ({
+    page,
+  }) => {
+    await startLocal(page);
+    await goToPage(page, "Einstellungen");
+
+    await expect(page.getByRole("region", { name: "Auf anderem Gerät öffnen" })).toContainText(
+      "Die Daten kommen nicht mit",
+    );
+    await expect(installTile(page)).toContainText("eigene Daten, getrennt von Safari");
   });
 });
 

@@ -5,13 +5,15 @@ import type { InstallWay } from "../install";
 interface InstallStepsProps {
   /** `ios`, `firefoxAndroid` or `other`; the browser's own question needs no steps. */
   readonly way: Exclude<InstallWay, "installed" | "prompt">;
+  /** The data are the household's shared data: signing in brings them, a backup would replace them. */
+  readonly shared?: boolean;
 }
 
 /**
  * How to put Krümel on the home screen by hand, step by step. Each step shows a picture of what
  * to tap, drawn like the browser shows it (decoration: the text says the same).
  */
-export function InstallSteps({ way }: InstallStepsProps) {
+export function InstallSteps({ way, shared = false }: InstallStepsProps) {
   if (way === "ios") {
     return (
       <>
@@ -29,11 +31,18 @@ export function InstallSteps({ way }: InstallStepsProps) {
             Home-Bildschirm.
           </Step>
         </ol>
-        <p class="install-note">
-          <strong>Wichtig:</strong> Die App vom Home-Bildschirm hat eigene Daten, getrennt von
-          Safari. Was du schon in Safari eingetragen hast, nimmst du über „Sicherung“ mit: hier
-          herunterladen, in der App einspielen.
-        </p>
+        {shared ? (
+          <p class="install-note">
+            <strong>Wichtig:</strong> Die App vom Home-Bildschirm ist von Safari getrennt. Melde
+            dich dort einmal mit deiner E-Mail-Adresse an, dann sind eure Daten da.
+          </p>
+        ) : (
+          <p class="install-note">
+            <strong>Wichtig:</strong> Die App vom Home-Bildschirm hat eigene Daten, getrennt von
+            Safari. Was du schon in Safari eingetragen hast, nimmst du über „Sicherung“ mit: hier
+            herunterladen, in der App einspielen.
+          </p>
+        )}
       </>
     );
   }

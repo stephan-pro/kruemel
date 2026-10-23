@@ -1093,6 +1093,7 @@ export function App({
             offersInstallHint(install.way) && (
               <InstallHint
                 way={install.way}
+                shared={sharedStorage !== undefined}
                 onInstall={() => void installFromHint()}
                 onDismiss={() => void dismissInstallHint()}
               />

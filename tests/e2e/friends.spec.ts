@@ -185,11 +185,19 @@ test.describe("E2-5b Neue Konten nur mit Einladung", () => {
   }) => {
     const alex = await founder(browser);
     await goToPage(alex, "Einstellungen");
+    // K2a: both tiles stand one below the other; their buttons say whom the link is for.
+    await expect(alex.getByRole("button", { name: FRIEND_TEXTS.create, exact: true })).toHaveCount(
+      1,
+    );
+    await expect(
+      alex.getByRole("button", { name: HOUSEHOLD_TEXTS.createInvite, exact: true }),
+    ).toHaveCount(1);
+    await expect(alex.getByRole("button", { name: "Einladungslink erzeugen" })).toHaveCount(0);
     await alex
       .locator('section[aria-labelledby="haushalt"]')
       .getByRole("button", { name: HOUSEHOLD_TEXTS.createInvite })
       .click();
-    const link = await alex.getByLabel(HOUSEHOLD_TEXTS.inviteLinkField).inputValue();
+    const link = await alex.getByLabel(HOUSEHOLD_TEXTS.secondPersonLinkField).inputValue();
 
     const dilan = await newDevice(browser);
     await dilan.goto(link);

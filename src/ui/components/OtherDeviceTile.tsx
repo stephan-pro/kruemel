@@ -5,13 +5,15 @@ import { QrCode } from "./QrCode";
 interface OtherDeviceTileProps {
   /** The app's address, the content of the code. */
   readonly address: string;
+  /** The data are the household's shared data: signing in there brings them, a backup would not. */
+  readonly shared?: boolean;
 }
 
 /**
  * "Auf anderem Gerät öffnen": a QR code with the app's address, for the camera of a phone. Hidden
  * until asked for, so the settings stay short.
  */
-export function OtherDeviceTile({ address }: OtherDeviceTileProps) {
+export function OtherDeviceTile({ address, shared = false }: OtherDeviceTileProps) {
   const [shown, setShown] = useState(false);
   const codeId = useId();
 
@@ -20,10 +22,18 @@ export function OtherDeviceTile({ address }: OtherDeviceTileProps) {
       <h2 class="tile__title" id="anderes-geraet">
         Auf anderem Gerät öffnen
       </h2>
-      <p class="muted">
-        Den Code mit der Kamera eines Handys scannen, um Krümel dort zu öffnen. Die Daten kommen
-        nicht mit: Jedes Gerät hat seine eigenen. Übertragen lassen sie sich mit „Sicherung“.
-      </p>
+      {shared ? (
+        <p class="muted">
+          Den QR-Code mit der Kamera eines Handys scannen, um Krümel dort zu öffnen. Melde dich dort
+          mit derselben E-Mail-Adresse an, dann sind eure Daten da.
+        </p>
+      ) : (
+        <p class="muted">
+          Den QR-Code mit der Kamera eines Handys scannen, um Krümel dort zu öffnen. Die Daten
+          kommen nicht mit: Jedes Gerät hat seine eigenen. Übertragen lassen sie sich mit
+          „Sicherung“.
+        </p>
+      )}
       <div class="button-row">
         <button
           class="btn btn--secondary"

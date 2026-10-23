@@ -7,8 +7,9 @@ playwright-report/
 test-results/
 *.log
 # Local settings with the project address (stage 2); never in the repository.
-.env.local
-.env.*.local
+.env
+.env.*
+!.env.example
 # Working files of the Supabase CLI (link to the real project, versions).
 supabase/.temp/
 supabase/.branches/

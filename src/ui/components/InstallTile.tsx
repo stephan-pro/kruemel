@@ -7,10 +7,12 @@ interface InstallTileProps {
   readonly way: InstallWay;
   /** Asks the browser's own install question (`prompt`). */
   readonly onInstall: () => Promise<boolean>;
+  /** The data are the household's shared data (`InstallSteps`). */
+  readonly shared?: boolean;
 }
 
 /** "Als App installieren" in the settings: always there, whatever happened to the week's hint. */
-export function InstallTile({ way, onInstall }: InstallTileProps) {
+export function InstallTile({ way, onInstall, shared = false }: InstallTileProps) {
   const heading = useRef<HTMLHeadingElement>(null);
 
   async function install() {
@@ -40,7 +42,7 @@ export function InstallTile({ way, onInstall }: InstallTileProps) {
               </button>
             </div>
           ) : (
-            <InstallSteps way={way} />
+            <InstallSteps way={way} shared={shared} />
           )}
         </>
       )}

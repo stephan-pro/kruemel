@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { expectPageShown, notice, openWeek } from "./helpers";
+import { expectPageShown, goToPage, notice, openWeek } from "./helpers";
 
 // Package 13: the final check of N2 – the whole way through the app with the keyboard alone, and
 // the Windows contrast themes (`forced-colors`), where the browser replaces all colours. Both only
@@ -50,6 +50,35 @@ test.describe("N2 Tastatur", () => {
     await page.keyboard.press("Enter");
     await expect(notice(page)).toContainText("Rückgängig gemacht");
     await expect(page.getByRole("button", { name: "Abhaken: Fenster putzen" })).toBeVisible();
+  });
+
+  test("K2a Am Handy verschwindet der Fokus beim Tabben nie unter der schwebenden Leiste", async ({
+    page,
+  }) => {
+    // A narrow window like a phone with a keyboard, or a PC at 200 % zoom (WCAG 2.4.11).
+    await page.setViewportSize({ width: 390, height: 640 });
+    await openWeek(page);
+    await goToPage(page, "Einstellungen");
+    const bar = await page.locator(".main-nav").boundingBox();
+    expect(bar).not.toBeNull();
+    const barTop = bar?.y ?? 0;
+
+    let checked = 0;
+    for (let stop = 0; stop < 40; stop++) {
+      await page.keyboard.press("Tab");
+      const bottom = await page.evaluate(() => {
+        const element = document.activeElement;
+        if (!element || element.closest(".main-nav") || !element.closest("main")) {
+          return null;
+        }
+        return element.getBoundingClientRect().bottom;
+      });
+      if (bottom !== null) {
+        expect(bottom, `Tab-Stopp ${stop + 1}`).toBeLessThanOrEqual(barTop);
+        checked++;
+      }
+    }
+    expect(checked).toBeGreaterThan(10);
   });
 });
 

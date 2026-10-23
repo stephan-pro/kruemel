@@ -234,8 +234,8 @@ export function SettingsPage({
               : {})}
           />
         )}
-        <InstallTile way={installWay} onInstall={onInstall} />
-        <OtherDeviceTile address={appAddress()} />
+        <InstallTile way={installWay} onInstall={onInstall} shared={shared} />
+        <OtherDeviceTile address={appAddress()} shared={shared} />
         <VersionTile />
       </div>
     </>

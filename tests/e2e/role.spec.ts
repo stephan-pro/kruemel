@@ -113,7 +113,7 @@ test.describe("E2-2e „Ich bin“ aus der Rolle", () => {
     await householdTile(founder)
       .getByRole("button", { name: HOUSEHOLD_TEXTS.createInvite })
       .click();
-    const link = await founder.getByLabel(HOUSEHOLD_TEXTS.inviteLinkField).inputValue();
+    const link = await founder.getByLabel(HOUSEHOLD_TEXTS.secondPersonLinkField).inputValue();
 
     // Das Gerät merkt sich „erste Person“ und die Namen Alex und Sam aus Etappe 1.
     const dilan = await deviceWithData(browser);

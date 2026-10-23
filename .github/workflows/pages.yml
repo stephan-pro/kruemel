@@ -20,8 +20,14 @@ concurrency:
 
 jobs:
   deploy:
-    # A manual start (workflow_dispatch) deploys whatever is on main without a check run.
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    # A manual start (workflow_dispatch) deploys whatever is on main without a check run. After a
+    # check run only a push to this repository counts: `branches: [main]` above matches the branch
+    # name alone, so a pull request from a fork's own "main" would pass it too (K2a).
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:

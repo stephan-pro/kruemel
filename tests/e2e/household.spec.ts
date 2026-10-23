@@ -19,7 +19,7 @@ async function newDevice(browser: Browser): Promise<Page> {
 
 // The tile's title is the household's name once it has one (E2-4c): found by its heading's id.
 const householdTile = (page: Page) => page.locator('section[aria-labelledby="haushalt"]');
-const linkField = (page: Page) => page.getByLabel(HOUSEHOLD_TEXTS.inviteLinkField);
+const linkField = (page: Page) => page.getByLabel(HOUSEHOLD_TEXTS.secondPersonLinkField);
 const createInviteButton = (page: Page) =>
   householdTile(page).getByRole("button", { name: HOUSEHOLD_TEXTS.createInvite });
 

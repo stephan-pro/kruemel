@@ -131,7 +131,7 @@ export function HouseholdTile({
                 link={link}
                 expiresAt={invite.expiresAt}
                 fieldId={LINK_FIELD}
-                fieldLabel={HOUSEHOLD_TEXTS.inviteLinkField}
+                fieldLabel={HOUSEHOLD_TEXTS.secondPersonLinkField}
                 shareTitle={HOUSEHOLD_TEXTS.shareTitle}
                 shareText={HOUSEHOLD_TEXTS.shareText(household.name)}
                 qrLabel={HOUSEHOLD_TEXTS.qrLabel}
