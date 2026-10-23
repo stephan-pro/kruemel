@@ -800,6 +800,33 @@ describe("Sync: mehrere Tabs und Sonderfälle", () => {
   });
 });
 
+describe("Sync: nicht mehr im Haushalt (E2-5a)", () => {
+  it("E2-5a Entfernt: wartende Änderungen bleiben stehen (keine Ablage), die App hört es beim Senden und beim Abruf", async () => {
+    const { device, server } = household(dataWith([weekly()]));
+    const a = device("a");
+    const start = await a.storage.load();
+    await a.storage.sync();
+    a.remote.removed = true;
+    a.updates.length = 0;
+
+    await a.storage.save({ ...start, tasks: [] });
+    await a.storage.sync();
+
+    expect(server.snapshot().tasks.map((task) => task.title)).toEqual(["Bad putzen"]);
+    expect(a.storage.rejected()).toEqual([]);
+    expect(a.storage.syncStatus()).toEqual({ state: "syncing", pending: 1 });
+    expect(a.updates.map((update) => update.type)).toContain("notMember");
+
+    // Nothing waiting: the pull tells it as well.
+    const b = device("b");
+    await b.storage.load();
+    b.remote.removed = true;
+    b.updates.length = 0;
+    await b.storage.sync();
+    expect(b.updates.map((update) => update.type)).toContain("notMember");
+  });
+});
+
 describe("Sync: dauerhaft abgelehnte Änderungen (E2-3c)", () => {
   it("E2-3c Eine dauerhaft abgelehnte Änderung wandert in die Ablage, die übrigen werden weiter übertragen", async () => {
     const { device, server } = household(dataWith([weekly()]));

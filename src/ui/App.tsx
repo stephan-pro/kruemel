@@ -15,7 +15,13 @@ import {
 } from "../domain/taskManagement";
 import { onNewVersion } from "../registerServiceWorker";
 import type { AppData, PersonNames } from "../storage/appData";
-import { exportData, rejectedFileName, signOutBackupFileName } from "../storage/exportImport";
+import {
+  exportData,
+  exportFileName,
+  leaveBackupFileName,
+  rejectedFileName,
+  signOutBackupFileName,
+} from "../storage/exportImport";
 import { requestPersistentStorage } from "../storage/localStorage";
 import {
   type AppStorage,
@@ -30,7 +36,7 @@ import {
 import type { SharedAccount } from "../sync/browserShared";
 import { exportRejected } from "../sync/rejected";
 import type { SyncedStorage } from "../sync/syncedStorage";
-import { ACCOUNT_TEXTS } from "./accountTexts";
+import { ACCOUNT_TEXTS, DELETE_ACCOUNT_TEXTS } from "./accountTexts";
 import { applyColorScheme } from "./colorScheme";
 import { InstallHint } from "./components/InstallHint";
 import { KruemelLogo } from "./components/KruemelLogo";
@@ -39,7 +45,7 @@ import { APP_NAME } from "./components/PageTitle";
 import { conflictText, SyncNotices } from "./components/SyncNotices";
 import { downloadTextFile } from "./download";
 import { pendingInvite, rememberInvite } from "./householdMemory";
-import { SHARED_TEXTS } from "./householdTexts";
+import { LEAVE_TEXTS, SHARED_TEXTS } from "./householdTexts";
 import { offersInstallHint, useInstallWay } from "./install";
 import { DonePage } from "./pages/DonePage";
 import { HouseholdPage, HouseholdUnavailablePage } from "./pages/HouseholdPage";
@@ -207,7 +213,13 @@ export function App({
 }: AppProps) {
   const [session, setSession] = useSession(auth);
   const [invite, setInvite] = useState(() => takeInvite(householdApi !== undefined));
-  const household = useHousehold(householdApi, session?.userId);
+  const household = useHousehold(householdApi, session?.userId, () => void lostHousehold());
+  /** What "Haushalt anlegen" says after leaving or being removed (E2-5a). */
+  const [householdNotice, setHouseholdNotice] = useState<string>();
+  /** What "Anmelden" says after the account was deleted (E2-5a). */
+  const [signInNotice, setSignInNotice] = useState<string>();
+  /** Set while this device leaves or deletes the account: the household is gone on purpose then. */
+  const going = useRef(false);
   const joined = household.state.status === "ready" ? household.state.household : null;
   /**
    * The shared data of the signed-in member, one storage per account (E2-3b). `undefined` while
@@ -299,6 +311,9 @@ export function App({
         );
       } else if (update.type === "outdated") {
         setOutdated(true);
+      } else if (update.type === "notMember") {
+        // Removed, or left on another device: the household answers, `lostHousehold` follows.
+        void household.refresh();
       } else if (update.type === "status") {
         showSync();
         // The household's name has no hint of its own: after a transfer, look at it again.
@@ -570,6 +585,122 @@ export function App({
     setSession(null);
   }
 
+  /** "Sicherung herunterladen" in the questions before going: all data shown now. */
+  function downloadBackup() {
+    const shown = latest.current;
+    if (shown.status === "ready") {
+      downloadTextFile(exportFileName(today), exportData(shown.data), "application/json");
+    }
+  }
+
+  /**
+   * Before the shared copy goes (E2-5a): all data as a file when the household goes with it or
+   * changes still wait, and the changes the server refused as a file of their own. Says whether
+   * waiting changes were saved.
+   */
+  function saveBeforeGoing(householdGoes: boolean): boolean {
+    if (sharedStorage === undefined) {
+      return false;
+    }
+    const shown = latest.current;
+    const waiting = pendingOf(sharedStorage.syncStatus()) > 0;
+    if ((householdGoes || waiting) && shown.status === "ready") {
+      downloadTextFile(leaveBackupFileName(today), exportData(shown.data), "application/json");
+    }
+    if (sharedStorage.rejected().length > 0) {
+      downloadRejected();
+    }
+    return waiting;
+  }
+
+  /** Leaving and deleting need the server; without network nothing is downloaded or deleted. */
+  function requireOnline() {
+    if (!navigator.onLine) {
+      throw new HouseholdError("offline");
+    }
+  }
+
+  /** "<Name> entfernen": the place is free again; the tile shows it at once. */
+  async function removeMember(person: Person) {
+    if (householdApi === undefined) {
+      throw new HouseholdError("unknown");
+    }
+    requireOnline();
+    household.show(await householdApi.removeMember(person));
+  }
+
+  /**
+   * "Haushalt verlassen": the server first; only then the copy on this device goes and the app
+   * shows "Haushalt anlegen". If the server refuses or cannot be reached, everything stays.
+   */
+  async function leaveHousehold() {
+    if (householdApi === undefined || joined === null) {
+      throw new HouseholdError("unknown");
+    }
+    requireOnline();
+    going.current = true;
+    try {
+      saveBeforeGoing(joined.members.length < 2);
+      await householdApi.leave();
+      await sharedStorage?.close();
+      setHouseholdNotice(LEAVE_TEXTS.youLeft);
+      household.show(null);
+    } finally {
+      going.current = false;
+    }
+  }
+
+  /**
+   * "Konto endgültig löschen": the server deletes the account (and the household, for the last
+   * one); then the copy, the remembered household and the session on this device go.
+   */
+  async function deleteAccount() {
+    if (householdApi === undefined || joined === null) {
+      throw new HouseholdError("unknown");
+    }
+    requireOnline();
+    going.current = true;
+    try {
+      saveBeforeGoing(joined.members.length < 2);
+      await householdApi.deleteAccount();
+      await sharedStorage?.close();
+      await auth?.signOut();
+      household.forget();
+      setSignInNotice(DELETE_ACCOUNT_TEXTS.deleted);
+      setSession(null);
+    } finally {
+      going.current = false;
+    }
+  }
+
+  /**
+   * The server says this person has no household any more (removed, or left on another device):
+   * waiting changes are saved as a file, the copy goes, "Haushalt anlegen" says why.
+   */
+  async function lostHousehold() {
+    if (going.current) {
+      return;
+    }
+    const saved = saveBeforeGoing(false);
+    await sharedStorage?.close();
+    setHouseholdNotice(
+      saved ? `${LEAVE_TEXTS.notMember} ${LEAVE_TEXTS.pendingSaved}` : LEAVE_TEXTS.notMember,
+    );
+    household.show(null);
+  }
+
+  // A new household or a new sign-in: the notices of the last one are done.
+  useEffect(() => {
+    if (joined !== null) {
+      setHouseholdNotice(undefined);
+    }
+  }, [joined !== null]);
+  useEffect(() => {
+    if (session != null) {
+      setSignInNotice(undefined);
+    }
+  }, [session != null]);
+
   /** "Haushalt anlegen": the new household is shown and its names taken over (see below). */
   async function createHousehold(names: PersonNames): Promise<HouseholdInfo> {
     if (householdApi === undefined) {
@@ -739,7 +870,9 @@ export function App({
           {(gate === "waiting" || (gate === "open" && state.status === "loading")) && (
             <p role="status">Wird geladen …</p>
           )}
-          {gate === "signIn" && auth && <SignInPage auth={auth} onSignedIn={setSession} />}
+          {gate === "signIn" && auth && (
+            <SignInPage auth={auth} onSignedIn={setSession} notice={signInNotice} />
+          )}
           {gate === "unavailable" && household.state.status === "failed" && (
             <HouseholdUnavailablePage message={household.state.message} onRetry={household.retry} />
           )}
@@ -753,7 +886,11 @@ export function App({
             />
           )}
           {gate === "household" && (
-            <HouseholdPage onCreate={createHousehold} onInvite={openInvite} />
+            <HouseholdPage
+              onCreate={createHousehold}
+              onInvite={openInvite}
+              notice={householdNotice}
+            />
           )}
           {gate === "open" && state.status === "unavailable" && (
             <HouseholdUnavailablePage
@@ -801,6 +938,7 @@ export function App({
                       ...(sharedStorage === undefined
                         ? {}
                         : { onCheckPending: pendingBeforeSignOut }),
+                      ...(householdApi && joined ? { onDeleteAccount: deleteAccount } : {}),
                     },
                   }
                 : {})}
@@ -811,6 +949,10 @@ export function App({
                       onCreateInvite: () => householdApi.createInvite(),
                       onRename: async (name: string) =>
                         household.show(await householdApi.rename(name)),
+                      onRemove: removeMember,
+                      onLeave: leaveHousehold,
+                      onPrepare: pendingBeforeSignOut,
+                      onBackup: downloadBackup,
                     },
                   }
                 : {})}

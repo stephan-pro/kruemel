@@ -1,5 +1,5 @@
 // The household of a signed-in person (stage 2): create one, see who belongs to it, invite the
-// other person and accept an invite. The app only talks to this interface; the implementations are
+// other person and accept an invite; remove the other person, leave, delete one's account (E2-5a). The app only talks to this interface; the implementations are
 // `SupabaseHousehold` (`supabaseHousehold.ts`, the database functions of `supabase/migrations/`)
 // and `FakeHttpHousehold` (`fakeHttpHousehold.ts`, against the fake server). Both pass the same
 // series of tests (`household.contract.ts`). The rules (one household per person, at most two
@@ -41,6 +41,8 @@ export type HouseholdFailure =
   | "householdFull"
   | "invalidNames"
   | "invalidHouseholdName"
+  /** Removing oneself, or a place that does not exist (E2-5a; leaving is `leave`). */
+  | "invalidMember"
   | "offline"
   | "unknown";
 
@@ -54,6 +56,7 @@ export const HOUSEHOLD_MESSAGES: Readonly<Record<HouseholdFailure, string>> = {
   householdFull: "In diesem Haushalt sind schon zwei Personen.",
   invalidNames: "Bitte beide Namen eingeben (höchstens 30 Zeichen).",
   invalidHouseholdName: "Der Name des Haushalts darf höchstens 30 Zeichen lang sein.",
+  invalidMember: "Dich selbst kannst du nicht entfernen. Nimm dafür „Haushalt verlassen“.",
   offline: "Keine Verbindung zum Server. Bitte Internet prüfen und erneut versuchen.",
   unknown: "Das hat nicht geklappt. Bitte später erneut versuchen.",
 };
@@ -110,4 +113,20 @@ export interface HouseholdApi {
   acceptInvite(token: string): Promise<HouseholdInfo>;
   /** Sets the household's name, an empty one removes it; only online. Throws `HouseholdError`. */
   rename(name: string): Promise<HouseholdInfo>;
+  /**
+   * Removes the other person (E2-5a); their place is free again and can be invited anew. A free
+   * place stays free (nothing happens). Only online. Throws `HouseholdError`.
+   */
+  removeMember(person: Person): Promise<HouseholdInfo>;
+  /**
+   * Leaves the household (E2-5a). Tasks, completions and names stay for the other person; the
+   * last one out deletes the household with all its data. Only online. Throws `HouseholdError`.
+   */
+  leave(): Promise<void>;
+  /**
+   * Deletes the signed-in person's account for good, after leaving the household as `leave` does
+   * (E2-5a). A database function does it, no secret key is needed. Only online. Throws
+   * `HouseholdError`. The session on the device is ended by the caller (`Auth.signOut`).
+   */
+  deleteAccount(): Promise<void>;
 }

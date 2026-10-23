@@ -8,6 +8,7 @@ import {
   exportFileName,
   importData,
   importSizeError,
+  leaveBackupFileName,
   MAX_IMPORT_BYTES,
   rawDataFileName,
   signOutBackupFileName,
@@ -71,8 +72,9 @@ describe("F7 Export", () => {
     expect(autoBackupFileName(d("2026-10-19"))).not.toBe(exportFileName(d("2026-10-19")));
   });
 
-  it("E2-3b Die Sicherung beim Abmelden mit wartenden Änderungen hat einen eigenen Namen", () => {
+  it("E2-3b/E2-5a Die Sicherungen beim Abmelden und beim Gehen haben eigene Namen", () => {
     expect(signOutBackupFileName(d("2026-10-19"))).toBe("kruemel-vor-abmelden-2026-10-19.json");
+    expect(leaveBackupFileName(d("2026-10-19"))).toBe("kruemel-vor-austritt-2026-10-19.json");
   });
 
   it("F7 Die automatische Sicherung ist selbst eine gültige Sicherung (sie lässt sich wieder einspielen)", () => {

@@ -63,6 +63,11 @@ export type StorageUpdate =
    * not updated until the app is reloaded ("Neue Version verfügbar – Neu laden").
    */
   | { readonly type: "outdated" }
+  /**
+   * The person no longer belongs to the household (removed, or left on another device; E2-5a).
+   * The changes wait untouched; the app looks at the household and closes the storage.
+   */
+  | { readonly type: "notMember" }
   /** A change of this device was not taken over by the server. */
   | {
       readonly type: "conflict";

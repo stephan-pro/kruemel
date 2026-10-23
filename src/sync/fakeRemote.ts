@@ -17,6 +17,8 @@ export class FakeRemote implements Remote {
   loseNextAnswer = false;
   /** The next `push` is refused for good (`RemoteError` with `permanent`), e.g. invalid data. */
   refuseNext = false;
+  /** The person no longer belongs to the household (E2-5a): every call fails with `notMember`. */
+  removed = false;
   /** Every change handed over, also those that were lost on the way back. */
   readonly pushed: Change[] = [];
 
@@ -53,6 +55,9 @@ export class FakeRemote implements Remote {
   private requireOnline(): void {
     if (!this.online) {
       throw new RemoteError("Keine Verbindung zum Server.");
+    }
+    if (this.removed) {
+      throw new RemoteError("Kein Mitglied des Haushalts.", true, true);
     }
   }
 }

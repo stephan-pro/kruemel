@@ -107,6 +107,23 @@ export class FakeAuth {
     }
   }
 
+  /**
+   * Deletes the account (E2-5a): its sessions end and the address counts as new afterwards. (The
+   * real project lets no new accounts in by themselves; the fake does, see E2-5b.)
+   */
+  deleteUser(userId: string): void {
+    for (const [address, id] of this.users) {
+      if (id === userId) {
+        this.users.delete(address);
+      }
+    }
+    for (const [token, session] of this.sessions) {
+      if (session.userId === userId) {
+        this.sessions.delete(token);
+      }
+    }
+  }
+
   /** Ends every session of the address, as the real service does when it refuses them for good. */
   signOutEverywhere(email: string): void {
     const address = email.trim().toLowerCase();

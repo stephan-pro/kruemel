@@ -126,6 +126,43 @@ export const SHARED_TEXTS = {
     "Die Kopie auf diesem Gerät wird gelöscht. Im Haushalt bleiben eure Daten erhalten, die heruntergeladene Datei auch.",
 } as const;
 
+/** Removing the other person and leaving the household (E2-5a). */
+export const LEAVE_TEXTS = {
+  needsInternet: "Das geht nur mit Internet.",
+
+  remove: (name: string) => `${name} entfernen …`,
+  removeQuestion: (name: string) => `${name} aus dem Haushalt entfernen?`,
+  removeDialog: (name: string) =>
+    `${name} sieht eure Aufgaben danach nicht mehr. Alle Aufgaben und Erledigungen bleiben im Haushalt, auch die von ${name}. Danach kannst du jemanden neu einladen.`,
+  removeConfirm: "Ja, entfernen",
+  removed: (name: string) => `${name} gehört nicht mehr zum Haushalt.`,
+  removeFailed: "Nicht entfernt",
+
+  leave: "Haushalt verlassen …",
+  leaveQuestion: "Haushalt verlassen?",
+  leaveDialog: (other: string) =>
+    `Du siehst die Aufgaben danach nicht mehr. Alle Aufgaben und Erledigungen bleiben für ${other} im Haushalt, auch deine. Die Daten auf diesem Gerät werden gelöscht. Zurück kommst du nur mit einer neuen Einladung.`,
+  leaveLastDialog:
+    "Du bist die letzte Person im Haushalt. Wenn du gehst, wird der Haushalt mit allen Aufgaben und Erledigungen gelöscht. Das lässt sich nicht rückgängig machen. Die App lädt vorher automatisch eine Sicherung herunter.",
+  leaveConfirm: "Haushalt verlassen",
+  leaveLastConfirm: "Haushalt löschen und gehen",
+  leaveFailed: "Haushalt nicht verlassen",
+
+  pending: (count: number) =>
+    `${changesAre(count)} noch nicht übertragen. Die App lädt sie vorher als Datei herunter.`,
+  backupOffer: "Willst du die Daten selbst behalten? Dann lade vorher eine Sicherung herunter.",
+  backup: "Sicherung herunterladen",
+  backupDone: "Sicherung heruntergeladen.",
+
+  /** On "Haushalt anlegen" afterwards. */
+  noticeLabel: "Hinweis",
+  youLeft:
+    "Du hast den Haushalt verlassen. Du kannst einen neuen anlegen oder einer neuen Einladung folgen.",
+  notMember:
+    "Du gehörst nicht mehr zu diesem Haushalt: Die andere Person hat dich entfernt, oder du bist auf einem anderen Gerät gegangen. Du kannst einen neuen Haushalt anlegen oder einer neuen Einladung folgen.",
+  pendingSaved: "Deine noch nicht übertragenen Änderungen hat die App als Datei heruntergeladen.",
+} as const;
+
 /** "1 Änderung wartet" / "3 Änderungen warten". */
 function changesWait(count: number): string {
   return count === 1 ? "1 Änderung wartet" : `${count} Änderungen warten`;

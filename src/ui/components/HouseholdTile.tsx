@@ -4,10 +4,11 @@ import type { HouseholdInfo, Invite } from "../../auth/household";
 import type { Person } from "../../domain/task";
 import type { PersonNames } from "../../storage/appData";
 import { appAddress } from "../appInfo";
-import { formatInviteEnd, HOUSEHOLD_TEXTS } from "../householdTexts";
+import { formatInviteEnd, HOUSEHOLD_TEXTS, LEAVE_TEXTS } from "../householdTexts";
 import { householdMessage } from "../pages/HouseholdPage";
 import { inviteHash } from "../route";
 import { ErrorAlert } from "./Alert";
+import { LeaveHousehold, RemoveMember } from "./HouseholdLeave";
 import { HouseholdNamesForm } from "./HouseholdNamesForm";
 import { QrCode } from "./QrCode";
 
@@ -21,11 +22,20 @@ interface HouseholdTileProps {
   readonly onSaveOwnName: (name: string) => Promise<void>;
   /** Sets the household's name (E2-3g); only online. Throws `HouseholdError`. */
   readonly onRename: (name: string) => Promise<void>;
+  /** Removes the other person (E2-5a); only online. Throws `HouseholdError`. */
+  readonly onRemove: (person: Person) => Promise<void>;
+  /** Before "Haushalt verlassen?": sends what waits and says how many changes still wait. */
+  readonly onPrepareLeave: () => Promise<number>;
+  /** Leaves the household (E2-5a); only online. Throws `HouseholdError`. */
+  readonly onLeave: () => Promise<void>;
+  /** Downloads a backup of all data (offered in the question). */
+  readonly onBackup: () => void;
 }
 
 const PEOPLE: readonly Person[] = ["personA", "personB"];
 
 const LINK_FIELD = "einladungslink";
+const INVITE_BUTTON = "einladung-erzeugen";
 
 /** The whole invite link, e.g. "https://…/kruemel/#/einladung/abc…". */
 export function inviteLink(token: string): string {
@@ -43,6 +53,10 @@ export function HouseholdTile({
   onCreateInvite,
   onSaveOwnName,
   onRename,
+  onRemove,
+  onPrepareLeave,
+  onLeave,
+  onBackup,
 }: HouseholdTileProps) {
   const [invite, setInvite] = useState<Invite>();
   const [failed, setFailed] = useState<string>();
@@ -107,6 +121,16 @@ export function HouseholdTile({
   }
 
   const complete = household.members.length >= 2;
+  const other: Person = household.me === "personA" ? "personB" : "personA";
+  const otherJoined = household.members.includes(other);
+  const [removed, setRemoved] = useState<string>();
+
+  // The button is gone with the person: the focus goes on to inviting someone new.
+  useEffect(() => {
+    if (removed !== undefined && !otherJoined) {
+      document.getElementById(INVITE_BUTTON)?.focus();
+    }
+  }, [removed, otherJoined]);
 
   return (
     <section class="tile tile--narrow form" aria-labelledby="haushalt">
@@ -128,6 +152,17 @@ export function HouseholdTile({
           </li>
         ))}
       </ul>
+      {otherJoined && (
+        <div class="button-row">
+          <RemoveMember
+            name={names[other]}
+            onRemove={async () => {
+              await onRemove(other);
+              setRemoved(LEAVE_TEXTS.removed(names[other]));
+            }}
+          />
+        </div>
+      )}
       {complete ? (
         <p class="muted">{HOUSEHOLD_TEXTS.bothJoined}</p>
       ) : (
@@ -188,6 +223,7 @@ export function HouseholdTile({
             <button
               class={`btn ${link === undefined ? "btn--primary" : "btn--quiet"}`}
               type="button"
+              id={INVITE_BUTTON}
               onClick={() => void createInvite()}
             >
               <Link size={20} />
@@ -196,12 +232,21 @@ export function HouseholdTile({
           </div>
         </>
       )}
+      <p class="form-status" role="status">
+        {removed && !otherJoined ? removed : ""}
+      </p>
       <HouseholdNamesForm
         householdName={household.name}
         names={names}
         me={household.me}
         onSaveOwnName={onSaveOwnName}
         onRename={onRename}
+      />
+      <LeaveHousehold
+        other={otherJoined ? names[other] : undefined}
+        onPrepare={onPrepareLeave}
+        onLeave={onLeave}
+        onBackup={onBackup}
       />
     </section>
   );

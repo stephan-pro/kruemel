@@ -43,12 +43,14 @@ export interface PullResult {
 /**
  * The server could not be reached or failed; whatever was asked can be tried again later. With
  * `permanent` the server refused the call itself (invalid data, not allowed): trying the same again
- * will not help (from E2-3c such a change is moved aside).
+ * will not help (from E2-3c such a change is moved aside). With `notMember` the person no longer
+ * belongs to the household (removed or left, E2-5a): nothing is moved aside, the app takes over.
  */
 export class RemoteError extends Error {
   constructor(
     message: string,
     readonly permanent = false,
+    readonly notMember = false,
   ) {
     super(message);
     this.name = "RemoteError";

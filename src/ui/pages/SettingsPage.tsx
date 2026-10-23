@@ -49,6 +49,8 @@ interface SettingsPageProps {
     readonly onSignOut: () => Promise<void>;
     /** With shared data: sends what waits and says how many changes still wait. */
     readonly onCheckPending?: () => Promise<number>;
+    /** Deletes the account (E2-5a, with a household). Throws `HouseholdError`. */
+    readonly onDeleteAccount?: () => Promise<void>;
   };
   /** The household and how to invite the second person (stage 2); missing without sign-in. */
   readonly household?: {
@@ -56,12 +58,26 @@ interface SettingsPageProps {
     readonly onCreateInvite: () => Promise<Invite>;
     /** Sets the household's name (E2-3g); only online. Throws `HouseholdError`. */
     readonly onRename: (name: string) => Promise<void>;
+    /** Removes the other person (E2-5a); only online. Throws `HouseholdError`. */
+    readonly onRemove: (person: Person) => Promise<void>;
+    /** Leaves the household (E2-5a); only online. Throws `HouseholdError`. */
+    readonly onLeave: () => Promise<void>;
+    /** Before leaving or deleting the account: sends what waits, says how many still wait. */
+    readonly onPrepare: () => Promise<number>;
+    /** Downloads a backup of all data (offered in the questions). */
+    readonly onBackup: () => void;
   };
   /** Where the shared data stand ("Übertragung", E2-3c); missing without shared data. */
   readonly sync?: {
     readonly status: SyncStatus;
     readonly rejected: number;
   };
+}
+
+/** The name of the other member, or `undefined` when nobody else has joined. */
+function otherMember(info: HouseholdInfo, names: PersonNames): string | undefined {
+  const other = info.members.find((person) => person !== info.me);
+  return other === undefined ? undefined : names[other];
 }
 
 const SCHEMES: readonly Choice<ColorScheme>[] = [
@@ -180,6 +196,10 @@ export function SettingsPage({
               onSubmit({ ...names, [household.info.me]: name }, household.info.me)
             }
             onRename={household.onRename}
+            onRemove={household.onRemove}
+            onPrepareLeave={household.onPrepare}
+            onLeave={household.onLeave}
+            onBackup={household.onBackup}
           />
         )}
         {account && (
@@ -188,6 +208,15 @@ export function SettingsPage({
             shared={shared}
             onSignOut={account.onSignOut}
             {...(account.onCheckPending ? { onCheckPending: account.onCheckPending } : {})}
+            {...(household && account.onDeleteAccount
+              ? {
+                  deleteAccount: {
+                    other: otherMember(household.info, names),
+                    onDelete: account.onDeleteAccount,
+                    onBackup: household.onBackup,
+                  },
+                }
+              : {})}
           />
         )}
         <InstallTile way={installWay} onInstall={onInstall} />

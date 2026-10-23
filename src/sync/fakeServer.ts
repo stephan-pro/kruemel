@@ -108,7 +108,10 @@ export class FakeServer {
     }
     const household = this.householdFor(request.token);
     if (household === undefined) {
-      return { status: 401, body: { error: "Nicht angemeldet" } };
+      // Signed in but no longer in a household (removed, left): its own answer, like the database.
+      return this.auth.sessionFor(request.token) === undefined
+        ? { status: 401, body: { error: "Nicht angemeldet" } }
+        : { status: 403, body: { failure: "noHousehold" satisfies HouseholdFailure } };
     }
     if (method === "GET" && path === "/pull") {
       return { status: 200, body: household.pull(request.query.cursor ?? null) };
@@ -141,6 +144,9 @@ export class FakeServer {
    *   POST /household/invite          → {token, expiresAt}
    *   POST /household/accept {token}  → {household}
    *   POST /household/rename {name}   → {household}
+   *   POST /household/remove {person} → {household}  (E2-5a)
+   *   POST /household/leave           → {}
+   *   POST /household/delete-account  → {}, the session ends
    * Needs the secret of a signed-in person (401 otherwise). A refused step answers with
    * `{failure}` (a `HouseholdFailure`), status 400.
    */
@@ -174,6 +180,19 @@ export class FakeServer {
           status: 200,
           body: { household: this.accounts.rename(userId, textOf(body, "name")) },
         };
+      }
+      if (method === "POST" && path === "/household/remove") {
+        const person = textOf(body, "person") as Person;
+        return { status: 200, body: { household: this.accounts.removeMember(userId, person) } };
+      }
+      if (method === "POST" && path === "/household/leave") {
+        this.accounts.leave(userId);
+        return { status: 200, body: {} };
+      }
+      if (method === "POST" && path === "/household/delete-account") {
+        this.accounts.forgetUser(userId);
+        this.auth.deleteUser(userId);
+        return { status: 200, body: {} };
       }
     } catch (error) {
       if (error instanceof HouseholdError) {

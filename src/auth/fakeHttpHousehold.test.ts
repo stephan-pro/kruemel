@@ -3,6 +3,7 @@ import { FakeStore } from "../storage/storage.fixtures";
 import { createFakeHttpRemote } from "../sync/fakeHttpRemote";
 import { FakeServer } from "../sync/fakeServer";
 import { fetchFrom } from "../sync/fakeServer.fixtures";
+import { RemoteError } from "../sync/remote";
 import { dataWith, weekly } from "../sync/sync.fixtures";
 import { FakeHttpAuth, fakeAuthToken } from "./fakeHttpAuth";
 import { FakeHttpHousehold } from "./fakeHttpHousehold";
@@ -60,6 +61,45 @@ describe("Haushalt am Fake-Server", () => {
     expect((await remote(robin).pull(null)).settings?.personNames).toEqual(NAMES);
     expect((await remote(robin).pull(null)).tasks.map((row) => row.id)).toEqual(["t-bad"]);
     expect((await remote(other).pull(null)).tasks).toEqual([]);
+  });
+
+  it("E2-5a Entfernt oder ausgetreten: Abruf und Senden melden „kein Mitglied“, die Daten bleiben; ein gelöschtes Konto ist abgemeldet", async () => {
+    const server = new FakeServer();
+    const [alex, robin] = [await device(server), await device(server)];
+    await alex.household.create(NAMES);
+    await robin.household.acceptInvite((await alex.household.createInvite()).token);
+    const remote = (who: typeof alex) =>
+      createFakeHttpRemote({
+        baseUrl: BASE,
+        fetch: who.send,
+        token: fakeAuthToken(who.store) ?? "",
+      });
+    const change = {
+      id: "c1",
+      type: "saveTask",
+      taskId: "t-bad",
+      patch: { set: { ...weekly() }, unset: [] },
+      create: weekly(),
+    } as const;
+    await remote(robin).push(change);
+
+    await alex.household.removeMember("personB");
+
+    for (const call of [remote(robin).pull(null), remote(robin).push({ ...change, id: "c2" })]) {
+      const failed = await call.catch((error: unknown) => error);
+      expect(failed).toBeInstanceOf(RemoteError);
+      expect((failed as RemoteError).notMember).toBe(true);
+    }
+    expect((await remote(alex).pull(null)).tasks.map((row) => row.id)).toEqual(["t-bad"]);
+
+    await alex.household.deleteAccount();
+    const signedOut = await remote(alex)
+      .pull(null)
+      .catch((error: unknown) => error);
+    expect((signedOut as RemoteError).notMember).toBe(false);
+    expect(await alex.household.current().catch((error: HouseholdError) => error.failure)).toBe(
+      "notSignedIn",
+    );
   });
 
   it("Ohne Anmeldung oder ohne Netz meldet die Schnittstelle den Grund; unlesbare Antworten sind „unbekannt“", async () => {

@@ -17,6 +17,8 @@
 // - A change the server refuses for good (invalid, not allowed) would block all later ones. It is
 //   moved aside (`rejected`, kept with the copy) and the rest goes on; it stays there until the
 //   person has downloaded or discarded it, so nothing is lost without a word.
+// - When the person no longer belongs to the household (removed or left, E2-5a), nothing is moved
+//   aside: the storage reports `notMember` and the app closes it (waiting changes as a file).
 // - Every read-modify-write of the stored state happens under a lock shared by all tabs.
 
 import { type AppData, emptyAppData, SCHEMA_VERSION } from "../storage/appData";
@@ -198,7 +200,7 @@ export function createSyncedStorage(options: SyncedStorageOptions): SyncedStorag
     try {
       return await call();
     } catch (error) {
-      if (error instanceof RemoteError) {
+      if (error instanceof RemoteError && !error.notMember) {
         connection = isOnline() ? "unreachable" : "offline";
         return undefined;
       }
@@ -211,6 +213,7 @@ export function createSyncedStorage(options: SyncedStorageOptions): SyncedStorag
     emit({ type: "status", status: status() });
     const conflicts: StorageUpdate[] = [];
     let outdated = false;
+    let notMember = false;
     try {
       let reachable = true;
       for (;;) {
@@ -226,6 +229,12 @@ export function createSyncedStorage(options: SyncedStorageOptions): SyncedStorag
         } catch (error) {
           if (!(error instanceof RemoteError)) {
             throw error;
+          }
+          if (error.notMember) {
+            // Not in the household any more: nothing is moved aside, the app takes over.
+            notMember = true;
+            reachable = false;
+            break;
           }
           if (!error.permanent) {
             connection = isOnline() ? "unreachable" : "offline";
@@ -268,7 +277,13 @@ export function createSyncedStorage(options: SyncedStorageOptions): SyncedStorag
       }
       if (reachable && !closed) {
         const cursor = (await inState(() => states.read()))?.cursor ?? null;
-        const delta = await attempt(() => remote.pull(cursor));
+        const delta = await attempt(() => remote.pull(cursor)).catch((error: unknown) => {
+          if (error instanceof RemoteError && error.notMember) {
+            notMember = true;
+            return undefined;
+          }
+          throw error;
+        });
         if (delta !== undefined) {
           connection = "ok";
           if (delta.schemaVersion > schemaVersion) {
@@ -294,6 +309,9 @@ export function createSyncedStorage(options: SyncedStorageOptions): SyncedStorag
     }
     if (outdated) {
       emit({ type: "outdated" });
+    }
+    if (notMember) {
+      emit({ type: "notMember" });
     }
     emit({ type: "status", status: status() });
   }

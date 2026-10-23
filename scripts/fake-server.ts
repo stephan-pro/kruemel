@@ -15,7 +15,8 @@
 //                       sign-in with a code (`FakeAuth`; the app's side is `FakeHttpAuth`)
 //   GET  /test/code?email=  the last code "sent" to the address, instead of a mail
 //
-//   GET /household, POST /household/create, /household/invite, /household/accept
+//   GET /household, POST /household/create, /household/invite, /household/accept,
+//   /household/rename, /household/remove, /household/leave, /household/delete-account
 //                       the household of a signed-in person (`FakeAccounts`; the app's side is
 //                       `FakeHttpHousehold`); their secret also opens /pull, /push and /events
 //
@@ -79,7 +80,16 @@ createServer(async (request, response) => {
       Connection: "keep-alive",
     });
     response.write(": connected\n\n");
-    const stop = household.subscribe(() => response.write("event: change\ndata: {}\n\n"));
+    const token = url.searchParams.get("token") ?? undefined;
+    const stop = household.subscribe(() => {
+      // Removed or left meanwhile (E2-5a): no more hints, like Realtime under row level security.
+      if (server.householdFor(token) !== household) {
+        stop();
+        response.end();
+        return;
+      }
+      response.write("event: change\ndata: {}\n\n");
+    });
     request.on("close", stop);
     return;
   }

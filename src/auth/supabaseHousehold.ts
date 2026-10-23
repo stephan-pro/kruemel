@@ -1,7 +1,7 @@
 // `HouseholdApi` over the database functions and tables of the real project (through supabase-js).
 // Reading goes through the tables (row level security shows a person only their own household),
-// writing through the functions `create_household`, `create_invite`, `accept_invite` and
-// `rename_household`; their
+// writing through the functions `create_household`, `create_invite`, `accept_invite`,
+// `rename_household` and (E2-5a) `remove_member`, `leave_household`, `delete_account`; their
 // errors are the messages the functions raise (`supabase/migrations/`).
 
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -26,6 +26,7 @@ const RAISED: Readonly<Record<string, HouseholdFailure>> = {
   invite_expired: "inviteExpired",
   household_full: "householdFull",
   invalid_household_name: "invalidHouseholdName",
+  invalid_member: "invalidMember",
 };
 
 interface Failed {
@@ -125,6 +126,27 @@ export class SupabaseHousehold implements HouseholdApi {
       throw failure(error);
     }
     return this.known();
+  }
+
+  async removeMember(person: Person): Promise<HouseholdInfo> {
+    await this.run("remove_member", { p_role: person });
+    return this.known();
+  }
+
+  async leave(): Promise<void> {
+    await this.run("leave_household");
+  }
+
+  async deleteAccount(): Promise<void> {
+    await this.run("delete_account");
+  }
+
+  /** Calls a database function that answers nothing; throws `HouseholdError`. */
+  private async run(name: string, args?: Record<string, unknown>): Promise<void> {
+    const { error } = await this.client.rpc(name, args);
+    if (error) {
+      throw failure(error);
+    }
   }
 
   /** The household right after it was created, joined or renamed. */

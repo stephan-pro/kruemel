@@ -2,6 +2,7 @@
 // `FakeAccounts`). It uses the secret of the session `FakeHttpAuth` keeps in the device's storage.
 // Test-only.
 
+import type { Person } from "../domain/task";
 import type { PersonNames } from "../storage/appData";
 import type { KeyValueStore } from "../storage/localStorage";
 import { fakeAuthToken } from "./fakeHttpAuth";
@@ -61,6 +62,21 @@ export class FakeHttpHousehold implements HouseholdApi {
       name: checkedHouseholdName(name) ?? "",
     })) as { household: HouseholdInfo };
     return answer.household;
+  }
+
+  async removeMember(person: Person): Promise<HouseholdInfo> {
+    const answer = (await this.call("POST", "/household/remove", { person })) as {
+      household: HouseholdInfo;
+    };
+    return answer.household;
+  }
+
+  async leave(): Promise<void> {
+    await this.call("POST", "/household/leave");
+  }
+
+  async deleteAccount(): Promise<void> {
+    await this.call("POST", "/household/delete-account");
   }
 
   private async call(method: string, path: string, body?: object): Promise<unknown> {

@@ -1,9 +1,11 @@
-import { LogOut } from "lucide-preact";
+import { LogOut, UserX } from "lucide-preact";
 import { useRef, useState } from "preact/hooks";
-import { ACCOUNT_TEXTS } from "../accountTexts";
+import { ACCOUNT_TEXTS, DELETE_ACCOUNT_TEXTS } from "../accountTexts";
 import { SHARED_TEXTS } from "../householdTexts";
+import { householdMessage } from "../pages/HouseholdPage";
 import { ErrorAlert } from "./Alert";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { DeleteAccountDialog } from "./DeleteAccountDialog";
 
 interface AccountTileProps {
   /** The address the person signed in with. */
@@ -17,16 +19,31 @@ interface AccountTileProps {
   readonly onSignOut: () => Promise<void>;
   /** With shared data: sends what waits and says how many changes still wait (asked first). */
   readonly onCheckPending?: () => Promise<number>;
+  /** "Konto löschen" (E2-5a, with a household); missing without one. */
+  readonly deleteAccount?: {
+    /** The other person's name, or `undefined` when the household goes with the account. */
+    readonly other: string | undefined;
+    /** Deletes the account; only online. Throws `HouseholdError`. */
+    readonly onDelete: () => Promise<void>;
+    readonly onBackup: () => void;
+  };
 }
 
-/** "Anmeldung" in the settings (stage 2): who is signed in, and signing out after a question. */
+/**
+ * "Anmeldung" in the settings (stage 2): who is signed in, signing out after a question and
+ * deleting the account after typing a word (E2-5a).
+ */
 export function AccountTile({
   email,
   shared = false,
   onSignOut,
   onCheckPending,
+  deleteAccount,
 }: AccountTileProps) {
   const [asking, setAsking] = useState(false);
+  /** Which question is open: signing out, or deleting the account. */
+  const [question, setQuestion] = useState<"signOut" | "delete">("signOut");
+  const [deleteError, setDeleteError] = useState<string>();
   const [checking, setChecking] = useState(false);
   /** Changes still waiting for the server when the question opened. */
   const [pending, setPending] = useState(0);
@@ -38,12 +55,14 @@ export function AccountTile({
     opener.current?.focus();
   }
 
-  async function ask(button: HTMLButtonElement) {
+  async function ask(button: HTMLButtonElement, which: "signOut" | "delete" = "signOut") {
     if (checking) {
       return;
     }
     opener.current = button;
+    setQuestion(which);
     setError(undefined);
+    setDeleteError(undefined);
     if (onCheckPending !== undefined) {
       setChecking(true);
       setPending(await onCheckPending().catch(() => 0));
@@ -58,6 +77,18 @@ export function AccountTile({
       await onSignOut();
     } catch (failed) {
       setError(failed instanceof Error ? failed.message : String(failed));
+      opener.current?.focus();
+    }
+  }
+
+  async function remove() {
+    setAsking(false);
+    setChecking(true);
+    try {
+      await deleteAccount?.onDelete();
+    } catch (failed) {
+      setChecking(false);
+      setDeleteError(householdMessage(failed));
       opener.current?.focus();
     }
   }
@@ -83,8 +114,35 @@ export function AccountTile({
         {checking ? ACCOUNT_TEXTS.busy : ""}
       </p>
       {error && <ErrorAlert title={ACCOUNT_TEXTS.signOutFailed}>{error}</ErrorAlert>}
+      {deleteAccount && (
+        <>
+          <p class="muted">{DELETE_ACCOUNT_TEXTS.intro}</p>
+          <div class="button-row">
+            <button
+              class="btn btn--quiet"
+              type="button"
+              aria-disabled={checking}
+              onClick={(event) => void ask(event.currentTarget, "delete")}
+            >
+              <UserX size={20} />
+              {DELETE_ACCOUNT_TEXTS.open}
+            </button>
+          </div>
+          {deleteError && (
+            <ErrorAlert title={DELETE_ACCOUNT_TEXTS.failed}>{deleteError}</ErrorAlert>
+          )}
+          <DeleteAccountDialog
+            open={asking && question === "delete"}
+            other={deleteAccount.other}
+            pending={pending}
+            onBackup={deleteAccount.onBackup}
+            onConfirm={() => void remove()}
+            onCancel={cancel}
+          />
+        </>
+      )}
       <ConfirmDialog
-        open={asking}
+        open={asking && question === "signOut"}
         title={ACCOUNT_TEXTS.signOutQuestion}
         confirmLabel={pending > 0 ? SHARED_TEXTS.signOutWithBackup : ACCOUNT_TEXTS.signOut}
         tone={pending > 0 ? "warn" : "primary"}

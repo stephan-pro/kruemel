@@ -1,9 +1,10 @@
 // Who belongs to which household and the invites, in memory, with the rules of the database
 // (`supabase/migrations/`, functions `create_household`, `create_invite`, `accept_invite`,
-// `rename_household`): one
+// `rename_household`, `remove_member`, `leave_household`, `delete_account`): one
 // household per person, at most two people, the creator is `personA`, an invite works once for
-// seven days, a new invite makes the unused earlier ones invalid. For the fake server of the tests;
-// the app's side is `FakeHttpHousehold`.
+// seven days, a new invite makes the unused earlier ones invalid, an invite fills the free place
+// (`personA` first), the last one to leave deletes the household. For the fake server of the
+// tests; the app's side is `FakeHttpHousehold`.
 
 import {
   checkedHouseholdName,
@@ -118,9 +119,58 @@ export class FakeAccounts {
     if (this.homeOf.has(userId)) {
       throw new HouseholdError("alreadyMember");
     }
-    invite.home.members.set(userId, "personB");
+    const taken = new Set(invite.home.members.values());
+    const role = PEOPLE.find((person) => !taken.has(person));
+    if (role === undefined) {
+      throw new HouseholdError("householdFull");
+    }
+    invite.home.members.set(userId, role);
     this.homeOf.set(userId, invite.home);
     invite.used = true;
     return this.info(userId) as HouseholdInfo;
   }
+
+  /** Removes the person in the other place; a free place stays free. */
+  removeMember(userId: string, person: Person): HouseholdInfo {
+    const home = this.homeOf.get(userId);
+    if (home === undefined) {
+      throw new HouseholdError("noHousehold");
+    }
+    if (!PEOPLE.includes(person) || home.members.get(userId) === person) {
+      throw new HouseholdError("invalidMember");
+    }
+    for (const [member, role] of home.members) {
+      if (role === person) {
+        home.members.delete(member);
+        this.homeOf.delete(member);
+      }
+    }
+    return this.info(userId) as HouseholdInfo;
+  }
+
+  /** Leaves the household; the last one out deletes it with its data and invites. */
+  leave(userId: string): void {
+    const home = this.homeOf.get(userId);
+    if (home === undefined) {
+      throw new HouseholdError("noHousehold");
+    }
+    home.members.delete(userId);
+    this.homeOf.delete(userId);
+    if (home.members.size === 0) {
+      for (const [token, invite] of this.invites) {
+        if (invite.home === home) {
+          this.invites.delete(token);
+        }
+      }
+    }
+  }
+
+  /** The household's part of deleting an account: leaving it, if the person has one. */
+  forgetUser(userId: string): void {
+    if (this.homeOf.has(userId)) {
+      this.leave(userId);
+    }
+  }
 }
+
+const PEOPLE: readonly Person[] = ["personA", "personB"];

@@ -42,9 +42,11 @@ export function createFakeHttpRemote(options: FakeHttpRemoteOptions): Remote {
     }
     if (!response.ok) {
       // Like Supabase: a refused change (400 …) is refused for good, a failure may pass later.
+      // 403: signed in, but no longer in the household (E2-5a).
       throw new RemoteError(
         `Der Server antwortet mit ${response.status}.`,
         !isTemporaryStatus(response.status),
+        response.status === 403,
       );
     }
     try {

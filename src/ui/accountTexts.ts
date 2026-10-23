@@ -42,3 +42,27 @@ export const ACCOUNT_TEXTS = {
     "Deine Aufgaben bleiben auf diesem Gerät. Zum Weitermachen meldest du dich wieder mit einem Code an.",
   signOutFailed: "Abmelden hat nicht geklappt",
 } as const;
+
+/** The word to type before the account is deleted (upper or lower case does not matter). */
+export const DELETE_WORD = "löschen";
+
+/** Deleting one's account (E2-5a): what goes, what stays, no way back by oneself. */
+export const DELETE_ACCOUNT_TEXTS = {
+  open: "Konto löschen …",
+  intro: "Löscht dein Konto bei Krümel endgültig. Das geht nur mit Internet.",
+  question: "Konto endgültig löschen?",
+  goes: "Das wird gelöscht: dein Konto mit deiner E-Mail-Adresse, deine Mitgliedschaft im Haushalt und die Daten von Krümel auf diesem Gerät.",
+  stays: (other: string) =>
+    `Das bleibt: alle Aufgaben und Erledigungen im Haushalt, auch deine. ${other} kann weitermachen und jemanden neu einladen.`,
+  staysNothing:
+    "Du bist die letzte Person im Haushalt. Deshalb wird auch der Haushalt mit allen Aufgaben und Erledigungen gelöscht. Die App lädt vorher automatisch eine Sicherung herunter.",
+  noUndo: "Das lässt sich nicht rückgängig machen.",
+  wayBack:
+    "Selbst kannst du dich danach nicht wieder anmelden: Neue Konten legt bei Krümel gerade nur die Person an, die die App betreibt. Willst du später wieder mitmachen, bitte sie darum und lass dich neu einladen.",
+  wordLabel: `Zum Bestätigen „${DELETE_WORD}“ eintippen`,
+  wordMissing: `Bitte tippe „${DELETE_WORD}“ ein, wenn du dein Konto wirklich löschen willst.`,
+  confirm: "Konto endgültig löschen",
+  failed: "Konto nicht gelöscht",
+  /** On the sign-in page afterwards. */
+  deleted: "Dein Konto ist gelöscht. Die Daten von Krümel auf diesem Gerät sind entfernt.",
+} as const;

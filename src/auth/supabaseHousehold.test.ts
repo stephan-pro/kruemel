@@ -89,6 +89,32 @@ describe("SupabaseHousehold", () => {
     ).toBe("invalidHouseholdName");
   });
 
+  it("E2-5a Entfernen, Verlassen und Konto löschen rufen ihre Funktion; Fehler werden zu Fehlerarten", async () => {
+    const calls: [string, unknown][] = [];
+    const api = new SupabaseHousehold(
+      client({ userId: "u1", rows: [row("u1", "personA")], calls }),
+    );
+
+    expect((await api.removeMember("personB")).members).toEqual(["personA"]);
+    await api.leave();
+    await api.deleteAccount();
+
+    expect(calls).toEqual([
+      ["remove_member", { p_role: "personB" }],
+      ["leave_household", undefined],
+      ["delete_account", undefined],
+    ]);
+    const failing = new SupabaseHousehold(
+      client({ userId: "u1", rpcError: { message: "invalid_member", code: "P0001" } }),
+    );
+    expect(await failureOf(failing.removeMember("personA"))).toBe("invalidMember");
+    expect(
+      await failureOf(
+        new SupabaseHousehold(client({ userId: "u1", rpcError: { message: "x" } })).leave(),
+      ),
+    ).toBe("offline");
+  });
+
   it("Ohne Anmeldung auf dem Gerät: „nicht angemeldet“; ohne eigene Zeile: kein Haushalt; ohne Namen: names ist null", async () => {
     expect(await failureOf(new SupabaseHousehold(client({})).current())).toBe("notSignedIn");
     expect(await new SupabaseHousehold(client({ userId: "u1" })).current()).toBeNull();

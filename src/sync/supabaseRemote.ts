@@ -5,7 +5,8 @@
 //
 // Errors: no connection, a timeout, an expired session (401), a server failure (5xx) or a function
 // the server does not have yet (not updated) can be tried again later (`RemoteError`). Everything
-// else is the server refusing the call itself (`RemoteError` with `permanent`).
+// else is the server refusing the call itself (`RemoteError` with `permanent`); `no_household`
+// (removed or left, E2-5a) also sets `notMember`.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { SCHEMA_VERSION } from "../storage/appData";
@@ -158,6 +159,7 @@ export class SupabaseRemote implements Remote {
       throw new RemoteError(
         `${name}: ${error.message} (${status})`,
         !isTemporary(status, error.code),
+        error.message.includes("no_household"),
       );
     }
     return data;

@@ -13,15 +13,25 @@ export type HouseholdState =
 /**
  * The household of the signed-in person (stage 2). The one remembered on the device is shown at
  * once (also offline); the server is asked in the background and its answer wins. Without `api`
- * or without a session it stays "loading" and is not used.
+ * or without a session it stays "loading" and is not used. When the server says the person has no
+ * household any more while one is shown (removed, or left on another device; E2-5a), `onGone`
+ * decides what happens instead of showing "none" at once.
  */
-export function useHousehold(api: HouseholdApi | undefined, userId: string | undefined) {
+export function useHousehold(
+  api: HouseholdApi | undefined,
+  userId: string | undefined,
+  onGone?: () => void,
+) {
   const [state, setState] = useState<HouseholdState>({ status: "loading" });
   /** Counts the households shown; an answer to an older question must not undo a newer one. */
   const shown = useRef(0);
+  const current = useRef<HouseholdInfo | null>(null);
+  const gone = useRef(onGone);
+  gone.current = onGone;
 
   function show(household: HouseholdInfo | null) {
     shown.current += 1;
+    current.current = household;
     if (userId !== undefined) {
       rememberHousehold(userId, household);
     }
@@ -35,7 +45,12 @@ export function useHousehold(api: HouseholdApi | undefined, userId: string | und
     const asked = shown.current;
     try {
       const household = await api.current();
-      if (shown.current === asked) {
+      if (shown.current !== asked) {
+        return;
+      }
+      if (household === null && current.current !== null && gone.current !== undefined) {
+        gone.current();
+      } else {
         show(household);
       }
     } catch (error) {
@@ -50,10 +65,12 @@ export function useHousehold(api: HouseholdApi | undefined, userId: string | und
 
   useEffect(() => {
     if (api === undefined || userId === undefined) {
+      current.current = null;
       setState({ status: "loading" });
       return;
     }
     const remembered = rememberedHousehold(userId);
+    current.current = remembered ?? null;
     setState(
       remembered === undefined ? { status: "loading" } : { status: "ready", household: remembered },
     );

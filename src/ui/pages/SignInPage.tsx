@@ -9,6 +9,8 @@ interface SignInPageProps {
   readonly auth: Auth;
   /** Called with the new session once the code was right. */
   readonly onSignedIn: (session: Session) => void;
+  /** Said above the form, e.g. that the account was deleted (E2-5a). */
+  readonly notice?: string | undefined;
 }
 
 const EMAIL_FIELD = "anmelden-email";
@@ -24,7 +26,7 @@ function messageOf(error: unknown): string {
  * its own (heading, tab title, focus). A refused step shows its message at the field and moves
  * the focus there; if the focus is there already, a hidden status line reads the message out.
  */
-export function SignInPage({ auth, onSignedIn }: SignInPageProps) {
+export function SignInPage({ auth, onSignedIn, notice: farewell }: SignInPageProps) {
   const [step, setStep] = useState<CodeStep | undefined>(() => rememberedStep());
   const [email, setEmail] = useState(step?.email ?? "");
   const [code, setCode] = useState("");
@@ -150,6 +152,7 @@ export function SignInPage({ auth, onSignedIn }: SignInPageProps) {
       <>
         <PageTitle title={ACCOUNT_TEXTS.signInTitle} />
         <div class="tile tile--narrow">
+          {farewell && <p class="intro">{farewell}</p>}
           <p class="intro">{ACCOUNT_TEXTS.signInIntro}</p>
           <form class="form" onSubmit={submitEmail} noValidate>
             <TextField

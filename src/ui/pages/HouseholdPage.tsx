@@ -6,7 +6,7 @@ import { ACCOUNT_TEXTS } from "../accountTexts";
 import { ErrorAlert } from "../components/Alert";
 import { TextField } from "../components/fields";
 import { PageTitle } from "../components/PageTitle";
-import { HOUSEHOLD_TEXTS } from "../householdTexts";
+import { HOUSEHOLD_TEXTS, LEAVE_TEXTS } from "../householdTexts";
 import { inviteTokenFrom } from "../route";
 
 const OWN_NAME_FIELD = "haushalt-name-ich";
@@ -23,6 +23,8 @@ interface HouseholdPageProps {
   readonly onCreate: (names: PersonNames) => Promise<HouseholdInfo>;
   /** An invite link was pasted: the app goes on to "Einladung annehmen". */
   readonly onInvite: (token: string) => void;
+  /** Why the person is here again (left, or removed; E2-5a); shown above the form. */
+  readonly notice?: string | undefined;
 }
 
 /**
@@ -30,7 +32,7 @@ interface HouseholdPageProps {
  * opens the app by itself; the field is for the installed app on an iPhone, where a tapped link
  * opens in Safari instead.
  */
-export function HouseholdPage({ onCreate, onInvite }: HouseholdPageProps) {
+export function HouseholdPage({ onCreate, onInvite, notice }: HouseholdPageProps) {
   const [names, setNames] = useState<PersonNames>({ personA: "", personB: "" });
   const [errors, setErrors] = useState<PersonNameErrors>({});
   const [failed, setFailed] = useState<string>();
@@ -75,6 +77,11 @@ export function HouseholdPage({ onCreate, onInvite }: HouseholdPageProps) {
     <>
       <PageTitle title={HOUSEHOLD_TEXTS.createTitle} />
       <div class="page-stack">
+        {notice && (
+          <section class="tile tile--narrow" aria-label={LEAVE_TEXTS.noticeLabel}>
+            <p>{notice}</p>
+          </section>
+        )}
         <div class="tile tile--narrow">
           <p class="intro">{HOUSEHOLD_TEXTS.createIntro}</p>
           <form class="form" onSubmit={create} noValidate>

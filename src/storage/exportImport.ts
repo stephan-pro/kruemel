@@ -32,6 +32,15 @@ export function signOutBackupFileName(today: CalendarDay): string {
 }
 
 /**
+ * Name of the copy the app downloads by itself before leaving the household or deleting the
+ * account, when the household goes with it or changes still wait (E2-5a), and after being removed
+ * with changes waiting, e.g. "kruemel-vor-austritt-2026-10-19.json".
+ */
+export function leaveBackupFileName(today: CalendarDay): string {
+  return `kruemel-vor-austritt-${today}.json`;
+}
+
+/**
  * Name of the file with changes the server refused for good (stage 2, E2-3c), e.g.
  * "kruemel-nicht-gespeichert-2026-10-19.json".
  */

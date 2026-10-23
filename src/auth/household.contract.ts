@@ -148,6 +148,83 @@ export function describeHouseholdContract(
       expect(await failureOf((await s.newPerson()).rename("Ohne Haushalt"))).toBe("noHousehold");
     });
 
+    it("E2-5a Person entfernen: der Platz ist wieder frei und neu einladbar; doppelt ändert nichts, sich selbst nicht", async () => {
+      const s = await setup();
+      const [alex, robin, sam] = [await s.newPerson(), await s.newPerson(), await s.newPerson()];
+      const { id } = await alex.create(NAMES);
+      await robin.acceptInvite((await alex.createInvite()).token);
+
+      const left = await alex.removeMember("personB");
+
+      expect(left).toMatchObject({ id, me: "personA", names: NAMES, members: ["personA"] });
+      expect(await robin.current()).toBeNull();
+      expect(await alex.removeMember("personB")).toEqual(left);
+      expect(await failureOf(alex.removeMember("personA"))).toBe("invalidMember");
+      expect(await failureOf(robin.removeMember("personA"))).toBe("noHousehold");
+      expect(await alex.current()).toEqual(left);
+
+      // The name stays with the place; whoever comes next takes it over.
+      const joined = await sam.acceptInvite((await alex.createInvite()).token);
+      expect(joined).toMatchObject({ id, me: "personB", names: NAMES });
+      // The removed person may start over: a household of their own.
+      expect((await robin.create({ personA: "Robin", personB: "Kim" })).me).toBe("personA");
+    });
+
+    it("E2-5a Haushalt verlassen: die andere Person bleibt mit Namen; der freie Platz (auch A) lässt sich neu einladen", async () => {
+      const s = await setup();
+      const [alex, robin, sam] = [await s.newPerson(), await s.newPerson(), await s.newPerson()];
+      const { id } = await alex.create(NAMES);
+      await robin.acceptInvite((await alex.createInvite()).token);
+      await alex.rename("WG Sonnenweg");
+
+      await alex.leave();
+
+      expect(await alex.current()).toBeNull();
+      expect(await failureOf(alex.leave())).toBe("noHousehold");
+      expect(await robin.current()).toEqual({
+        id,
+        me: "personB",
+        names: NAMES,
+        name: "WG Sonnenweg",
+        members: ["personB"],
+      });
+      const joined = await sam.acceptInvite((await robin.createInvite()).token);
+      expect(joined).toMatchObject({ id, me: "personA", members: ["personA", "personB"] });
+    });
+
+    it("E2-5a Die letzte Person nimmt den Haushalt mit: er ist samt Einladung weg", async () => {
+      const s = await setup();
+      const [alex, robin] = [await s.newPerson(), await s.newPerson()];
+      await alex.create(NAMES);
+      const open = await alex.createInvite();
+
+      await alex.leave();
+
+      expect(await alex.current()).toBeNull();
+      expect(await failureOf(robin.acceptInvite(open.token))).toBe("inviteUnknown");
+      expect(await failureOf(alex.createInvite())).toBe("noHousehold");
+      expect((await alex.create(NAMES)).members).toEqual(["personA"]);
+    });
+
+    it("E2-5a Konto löschen: die Person ist aus dem Haushalt, der für die andere bleibt; allein löscht es ihn mit", async () => {
+      const s = await setup();
+      const [alex, robin, sam] = [await s.newPerson(), await s.newPerson(), await s.newPerson()];
+      const { id } = await alex.create(NAMES);
+      await robin.acceptInvite((await alex.createInvite()).token);
+      await sam.create({ personA: "Sam", personB: "Kim" });
+      const samsInvite = await sam.createInvite();
+
+      await robin.deleteAccount();
+
+      expect(await alex.current()).toMatchObject({ id, names: NAMES, members: ["personA"] });
+      await alex.createInvite();
+
+      await sam.deleteAccount();
+      expect(await failureOf((await s.newPerson()).acceptInvite(samsInvite.token))).toBe(
+        "inviteUnknown",
+      );
+    });
+
     it("Wer schon einen Haushalt hat, kann keiner Einladung folgen, auch nicht der eigenen", async () => {
       const s = await setup();
       const [alex, robin] = [await s.newPerson(), await s.newPerson()];
