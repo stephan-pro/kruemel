@@ -2,6 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 import { DEMO_NAMES, demoData } from "../../src/demo/demoData";
 import { expectNoAccessibilityViolations } from "./axe";
 import { expectPageShown, goToPage, startConfigured, storedData, today } from "./helpers";
+import { E2E_APP } from "./shared";
 
 // Package 8: managing tasks (F1, F3): list, create, change, delete.
 
@@ -497,7 +498,7 @@ test.describe("F1 Aufgabe bearbeiten", () => {
     page,
   }) => {
     await startConfigured(page);
-    const opened = await openByAddress(page, "./#/aufgaben/bearbeiten/gibt-es-nicht");
+    const opened = await openByAddress(page, `${E2E_APP}#/aufgaben/bearbeiten/gibt-es-nicht`);
 
     await expect(
       opened.getByRole("heading", { level: 1, name: "Aufgabe nicht gefunden" }),
@@ -511,7 +512,7 @@ test.describe("F1 Aufgabe bearbeiten", () => {
 
   test("F1 Die Bearbeiten-Seite lässt sich direkt über ihre Adresse öffnen", async ({ page }) => {
     await startConfigured(page);
-    const opened = await openByAddress(page, "./#/aufgaben/bearbeiten/demo-bad");
+    const opened = await openByAddress(page, `${E2E_APP}#/aufgaben/bearbeiten/demo-bad`);
 
     await expect(opened.getByLabel("Titel")).toHaveValue("Bad putzen");
   });

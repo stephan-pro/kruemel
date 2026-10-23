@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 import { expectNoAccessibilityViolations } from "./axe";
 import {
   chooseDay,
@@ -17,6 +17,12 @@ import {
 // Package 10: a tap or click on a task of the week view opens its details (F6); there are
 // "Bearbeiten", "Übernehmen" and the checklist (F4, F5). Escape closes the view and the focus
 // returns to the task. The clock stands on Wednesday 21.10.2026 (see `week.spec.ts`).
+
+/** The stored ticks of a task; a box shows its tick at once, the shared storage a moment later. */
+async function checkedOf(page: Page, id: string) {
+  const task = (await storedData(page)).tasks.find((candidate) => candidate.id === id);
+  return task?.checklist.map((item) => item.checked);
+}
 
 test.describe("F6 Detailansicht einer Aufgabe", () => {
   test("F6 Ein Klick auf eine Aufgabe öffnet ihre Detailansicht mit allen Angaben", async ({
@@ -203,8 +209,7 @@ test.describe("F4 Checkliste in der Detailansicht", () => {
 
     await expect(dialog).toContainText("3 von 4 abgehakt");
     await expect(dialog).toBeVisible();
-    const task = (await storedData(page)).tasks.find((t) => t.id === "demo-einkaufen");
-    expect(task?.checklist.map((item) => item.checked)).toEqual([true, true, true, false]);
+    await expect.poll(() => checkedOf(page, "demo-einkaufen")).toEqual([true, true, true, false]);
 
     await dialog.getByRole("button", { name: "Schließen" }).click();
     await expect(todayTile(page)).toContainText("3 von 4 abgehakt");
@@ -218,8 +223,7 @@ test.describe("F4 Checkliste in der Detailansicht", () => {
     await dialog.getByRole("checkbox", { name: "Milch" }).uncheck();
 
     await expect(dialog).toContainText("1 von 4 abgehakt");
-    const task = (await storedData(page)).tasks.find((t) => t.id === "demo-einkaufen");
-    expect(task?.checklist.map((item) => item.checked)).toEqual([false, true, false, false]);
+    await expect.poll(() => checkedOf(page, "demo-einkaufen")).toEqual([false, true, false, false]);
   });
 
   test("F4 Mit der Tastatur: Leertaste setzt das Häkchen, der Fokus bleibt auf dem Kästchen", async ({

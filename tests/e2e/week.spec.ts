@@ -1,6 +1,7 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import { demoData } from "../../src/demo/demoData";
 import { calendarDay } from "../../src/domain/date";
+import { ACCOUNT_TEXTS } from "../../src/ui/accountTexts";
 import { expectNoAccessibilityViolations } from "./axe";
 import { expectPageShown, FROZEN_TODAY, openWeek, startConfigured, storedData } from "./helpers";
 
@@ -380,7 +381,7 @@ test.describe("F6 Filter alle / nur meine", () => {
     page,
   }) => {
     await openWeek(page, demo(), "personB");
-    await expect(page.getByText("Dieses Gerät:")).toContainText("Robin");
+    await expect(page.getByText(ACCOUNT_TEXTS.signedInAs)).toContainText("Robin");
 
     await page.getByRole("button", { name: "Nur meine" }).click();
 

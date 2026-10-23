@@ -109,10 +109,7 @@ test.describe("N3 Hinweis schließen", () => {
 
     await expect(hint(page)).toHaveCount(0);
     await expectPageShown(page, "Diese Woche");
-    expect(await storedDevice(page)).toEqual({
-      currentPerson: "personA",
-      installHintDismissed: true,
-    });
+    expect(await storedDevice(page)).toEqual({ installHintDismissed: true });
 
     await page.reload();
     await expect(page.getByRole("heading", { level: 1, name: "Diese Woche" })).toBeVisible();

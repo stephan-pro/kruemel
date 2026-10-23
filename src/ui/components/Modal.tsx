@@ -1,5 +1,5 @@
 import type { ComponentChildren } from "preact";
-import { useEffect, useId, useRef } from "preact/hooks";
+import { useEffect, useId, useLayoutEffect, useRef } from "preact/hooks";
 
 interface ModalProps {
   readonly open: boolean;
@@ -45,10 +45,16 @@ export function Modal({
       } else if (focusTitle) {
         heading.current?.focus();
       }
-    } else if (!open && element.open) {
-      element.close();
     }
   }, [open, focusTitle, initialFocusId]);
+
+  // Closed before the effects of the page run: a page that then moves the focus behind the dialog
+  // (the notice after "Übernehmen") would otherwise try it while everything there is still inert.
+  useLayoutEffect(() => {
+    if (!open && dialog.current?.open) {
+      dialog.current.close();
+    }
+  }, [open]);
 
   return (
     <dialog

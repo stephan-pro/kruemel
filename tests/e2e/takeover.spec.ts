@@ -27,6 +27,11 @@ async function taskOf(page: Page, id: string) {
   return (await storedData(page)).tasks.find((task) => task.id === id);
 }
 
+/** Waits until the stored task matches: the page shows a change at once, the storage a moment later. */
+async function expectTask(page: Page, id: string, expected: Record<string, unknown>) {
+  await expect.poll(() => taskOf(page, id)).toMatchObject(expected);
+}
+
 /** Thursday, 22.10. is the day with Robin's tasks "Müll rausbringen" (recurring), "Paket abholen". */
 async function openThursday(page: Page, person: "personA" | "personB" = "personA") {
   await openWeek(page, undefined, person);
@@ -156,9 +161,10 @@ test.describe("F5 Wiederkehrende Aufgabe übernehmen: nur dieses Mal oder dauerh
 
     await page.getByRole("button", { name: "Abhaken: Müll rausbringen" }).click();
 
-    const task = await taskOf(page, "demo-muell");
-    expect(task).toMatchObject({ assignee: "personB" });
-    expect(task).not.toHaveProperty("takenOverBy");
+    await expect
+      .poll(async () => Object.hasOwn((await taskOf(page, "demo-muell")) ?? {}, "takenOverBy"))
+      .toBe(false);
+    expect(await taskOf(page, "demo-muell")).toMatchObject({ assignee: "personB" });
     const data = await storedData(page);
     expect(data.completions[data.completions.length - 1]).toMatchObject({
       taskId: "demo-muell",
@@ -340,7 +346,7 @@ test.describe("F5 Übernehmen in der Detailansicht", () => {
       "„Müll rausbringen“ ist jetzt bei Alex, nur dieses Mal.",
     );
     await expect(notice(page)).toBeFocused();
-    expect(await taskOf(page, "demo-muell")).toMatchObject({ takenOverBy: "personA" });
+    await expectTask(page, "demo-muell", { takenOverBy: "personA" });
   });
 
   test("F5 Eine einmalige Aufgabe wird aus der Detailansicht ohne Rückfrage umgewiesen", async ({

@@ -2,12 +2,23 @@ import { expect, type Locator, type Page } from "@playwright/test";
 import { demoData } from "../../src/demo/demoData";
 import { calendarDay, dayFromDate } from "../../src/domain/date";
 import type { AppData } from "../../src/storage/appData";
+import type { DeviceSettings } from "../../src/storage/storage";
+import { viewOf } from "../../src/sync/merge";
+import type { SyncState } from "../../src/sync/outbox";
+import { FAKE_AUTH_KEY, householdOfTwo, type Member } from "./account";
+import { E2E_APP } from "./shared";
 
 // Minimal Node typing instead of @types/node (N7: avoid a dependency for one line), as in
 // playwright.config.ts. `never` fits every place that expects a Buffer.
 declare const Buffer: { from(text: string, encoding: "utf8"): never };
 
-// The real app (production build). Its data lives in the browser storage under these keys.
+// Most tests run as in real use since E2-3e: a signed-in member of a household of two, the data
+// shared through the fake server (the app in the mode `e2e`, `E2E_APP`). The mode `local` (the
+// `baseURL`, production build) keeps the tests of what only it has: first setup, editable names,
+// unreadable data of this device, the service worker (`startLocal`, `store`, `localData`).
+
+// The mode `local` keeps its data in the browser storage under these keys; the device settings are
+// kept there in every mode.
 export const dataKey = "putzplan:data";
 export const deviceKey = "putzplan:device";
 
@@ -24,8 +35,8 @@ export const greetingHeading = (name = ".+") =>
   new RegExp(`^(Guten Morgen|Hallo|Guten Abend), ${name}!$`);
 
 /**
- * Puts values into the browser storage before the app reads it, then opens the app (at `hash`,
- * "" for the start page).
+ * Mode `local`: puts values into the browser storage before the app reads it, then opens the app
+ * (at `hash`, "" for the start page).
  */
 export async function store(page: Page, items: Record<string, string>, hash = "") {
   await page.goto("./");
@@ -43,8 +54,50 @@ export async function store(page: Page, items: Record<string, string>, hash = ""
   await page.reload();
 }
 
-/** A configured app on the week view: names set, this device belongs to the first person. */
+/** Who uses the device: `personA` is Alex (made the household), `personB` Robin (joined). */
+export type Person = "personA" | "personB";
+
+/**
+ * A signed-in member's device on the shared data: a new household of two on the fake server
+ * holding `data`, the session of `person` (and `device` settings) put into the browser storage
+ * once (a reload after signing out stays signed out), then the app opened at `hash`. Returns the
+ * member, for the API of `account.ts`.
+ */
+export async function startShared(
+  page: Page,
+  data: AppData = demoData(today()),
+  hash: string = WEEK_HASH,
+  { person = "personA", device }: { person?: Person; device?: DeviceSettings } = {},
+): Promise<Member> {
+  const { alex, robin } = await householdOfTwo(page.request, data);
+  const member = person === "personA" ? alex : robin;
+  const items: Record<string, string> = { [FAKE_AUTH_KEY]: JSON.stringify(member) };
+  if (device !== undefined) {
+    items[deviceKey] = JSON.stringify(device);
+  }
+  await page.addInitScript((entries) => {
+    if (sessionStorage.getItem("e2e-seeded") === null) {
+      sessionStorage.setItem("e2e-seeded", "1");
+      for (const [key, value] of Object.entries(entries)) {
+        localStorage.setItem(key, value);
+      }
+    }
+  }, items);
+  await page.goto(`${E2E_APP}${hash}`);
+  return member;
+}
+
+/** A signed-in member's device on the week view (Alex, demo data of today). */
 export async function startConfigured(
+  page: Page,
+  data: AppData = demoData(today()),
+  hash: string = WEEK_HASH,
+) {
+  return startShared(page, data, hash);
+}
+
+/** Mode `local`: a configured app on the week view, names set, the device is the first person's. */
+export async function startLocal(
   page: Page,
   data: AppData = demoData(today()),
   hash: string = WEEK_HASH,
@@ -67,43 +120,31 @@ export async function freezeClock(page: Page) {
   await page.clock.setFixedTime(new Date(2026, 9, 21, 12, 0, 0));
 }
 
-/** The week view of the demo data (or `data`) on the frozen day, for the given person's device. */
+/** The week view of the demo data (or `data`) on the frozen day, on the given person's device. */
 export async function openWeek(
   page: Page,
   data: AppData = demoData(FROZEN_TODAY),
-  person: "personA" | "personB" = "personA",
+  person: Person = "personA",
 ) {
   await freezeClock(page);
-  await store(
-    page,
-    {
-      [dataKey]: JSON.stringify(data),
-      [deviceKey]: JSON.stringify({ currentPerson: person }),
-    },
-    WEEK_HASH,
-  );
+  const member = await startShared(page, data, WEEK_HASH, { person });
   await expect(page.getByRole("heading", { level: 1, name: "Diese Woche" })).toBeVisible();
+  return member;
 }
 
 /**
- * "Heute" for the demo data (or `data`) on the frozen day, for the given person's device. The clock
+ * "Heute" for the demo data (or `data`) on the frozen day, on the given person's device. The clock
  * stands at noon, so the greeting is "Hallo, …!".
  */
 export async function openToday(
   page: Page,
   data: AppData = demoData(FROZEN_TODAY),
-  person: "personA" | "personB" = "personA",
+  person: Person = "personA",
 ) {
   await freezeClock(page);
-  await store(
-    page,
-    {
-      [dataKey]: JSON.stringify(data),
-      [deviceKey]: JSON.stringify({ currentPerson: person }),
-    },
-    "#/heute",
-  );
+  const member = await startShared(page, data, "#/heute", { person });
   await expect(page.getByRole("heading", { level: 1, name: /^Hallo, / })).toBeVisible();
+  return member;
 }
 
 /** A tile of the week view, found by its heading ("Heute · Mi, 21.10.", "Do, 22.10.", "Überfällig"). */
@@ -144,7 +185,7 @@ export async function expectPageShown(page: Page, title: string | RegExp) {
   await expect(page.getByRole("heading", { level: 1, name: title })).toBeFocused();
 }
 
-/** Pages that are not in the navigation: reached from "Woche" and the settings (see `app.spec.ts`). */
+/** Pages that are not in the navigation: reached from "Woche" (see `app.spec.ts`). */
 const LIST_PAGES: Record<string, string> = { Aufgaben: "#/aufgaben", Erledigt: "#/erledigt" };
 
 /**
@@ -173,8 +214,21 @@ export function textFile(name: string, text: string) {
   return { name, mimeType: "application/json", buffer: Buffer.from(text, "utf8") };
 }
 
-/** What the app has stored right now, as the app would read it back. */
+/**
+ * What the signed-in device has stored right now, as the app shows it: its copy of the shared
+ * data (`kruemel:<household>:<person>:sync`) with the changes still waiting applied.
+ */
 export async function storedData(page: Page): Promise<AppData> {
+  const text = await page.evaluate(() => {
+    const key = Object.keys(localStorage).find((name) => /^kruemel:[^:]+:[^:]+:sync$/.test(name));
+    return key === undefined ? null : localStorage.getItem(key);
+  });
+  const state = JSON.parse(text ?? "null") as SyncState | null;
+  return (state === null ? null : viewOf(state.base, state.outbox)) as AppData;
+}
+
+/** Mode `local`: what the app has stored right now, as the app would read it back. */
+export async function localData(page: Page): Promise<AppData> {
   const text = await page.evaluate((key) => localStorage.getItem(key), dataKey);
   return JSON.parse(text ?? "null") as AppData;
 }

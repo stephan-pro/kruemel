@@ -7,16 +7,17 @@ import {
   FROZEN_TODAY,
   freezeClock,
   goToPage,
+  localData,
   notice,
-  startConfigured,
+  startLocal,
   store,
-  storedData,
   textFile,
 } from "./helpers";
 
 // Package 12: the app can be put on the home screen and used without internet (N3). What a test
 // cannot do is install an app; it checks everything an installation relies on: manifest, icons, bar
 // colours, the service worker and the kept files, and then works with the network switched off.
+// Mode `local`: only the real builds have the service worker (not the mode `e2e`).
 
 const demoUrl = "http://localhost:4174/kruemel/";
 
@@ -141,7 +142,7 @@ test.describe("N3 Farbe der Leiste je Farbschema", () => {
   test("N3 Ohne Wahl gilt für ein helles und für ein dunkles Gerät je eine Leistenfarbe", async ({
     page,
   }) => {
-    await startConfigured(page);
+    await startLocal(page);
 
     expect(await themeColors(page)).toEqual([
       "light:(prefers-color-scheme: light):#f3f2f8",
@@ -166,7 +167,7 @@ test.describe("N3 Farbe der Leiste je Farbschema", () => {
   test("N3 Beim Wechsel der Darstellung in den Einstellungen folgt die Leistenfarbe sofort", async ({
     page,
   }) => {
-    await startConfigured(page);
+    await startLocal(page);
     await goToPage(page, "Einstellungen");
 
     await page.getByRole("radio", { name: "Dunkel" }).check();
@@ -260,7 +261,7 @@ test.describe("N3 Service Worker und Nutzung ohne Internet", () => {
       page.getByRole("region", { name: "Erledigte Aufgaben" }).getByRole("listitem").first(),
     ).toContainText("Einkaufen");
 
-    expect((await storedData(page)).completions).toHaveLength(
+    expect((await localData(page)).completions).toHaveLength(
       demoData(FROZEN_TODAY).completions.length + 1,
     );
   });
@@ -298,7 +299,7 @@ test.describe("N3 Service Worker und Nutzung ohne Internet", () => {
       question.getByRole("button", { name: "Ja, Daten ersetzen" }).click(),
     ]);
 
-    await expect.poll(async () => (await storedData(page)).tasks.length).toBe(2);
+    await expect.poll(async () => (await localData(page)).tasks.length).toBe(2);
     await expect(
       page.getByRole("status").filter({ hasText: "Sicherung eingespielt" }),
     ).toBeVisible();

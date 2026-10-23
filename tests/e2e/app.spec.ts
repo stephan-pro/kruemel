@@ -2,9 +2,20 @@ import { expect, type Page, test } from "@playwright/test";
 import { DEMO_NAMES, demoData } from "../../src/demo/demoData";
 import { dayFromDate } from "../../src/domain/date";
 import { expectNoAccessibilityViolations } from "./axe";
-import { dataKey, deviceKey, goToPage, greetingHeading, startConfigured, store } from "./helpers";
+import {
+  dataKey,
+  deviceKey,
+  goToPage,
+  greetingHeading,
+  startConfigured,
+  startLocal,
+  store,
+} from "./helpers";
+import { E2E_APP } from "./shared";
 
-// The real app (production build), first start: nothing stored yet. Packages 7+ of docs/PLAN.md.
+// Packages 7+ of docs/PLAN.md. First setup, editable names and unreadable data of this device exist
+// only in the mode `local` (production build, `baseURL`); the frame and the navigation are tested
+// as in real use, signed in on the shared data (E2-3e).
 
 async function fillSetup(page: Page, nameA: string, nameB: string) {
   await page.getByLabel("Name der ersten Person").fill(nameA);
@@ -176,7 +187,7 @@ test.describe("Rahmen und Navigation", () => {
     });
   }
 
-  // Not in the navigation: reached from "Woche" and the settings (today.spec.ts follows the links).
+  // Not in the navigation: reached from "Woche" (today.spec.ts follows the links).
   for (const { title, hash } of [
     { title: "Aufgaben", hash: "#/aufgaben" },
     { title: "Erledigt", hash: "#/erledigt" },
@@ -254,7 +265,7 @@ test.describe("Rahmen und Navigation", () => {
 
     // A new tab, as when following a link or a bookmark (same browser storage, fresh page load).
     const opened = await page.context().newPage();
-    await opened.goto("./#/erledigt");
+    await opened.goto(`${E2E_APP}#/erledigt`);
 
     await expect(opened.getByRole("heading", { level: 1, name: "Erledigt" })).toBeVisible();
     await expect(opened).toHaveTitle("Erledigt – Krümel");
@@ -272,9 +283,9 @@ test.describe("Rahmen und Navigation", () => {
   });
 });
 
-test.describe("Einstellungen (F5 Namen)", () => {
+test.describe("Einstellungen (F5 Namen, Modus local)", () => {
   test("ändert Namen und „Ich bin“ und meldet das Speichern", async ({ page }) => {
-    await startConfigured(page);
+    await startLocal(page);
     await goToPage(page, "Einstellungen");
     await expect(page.getByLabel("Name der ersten Person")).toHaveValue(DEMO_NAMES.personA);
     await expect(page.getByRole("radio", { name: DEMO_NAMES.personA })).toBeChecked();
@@ -296,7 +307,7 @@ test.describe("Einstellungen (F5 Namen)", () => {
   });
 
   test("lehnt ungültige Namen auch hier ab", async ({ page }) => {
-    await startConfigured(page);
+    await startLocal(page);
     await goToPage(page, "Einstellungen");
 
     await page.getByLabel("Name der ersten Person").fill("");

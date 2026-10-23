@@ -1,7 +1,7 @@
 import { expect, type Page, test } from "@playwright/test";
 import { demoData } from "../../src/demo/demoData";
 import { expectNoAccessibilityViolations } from "./axe";
-import { dataKey, deviceKey, goToPage, startConfigured, store, storedData, today } from "./helpers";
+import { deviceKey, goToPage, startConfigured, startShared, storedData, today } from "./helpers";
 
 // Package R1: the own design (N1, DESIGN.md) and the colour scheme setting (N8).
 
@@ -45,7 +45,7 @@ test.describe("N8 Farbschema Hell / Dunkel / Automatisch", () => {
 
     expect(await background(page)).toBe(DARK_BG);
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-    expect(await storedDevice(page)).toEqual({ currentPerson: "personA", colorScheme: "dark" });
+    expect(await storedDevice(page)).toEqual({ colorScheme: "dark" });
     await expectNoAccessibilityViolations(page);
 
     await page.reload();
@@ -68,17 +68,15 @@ test.describe("N8 Farbschema Hell / Dunkel / Automatisch", () => {
     await schemeChoice(page, "Automatisch (wie das Gerät)").check();
     expect(await background(page)).toBe(DARK_BG);
     await expect(page.locator("html")).not.toHaveAttribute("data-theme", /.*/);
-    expect(await storedDevice(page)).toEqual({ currentPerson: "personA", colorScheme: "auto" });
+    expect(await storedDevice(page)).toEqual({ colorScheme: "auto" });
   });
 
   test("N8 Kein Aufblitzen: das gewählte Farbschema gilt, bevor die App überhaupt startet", async ({
     page,
   }) => {
     await page.emulateMedia({ colorScheme: "light" });
-    await store(page, {
-      [dataKey]: JSON.stringify(demoData(today())),
-      [deviceKey]: JSON.stringify({ currentPerson: "personA", colorScheme: "dark" }),
-    });
+    await startShared(page, demoData(today()), "", { device: { colorScheme: "dark" } });
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     // Without the app's script: only the page itself and its stylesheet.
     await page.route("**/assets/*.js", (route) => route.abort());
 

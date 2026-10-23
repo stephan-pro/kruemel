@@ -28,9 +28,18 @@ async function showChecklist(page: Page, title: string) {
   await expect(group(page, title)).toBeVisible();
 }
 
-async function checkedOf(page: Page, id: string): Promise<boolean[] | undefined> {
-  const task = (await storedData(page)).tasks.find((candidate) => candidate.id === id);
-  return task?.checklist.map((item) => item.checked);
+/**
+ * Waits until the stored ticks of a task are `expected`: the box shows a tick at once, the shared
+ * storage writes it a moment later.
+ */
+async function expectChecked(page: Page, id: string, expected: boolean[]) {
+  await expect
+    .poll(async () =>
+      (await storedData(page)).tasks
+        .find((candidate) => candidate.id === id)
+        ?.checklist.map((item) => item.checked),
+    )
+    .toEqual(expected);
 }
 
 test.describe("F4 Checkliste in der Zeile", () => {
@@ -87,7 +96,7 @@ test.describe("F4 Checkliste in der Zeile", () => {
 
     await expect(obst).toBeChecked();
     await expect(obst).toBeFocused();
-    expect(await checkedOf(page, "demo-einkaufen")).toEqual([true, true, true, false]);
+    await expectChecked(page, "demo-einkaufen", [true, true, true, false]);
     await expect(todayTile(page)).toContainText("3 von 4 abgehakt");
     await expect(notice(page)).toHaveCount(0);
     // Die Aufgabe selbst bleibt offen.
@@ -100,10 +109,10 @@ test.describe("F4 Checkliste in der Zeile", () => {
     const boxes = group(page, "Einkaufen");
 
     await boxes.getByRole("checkbox", { name: "Spülmittel" }).check();
-    expect(await checkedOf(page, "demo-einkaufen")).toEqual([true, true, false, true]);
+    await expectChecked(page, "demo-einkaufen", [true, true, false, true]);
     await boxes.getByRole("checkbox", { name: "Milch" }).uncheck();
 
-    expect(await checkedOf(page, "demo-einkaufen")).toEqual([false, true, false, true]);
+    await expectChecked(page, "demo-einkaufen", [false, true, false, true]);
     await expect(todayTile(page)).toContainText("2 von 4 abgehakt");
   });
 
@@ -111,6 +120,7 @@ test.describe("F4 Checkliste in der Zeile", () => {
     await openWeek(page);
     await showChecklist(page, "Einkaufen");
     await group(page, "Einkaufen").getByRole("checkbox", { name: "Obst" }).check();
+    await expectChecked(page, "demo-einkaufen", [true, true, true, false]);
 
     await page.reload();
 
@@ -135,7 +145,7 @@ test.describe("F4 Checkliste in der Zeile", () => {
     await expect(
       group(page, "Einkaufen").getByRole("checkbox", { name: "Obst" }),
     ).not.toBeChecked();
-    expect(await checkedOf(page, "demo-einkaufen")).toEqual([true, true, false, false]);
+    await expectChecked(page, "demo-einkaufen", [true, true, false, false]);
   });
 
   test("F4 Beim Abhaken einer wiederkehrenden Aufgabe sind die Häkchen danach zurückgesetzt, die Einträge bleiben", async ({
@@ -151,12 +161,12 @@ test.describe("F4 Checkliste in der Zeile", () => {
     const boxes = saturday.getByRole("group", { name: "Checkliste: Küche wischen" });
     await boxes.getByRole("checkbox", { name: "Herd" }).check();
     await boxes.getByRole("checkbox", { name: "Boden" }).check();
-    expect(await checkedOf(page, "demo-kueche")).toEqual([true, false, true]);
+    await expectChecked(page, "demo-kueche", [true, false, true]);
 
     await saturday.getByRole("button", { name: "Abhaken: Küche wischen" }).click();
 
     await expect(notice(page)).toBeVisible();
-    expect(await checkedOf(page, "demo-kueche")).toEqual([false, false, false]);
+    await expectChecked(page, "demo-kueche", [false, false, false]);
   });
 
   test("F4 Jedes Kästchen ist mindestens 44 Pixel hoch und eine Gruppe mit dem Namen der Aufgabe", async ({
@@ -301,6 +311,7 @@ test.describe("F4 Checkliste im Aufgabenformular", () => {
       expect(size?.height).toBeGreaterThanOrEqual(44);
     }
     await page.getByRole("button", { name: "Aufgabe anlegen" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Aufgaben" })).toBeFocused();
     const saved = (await storedData(page)).tasks.find((task) => task.title === "Wocheneinkauf");
     expect(saved?.checklist.map((item) => item.text)).toEqual(["Milch", "Obst"]);
   });

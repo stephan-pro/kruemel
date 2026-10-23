@@ -8,6 +8,7 @@ import {
   dataKey,
   expectPageShown,
   goToPage,
+  localData,
   startConfigured,
   store,
   storedData,
@@ -21,6 +22,7 @@ import {
 const TODAY = calendarDay("2026-10-21");
 const demo = () => demoData(TODAY);
 
+/** Signed in on the shared data; raw stored text (old data of this device) in the mode `local`. */
 async function start(page: Page, data: AppData | string = demo()) {
   await page.clock.setFixedTime(new Date(2026, 9, 21, 12, 0, 0));
   if (typeof data === "string") {
@@ -295,7 +297,7 @@ test.describe("F8 Alte Daten (schemaVersion 1)", () => {
     await page.getByRole("button", { name: "Abhaken: Einkaufen" }).click();
     await expect(page.getByRole("region", { name: "Hinweis" })).toBeVisible();
 
-    const data = await storedData(page);
+    const data = await localData(page);
     expect(data.schemaVersion).toBe(3);
     expect(data.tasks.every((task) => task.symbol === "standard")).toBe(true);
     expect(data.tasks).toHaveLength(demo().tasks.length);

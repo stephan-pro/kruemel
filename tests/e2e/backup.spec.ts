@@ -1,12 +1,16 @@
 import { type Download, expect, type Page, test } from "@playwright/test";
 import { demoData } from "../../src/demo/demoData";
 import type { AppData } from "../../src/storage/appData";
+import { ACCOUNT_TEXTS } from "../../src/ui/accountTexts";
+import { SHARED_TEXTS } from "../../src/ui/householdTexts";
+import { pushAs } from "./account";
 import { expectNoAccessibilityViolations } from "./axe";
-import { dataKey, FROZEN_TODAY, goToPage, openWeek, storedData, textFile } from "./helpers";
+import { FROZEN_TODAY, goToPage, openWeek, storedData, textFile } from "./helpers";
 
 // Package 11: "Sicherung" in the settings (F7): all data as a file, and back from such a file after
 // a question and with an automatic copy of the current data first. The clock stands on Wednesday
-// 21.10.2026 (see `week.spec.ts`), so the file names carry that day.
+// 21.10.2026 (see `week.spec.ts`), so the file names carry that day. Signed in on the shared data
+// (E2-3e): a backup replaces the data for both, online only (offline: `sync.spec.ts`).
 
 const demo = () => demoData(FROZEN_TODAY);
 const EXPORT_NAME = "kruemel-2026-10-21.json";
@@ -33,8 +37,22 @@ function version1(data: AppData): string {
 }
 
 async function openSettings(page: Page, data: AppData = demo()) {
-  await openWeek(page, data);
+  const member = await openWeek(page, data);
   await goToPage(page, "Einstellungen");
+  return member;
+}
+
+/**
+ * The data with tasks and completions in the order of their ids: the shared storage keeps the place
+ * of a task it knew already, so a replaced list may come back in another order.
+ */
+function sorted(data: AppData): AppData {
+  const byId = (a: { id: string }, b: { id: string }) => a.id.localeCompare(b.id);
+  return {
+    ...data,
+    tasks: [...data.tasks].sort(byId),
+    completions: [...data.completions].sort(byId),
+  };
 }
 
 const backupTile = (page: Page) => page.getByRole("region", { name: "Sicherung", exact: true });
@@ -63,8 +81,8 @@ function contentOf(page: Page, download: Download): Promise<string> {
   return page.evaluate((url) => fetch(url).then((response) => response.text()), download.url());
 }
 
-async function storedText(page: Page): Promise<string | null> {
-  return page.evaluate((key) => localStorage.getItem(key), dataKey);
+async function storedText(page: Page): Promise<string> {
+  return JSON.stringify(await storedData(page));
 }
 
 test.describe("F7 Export", () => {
@@ -138,29 +156,26 @@ test.describe("F7 Import mit Rückfrage und automatischer Sicherung", () => {
   test("F7 Eine heruntergeladene Sicherung lässt sich wieder einspielen und stellt genau diese Daten her", async ({
     page,
   }) => {
-    await openSettings(page);
+    const member = await openSettings(page);
     const original = await storedData(page);
     const [download] = await Promise.all([
       page.waitForEvent("download"),
       downloadButton(page).click(),
     ]);
     const path = await download.path();
-    // Daten ändern: nur zwei Aufgaben, keine Erledigungen.
-    await page.evaluate((key) => {
-      const data = JSON.parse(localStorage.getItem(key) ?? "{}");
-      data.tasks = data.tasks.slice(0, 2);
-      data.completions = [];
-      localStorage.setItem(key, JSON.stringify(data));
-    }, dataKey);
-    await page.reload();
-    await expect(page.getByRole("heading", { level: 1, name: "Einstellungen" })).toBeVisible();
-    expect((await storedData(page)).tasks).toHaveLength(2);
+    // Daten im Haushalt ändern: nur zwei Aufgaben, keine Erledigungen.
+    await pushAs(page.request, member, {
+      type: "replaceAll",
+      id: crypto.randomUUID(),
+      data: { ...original, tasks: original.tasks.slice(0, 2), completions: [] },
+    });
+    await expect.poll(async () => (await storedData(page)).tasks.length).toBe(2);
 
     await chooseBackup(page, path);
     await expect(question(page)).toBeVisible();
     await Promise.all([page.waitForEvent("download"), confirmButton(page).click()]);
 
-    await expect.poll(() => storedData(page)).toEqual(original);
+    await expect.poll(async () => sorted(await storedData(page))).toEqual(sorted(original));
   });
 
   test("F7 Vor dem Einspielen fragt die App nach, nennt Datei und Inhalt und ändert noch nichts", async ({
@@ -177,9 +192,8 @@ test.describe("F7 Import mit Rückfrage und automatischer Sicherung", () => {
       "Die Datei „klein.json“ enthält 2 Aufgaben und 2 Erledigungen.",
     );
     await expect(dialog).toContainText(
-      "Auf diesem Gerät sind jetzt 11 Aufgaben und 10 Erledigungen.",
+      "In eurem Haushalt sind jetzt 11 Aufgaben und 10 Erledigungen. Sie werden für euch beide ersetzt; das lässt sich nicht rückgängig machen.",
     );
-    await expect(dialog).toContainText("lässt sich nicht rückgängig machen");
     await expect(dialog).toContainText(`als „${AUTO_BACKUP_NAME}“ herunter`);
     // Wie bei jeder Frage, die etwas ersetzt: zuerst „Abbrechen“.
     await expect(cancelButton(page)).toBeFocused();
@@ -228,11 +242,9 @@ test.describe("F7 Import mit Rückfrage und automatischer Sicherung", () => {
       `Sicherung eingespielt: 2 Aufgaben und 2 Erledigungen. Die bisherigen Daten wurden vorher als „${AUTO_BACKUP_NAME}“ heruntergeladen.`,
     );
     await expect(importButton(page)).toBeFocused();
-    expect(await storedData(page)).toEqual(JSON.parse(JSON.stringify(smallBackup())));
-    // Die Namen der Sicherung stehen im Formular und neben „Dieses Gerät“.
-    await expect(page.getByLabel("Name der ersten Person")).toHaveValue("Sam");
-    await expect(page.getByLabel("Name der zweiten Person")).toHaveValue("Kim");
-    await expect(page.getByText("Dieses Gerät:")).toContainText("Sam");
+    expect(sorted(await storedData(page))).toEqual(sorted(smallBackup()));
+    // Die Namen der Sicherung gelten für den Haushalt: Alex' Gerät heißt jetzt Sam.
+    await expect(page.locator(".app-person")).toHaveText(`${ACCOUNT_TEXTS.signedInAs} Sam`);
     await expect(backupTile(page)).toContainText(
       "Jetzt auf diesem Gerät: 2 Aufgaben und 2 Erledigungen.",
     );
@@ -275,7 +287,7 @@ test.describe("F7 Import mit Rückfrage und automatischer Sicherung", () => {
     await chooseBackup(page, path);
     await Promise.all([page.waitForEvent("download"), confirmButton(page).click()]);
 
-    await expect.poll(() => storedData(page)).toEqual(before);
+    await expect.poll(async () => sorted(await storedData(page))).toEqual(sorted(before));
   });
 
   test("F7 Eine alte Sicherung (schemaVersion 1) wird eingespielt; jede Aufgabe bekommt das Standardsymbol", async ({
@@ -372,7 +384,7 @@ test.describe("F7 Fehlerhafte Dateien", () => {
 
       await expect(problem(page)).toContainText("Sicherung nicht eingespielt");
       await expect(problem(page)).toContainText(message);
-      await expect(problem(page)).toContainText("Deine Daten auf diesem Gerät sind unverändert.");
+      await expect(problem(page)).toContainText(SHARED_TEXTS.unchanged);
       await expect(question(page)).toBeHidden();
       expect(await storedText(page)).toBe(before);
       await expectNoAccessibilityViolations(page);
@@ -408,7 +420,7 @@ test.describe("F7 Fehlerhafte Dateien", () => {
 
     await expect(problem(page)).toContainText("Sicherung nicht eingespielt");
     await expect(problem(page)).toContainText("Speichern nicht möglich");
-    await expect(problem(page)).toContainText("Deine Daten auf diesem Gerät sind unverändert.");
+    await expect(problem(page)).toContainText(SHARED_TEXTS.unchanged);
     await expect(status(page)).toHaveText("");
     expect(await storedText(page)).toBe(before);
     await expectNoAccessibilityViolations(page);

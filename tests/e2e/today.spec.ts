@@ -2,16 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 import { demoData } from "../../src/demo/demoData";
 import type { AppData } from "../../src/storage/appData";
 import { expectNoAccessibilityViolations } from "./axe";
-import {
-  dataKey,
-  deviceKey,
-  FROZEN_TODAY,
-  freezeClock,
-  notice,
-  openToday,
-  store,
-  storedData,
-} from "./helpers";
+import { FROZEN_TODAY, freezeClock, notice, openToday, startShared, storedData } from "./helpers";
 
 // E2-4a: die Startseite „Heute“ (DESIGN.md Abschnitt 5) und die neue Navigation (Abschnitt 7).
 //
@@ -27,17 +18,15 @@ const dayField = (page: Page, day: string) =>
 
 test.describe("F6 Heute: Kopf und Begrüßung", () => {
   test("F6 Die Begrüßung nennt den Namen und richtet sich nach der Tageszeit", async ({ page }) => {
-    const items = {
-      [dataKey]: JSON.stringify(demoData(FROZEN_TODAY)),
-      [deviceKey]: JSON.stringify({ currentPerson: "personA" }),
-    };
+    await page.clock.setFixedTime(new Date(2026, 9, 21, 8, 0, 0));
+    await startShared(page, demoData(FROZEN_TODAY), "#/heute");
     for (const [hour, expected] of [
       [8, "Guten Morgen, Alex!"],
       [12, "Hallo, Alex!"],
       [20, "Guten Abend, Alex!"],
     ] as const) {
       await page.clock.setFixedTime(new Date(2026, 9, 21, hour, 0, 0));
-      await store(page, items, "#/heute");
+      await page.reload();
 
       await expect(page.getByRole("heading", { level: 1, name: expected })).toBeVisible();
       await expect(page).toHaveTitle("Heute – Krümel");

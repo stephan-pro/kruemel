@@ -19,7 +19,7 @@ import {
   expectPageShown,
   goToPage,
   greetingHeading,
-  storedData,
+  localData,
   today,
 } from "./helpers";
 import { E2E_APP, FAKE_SERVER } from "./shared";
@@ -253,7 +253,7 @@ test.describe("E2-2c Anmelden mit Code", () => {
     await dialog.getByRole("button", { name: ACCOUNT_TEXTS.signOut }).click();
 
     await expectPageShown(page, "Anmelden");
-    expect((await storedData(page)).tasks.length).toBeGreaterThan(0);
+    expect((await localData(page)).tasks.length).toBeGreaterThan(0);
     await page.reload();
     await expect(page.getByRole("heading", { level: 1, name: "Anmelden" })).toBeVisible();
   });

@@ -1,7 +1,7 @@
 import { expect, type Page, test } from "@playwright/test";
 import { demoData } from "../../src/demo/demoData";
 import { expectNoAccessibilityViolations } from "./axe";
-import { FROZEN_TODAY, freezeClock, goToPage, openToday, store } from "./helpers";
+import { FROZEN_TODAY, freezeClock, goToPage, openToday, startShared } from "./helpers";
 
 // E2-4b: die Seite „Statistik“ (DESIGN.md Abschnitt 6, „Eure Bilanz“).
 //
@@ -291,14 +291,7 @@ test.describe("N2 Statistik: Barrierefreiheit und Handy", () => {
   }) => {
     await freezeClock(page);
     await page.setViewportSize({ width: 390, height: 844 });
-    await store(
-      page,
-      {
-        "putzplan:data": JSON.stringify(demoData(FROZEN_TODAY)),
-        "putzplan:device": JSON.stringify({ currentPerson: "personB" }),
-      },
-      "#/statistik",
-    );
+    await startShared(page, demoData(FROZEN_TODAY), "#/statistik", { person: "personB" });
 
     await expect(page.getByRole("heading", { level: 1, name: "Eure Bilanz" })).toBeVisible();
     await expect(
