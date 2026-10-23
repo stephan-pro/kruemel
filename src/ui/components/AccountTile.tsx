@@ -1,25 +1,55 @@
 import { LogOut } from "lucide-preact";
 import { useRef, useState } from "preact/hooks";
 import { ACCOUNT_TEXTS } from "../accountTexts";
+import { SHARED_TEXTS } from "../householdTexts";
 import { ErrorAlert } from "./Alert";
 import { ConfirmDialog } from "./ConfirmDialog";
 
 interface AccountTileProps {
   /** The address the person signed in with. */
   readonly email: string;
-  /** Ends the session on this device; the app shows the sign-in page afterwards. */
+  /** The data shown are the household's shared data; signing out deletes them from the device. */
+  readonly shared?: boolean;
+  /**
+   * Ends the session on this device; the app shows the sign-in page afterwards. With shared data
+   * and changes still waiting it downloads a backup file first.
+   */
   readonly onSignOut: () => Promise<void>;
+  /** With shared data: sends what waits and says how many changes still wait (asked first). */
+  readonly onCheckPending?: () => Promise<number>;
 }
 
 /** "Anmeldung" in the settings (stage 2): who is signed in, and signing out after a question. */
-export function AccountTile({ email, onSignOut }: AccountTileProps) {
+export function AccountTile({
+  email,
+  shared = false,
+  onSignOut,
+  onCheckPending,
+}: AccountTileProps) {
   const [asking, setAsking] = useState(false);
+  const [checking, setChecking] = useState(false);
+  /** Changes still waiting for the server when the question opened. */
+  const [pending, setPending] = useState(0);
   const [error, setError] = useState<string>();
   const opener = useRef<HTMLButtonElement | null>(null);
 
   function cancel() {
     setAsking(false);
     opener.current?.focus();
+  }
+
+  async function ask(button: HTMLButtonElement) {
+    if (checking) {
+      return;
+    }
+    opener.current = button;
+    setError(undefined);
+    if (onCheckPending !== undefined) {
+      setChecking(true);
+      setPending(await onCheckPending().catch(() => 0));
+      setChecking(false);
+    }
+    setAsking(true);
   }
 
   async function signOut() {
@@ -42,26 +72,27 @@ export function AccountTile({ email, onSignOut }: AccountTileProps) {
         <button
           class="btn btn--secondary"
           type="button"
-          onClick={(event) => {
-            opener.current = event.currentTarget;
-            setError(undefined);
-            setAsking(true);
-          }}
+          aria-disabled={checking}
+          onClick={(event) => void ask(event.currentTarget)}
         >
           <LogOut size={20} />
           {ACCOUNT_TEXTS.signOut}
         </button>
       </div>
+      <p class="form-status" role="status">
+        {checking ? ACCOUNT_TEXTS.busy : ""}
+      </p>
       {error && <ErrorAlert title={ACCOUNT_TEXTS.signOutFailed}>{error}</ErrorAlert>}
       <ConfirmDialog
         open={asking}
         title={ACCOUNT_TEXTS.signOutQuestion}
-        confirmLabel={ACCOUNT_TEXTS.signOut}
-        tone="primary"
+        confirmLabel={pending > 0 ? SHARED_TEXTS.signOutWithBackup : ACCOUNT_TEXTS.signOut}
+        tone={pending > 0 ? "warn" : "primary"}
         onConfirm={() => void signOut()}
         onCancel={cancel}
       >
-        <p>{ACCOUNT_TEXTS.signOutExplained}</p>
+        {pending > 0 && <p>{SHARED_TEXTS.signOutPending(pending)}</p>}
+        <p>{shared ? SHARED_TEXTS.signOutExplained : ACCOUNT_TEXTS.signOutExplained}</p>
       </ConfirmDialog>
     </section>
   );

@@ -274,6 +274,45 @@ export function describeRemoteContract(
       ]);
     });
 
+    it("E2-3b Sicherung einspielen gilt für beide: Namen, Aufgaben und Erledigungen aus der Datei", async () => {
+      const { a, b } = await setup();
+      await a.push(change({ type: "setNames", names: { personA: "Alex", personB: "Robin" } }));
+      await a.push(create(weekly()));
+      const known = await b.pull(null);
+      const backup = {
+        ...dataWith(
+          [once()],
+          [completion({ id: "c-p", taskId: "t-paket", previousDueDate: d("2026-10-22") })],
+        ),
+        settings: { personNames: { personA: "Kim", personB: "Noa" } },
+      };
+
+      await a.push(change({ type: "replaceAll", data: backup }));
+      const delta = await b.pull(known.cursor);
+      const merged = mergeDelta(mergeDelta(dataWith([]), known), delta);
+
+      expect(delta.settings?.personNames).toEqual({ personA: "Kim", personB: "Noa" });
+      expect(merged.tasks.map((task) => task.id)).toEqual(["t-paket"]);
+      expect(merged.completions.map((row) => row.id)).toEqual(["c-p"]);
+    });
+
+    it("E2-3b Neu angemeldet (Abruf ohne Stand): das Gerät bekommt den ganzen Stand, Gelöschtes fehlt", async () => {
+      const { a, b } = await setup();
+      await a.push(change({ type: "setNames", names: { personA: "Alex", personB: "Robin" } }));
+      await a.push(create(weekly()));
+      await a.push(create(once()));
+      await b.push(tick("c-b", "2026-10-19", "personB"));
+      await b.push(change({ type: "deleteTask", taskId: "t-paket" }));
+
+      const fresh = mergeDelta(dataWith([]), await b.pull(null));
+
+      expect(fresh.settings.personNames).toEqual({ personA: "Alex", personB: "Robin" });
+      expect(fresh.tasks.map((task) => task.id)).toEqual(["t-bad"]);
+      expect(fresh.completions.map((row) => [row.id, row.completedBy])).toEqual([
+        ["c-b", "personB"],
+      ]);
+    });
+
     it("Versionsschutz: Ein Gerät mit älterer App überschreibt keine Daten im neueren Format", async () => {
       const { a, device } = await setup();
       await a.push(create(weekly()));

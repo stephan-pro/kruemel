@@ -1,18 +1,18 @@
-import { type Browser, expect, type Page, test } from "@playwright/test";
+import { type APIRequestContext, type Browser, expect, type Page, test } from "@playwright/test";
 import { demoData } from "../../src/demo/demoData";
 import { ACCOUNT_TEXTS } from "../../src/ui/accountTexts";
 import { HOUSEHOLD_TEXTS } from "../../src/ui/householdTexts";
-import { createHousehold, newAddress, signInWithCode } from "./account";
-import { expectNoAccessibilityViolations } from "./axe";
 import {
-  dataKey,
-  deviceKey,
-  expectPageShown,
-  goToPage,
-  greetingHeading,
-  storedData,
-  today,
-} from "./helpers";
+  createHousehold,
+  FAKE_AUTH_KEY,
+  type Member,
+  newAddress,
+  pushAs,
+  serverData,
+  signInWithCode,
+} from "./account";
+import { expectNoAccessibilityViolations } from "./axe";
+import { dataKey, deviceKey, expectPageShown, goToPage, greetingHeading, today } from "./helpers";
 import { E2E_APP } from "./shared";
 
 // Package E2-2e: "Ich bin" comes from the role in the household, not from a choice on the device.
@@ -41,22 +41,42 @@ async function deviceWithData(browser: Browser): Promise<Page> {
 const householdTile = (page: Page) =>
   page.getByRole("region", { name: HOUSEHOLD_TEXTS.tileTitle, exact: true });
 
-/** Ticks off the first task the week view offers; returns the data saved on this device. */
-async function tickFirstTask(page: Page) {
+/**
+ * Puts a task due today into the household (E2-3b: the app shows the household's shared data, not
+ * those of stage 1), ticks it off in the week view and returns the completion the server got.
+ */
+async function tickNewTask(page: Page, request: APIRequestContext) {
+  const member = JSON.parse(
+    (await page.evaluate((key) => localStorage.getItem(key), FAKE_AUTH_KEY)) ?? "null",
+  ) as Member;
+  const id = crypto.randomUUID();
+  const task = {
+    kind: "oneOff",
+    id,
+    title: "Blumen gießen",
+    symbol: "standard",
+    assignee: "both",
+    dueDate: today(),
+    done: false,
+    checklist: [],
+  };
+  await pushAs(request, member, {
+    type: "saveTask",
+    taskId: id,
+    patch: { set: task, unset: [] },
+    create: task,
+    id: crypto.randomUUID(),
+  });
   await goToPage(page, "Woche", "Diese Woche");
-  const before = (await storedData(page)).completions.length;
-  await page
-    .getByRole("button", { name: /^Abhaken:/ })
-    .first()
-    .click();
-  await expect.poll(async () => (await storedData(page)).completions.length).toBe(before + 1);
-  const { completions } = await storedData(page);
-  return completions[completions.length - 1];
+  await page.getByRole("button", { name: "Abhaken: Blumen gießen" }).click();
+  await expect.poll(async () => (await serverData(request, member)).completions.length).toBe(1);
+  return (await serverData(request, member)).completions[0];
 }
 
 test.describe("E2-2e „Ich bin“ aus der Rolle", () => {
   test("Wer den Haushalt anlegt, ist die erste Person: Kopfzeile, Einstellungen und Abhaken", async ({
     browser,
+    request,
   }) => {
     const alex = await deviceWithData(browser);
     await alex.goto(E2E_APP);
@@ -77,11 +97,12 @@ test.describe("E2-2e „Ich bin“ aus der Rolle", () => {
     ).toContainText(email);
     await expectNoAccessibilityViolations(alex);
 
-    expect(await tickFirstTask(alex)).toMatchObject({ completedBy: "personA" });
+    expect(await tickNewTask(alex, request)).toMatchObject({ completedBy: "personA" });
   });
 
   test("Das zweite Mitglied ist die zweite Person, auch auf einem Gerät mit anderem „Ich bin“", async ({
     browser,
+    request,
   }) => {
     const founder = await deviceWithData(browser);
     await founder.goto(E2E_APP);
@@ -111,7 +132,7 @@ test.describe("E2-2e „Ich bin“ aus der Rolle", () => {
     );
     await expectNoAccessibilityViolations(dilan);
 
-    expect(await tickFirstTask(dilan)).toMatchObject({ completedBy: "personB" });
+    expect(await tickNewTask(dilan, request)).toMatchObject({ completedBy: "personB" });
 
     // Nach dem Neuladen (und ohne zu warten, bis der Haushalt gelesen ist) dasselbe.
     await dilan.reload();

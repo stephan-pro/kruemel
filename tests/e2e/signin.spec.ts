@@ -2,7 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 import { AUTH_MESSAGES } from "../../src/auth/auth";
 import { demoData } from "../../src/demo/demoData";
 import { ACCOUNT_TEXTS } from "../../src/ui/accountTexts";
-import { HOUSEHOLD_TEXTS } from "../../src/ui/householdTexts";
+import { HOUSEHOLD_TEXTS, SHARED_TEXTS } from "../../src/ui/householdTexts";
 import {
   codeField,
   createHousehold,
@@ -231,7 +231,7 @@ test.describe("E2-2c Anmelden mit Code", () => {
     await expect(page.getByText(ACCOUNT_TEXTS.signedInAs)).toContainText("Alex");
   });
 
-  test("Abmelden mit Rückfrage: danach die Anmeldeseite, die Aufgaben bleiben auf dem Gerät", async ({
+  test("Abmelden mit Rückfrage: danach die Anmeldeseite, die Aufgaben aus Etappe 1 bleiben auf dem Gerät", async ({
     page,
   }) => {
     await signIn(page, newAddress());
@@ -243,7 +243,8 @@ test.describe("E2-2c Anmelden mit Code", () => {
 
     await signOut.click();
     const dialog = page.getByRole("dialog", { name: ACCOUNT_TEXTS.signOutQuestion });
-    await expect(dialog).toContainText(ACCOUNT_TEXTS.signOutExplained);
+    // E2-3b: die gemeinsame Kopie geht, die lokalen Daten (`putzplan:data`) bleiben.
+    await expect(dialog).toContainText(SHARED_TEXTS.signOutExplained);
     await expectNoAccessibilityViolations(page);
     await dialog.getByRole("button", { name: "Abbrechen" }).click();
     await expect(signOut).toBeFocused();

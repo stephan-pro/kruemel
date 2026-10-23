@@ -5,6 +5,7 @@ import { ErrorAlert } from "../components/Alert";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { PageTitle } from "../components/PageTitle";
 import { downloadTextFile } from "../download";
+import { SHARED_TEXTS } from "../householdTexts";
 
 interface StorageProblemPageProps {
   /** What the storage reported (see `StorageError`). */
@@ -12,6 +13,8 @@ interface StorageProblemPageProps {
   readonly details: readonly string[];
   /** The stored text as it is; missing if there is nothing to rescue or it cannot be read. */
   readonly rawData: string | undefined;
+  /** The device's copy of the household's shared data (stage 2): it comes anew from the server. */
+  readonly shared?: boolean;
   /** Deletes the stored data; rejects with an `Error` whose message is shown. */
   readonly onDiscard: () => Promise<void>;
   readonly onRetry: () => void;
@@ -26,6 +29,7 @@ export function StorageProblemPage({
   message,
   details,
   rawData,
+  shared = false,
   onDiscard,
   onRetry,
 }: StorageProblemPageProps) {
@@ -71,9 +75,9 @@ export function StorageProblemPage({
         {canRescue ? (
           <>
             <p>
-              Die Krümel-App hat nichts verändert und überschreibt die Daten nicht von selbst.
-              Sichere sie zuerst als Datei, damit sich der Fehler später reparieren lässt. Danach
-              kannst du neu beginnen.
+              {shared
+                ? SHARED_TEXTS.problemIntro
+                : "Die Krümel-App hat nichts verändert und überschreibt die Daten nicht von selbst. Sichere sie zuerst als Datei, damit sich der Fehler später reparieren lässt. Danach kannst du neu beginnen."}
             </p>
             <section class="tile form" aria-labelledby="schritt-1">
               <h2 class="tile__title" id="schritt-1">
@@ -93,16 +97,17 @@ export function StorageProblemPage({
             {downloaded && (
               <section class="tile form" aria-labelledby="schritt-2">
                 <h2 class="tile__title" id="schritt-2">
-                  2. Neu beginnen
+                  {shared ? SHARED_TEXTS.fromServerTitle : "2. Neu beginnen"}
                 </h2>
                 <p>
-                  Dabei werden die gespeicherten Daten in diesem Browser gelöscht. Aufgaben und
-                  Erledigtes sind dann nur noch in der heruntergeladenen Datei vorhanden.
+                  {shared
+                    ? SHARED_TEXTS.fromServerText
+                    : "Dabei werden die gespeicherten Daten in diesem Browser gelöscht. Aufgaben und Erledigtes sind dann nur noch in der heruntergeladenen Datei vorhanden."}
                 </p>
                 {discardError && <ErrorAlert title="Nicht gelöscht">{discardError}</ErrorAlert>}
                 <div class="button-row">
                   <button class="btn btn--secondary" type="button" onClick={() => setAsking(true)}>
-                    Neu beginnen …
+                    {shared ? SHARED_TEXTS.fromServer : "Neu beginnen …"}
                   </button>
                 </div>
               </section>
@@ -125,14 +130,15 @@ export function StorageProblemPage({
 
       <ConfirmDialog
         open={asking}
-        title="Wirklich neu beginnen?"
-        confirmLabel="Ja, Daten löschen"
+        title={shared ? SHARED_TEXTS.fromServerQuestion : "Wirklich neu beginnen?"}
+        confirmLabel={shared ? SHARED_TEXTS.fromServerConfirm : "Ja, Daten löschen"}
         onConfirm={discard}
         onCancel={() => setAsking(false)}
       >
         <p>
-          Die gespeicherten Daten in diesem Browser werden gelöscht. Das lässt sich nicht rückgängig
-          machen. Die heruntergeladene Datei bleibt erhalten.
+          {shared
+            ? SHARED_TEXTS.fromServerDialog
+            : "Die gespeicherten Daten in diesem Browser werden gelöscht. Das lässt sich nicht rückgängig machen. Die heruntergeladene Datei bleibt erhalten."}
         </p>
       </ConfirmDialog>
     </>

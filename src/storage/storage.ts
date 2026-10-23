@@ -56,6 +56,11 @@ export type StorageUpdate =
   /** The data changed, e.g. through the other device; these are the data to show now. */
   | { readonly type: "data"; readonly data: AppData }
   | { readonly type: "status"; readonly status: SyncStatus }
+  /**
+   * The household holds data of a newer app version: this device's changes wait and its view is
+   * not updated until the app is reloaded ("Neue Version verfügbar – Neu laden").
+   */
+  | { readonly type: "outdated" }
   /** A change of this device was not taken over by the server. */
   | {
       readonly type: "conflict";
@@ -100,5 +105,16 @@ export class StorageError extends Error {
     super(message);
     this.name = "StorageError";
     this.details = details;
+  }
+}
+
+/**
+ * The shared data cannot be shown yet: this device has never got them from the server and the
+ * server cannot be reached now. Nothing is broken; it works once the device has a connection.
+ */
+export class StorageUnavailableError extends StorageError {
+  constructor(message: string) {
+    super(message);
+    this.name = "StorageUnavailableError";
   }
 }

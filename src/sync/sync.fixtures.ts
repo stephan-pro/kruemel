@@ -2,7 +2,7 @@
 
 import { calendarDay } from "../domain/date";
 import type { Completion, OneOffTask, RecurringTask, Task } from "../domain/task";
-import { type AppData, emptyAppData } from "../storage/appData";
+import { type AppData, emptyAppData, SCHEMA_VERSION } from "../storage/appData";
 import type { StorageUpdate } from "../storage/storage";
 import { FakeStore } from "../storage/storage.fixtures";
 import { FakeHousehold } from "./fakeHousehold";
@@ -77,15 +77,24 @@ export function idCounter(prefix: string): () => string {
   return () => `${prefix}-${++count}`;
 }
 
-/** Two or more devices of one household; `devices[i].remote.online = false` cuts one off. */
+/**
+ * Two or more devices of one household; `devices[i].remote.online = false` cuts one off. A device
+ * can run another app version (`schemaVersion`) and use the browser storage of an earlier one
+ * (`store`: the same device after reloading a new version).
+ */
 export function household(initial?: AppData) {
   const server = new FakeHousehold(initial);
-  const device = (name: string): Device => {
-    const store = new FakeStore();
+  const device = (
+    name: string,
+    schemaVersion: number = SCHEMA_VERSION,
+    store: FakeStore = new FakeStore(),
+  ): Device => {
     const remote = new FakeRemote(server);
+    remote.schemaVersion = schemaVersion;
     const storage = createSyncedStorage({
       remote,
       store,
+      schemaVersion,
       device: {
         loadDevice: async () => ({}),
         saveDevice: async () => undefined,

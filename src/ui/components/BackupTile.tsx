@@ -11,6 +11,7 @@ import {
 } from "../../storage/exportImport";
 import { downloadTextFile } from "../download";
 import { describeContents, exportNotice, importNotice } from "../format";
+import { SHARED_TEXTS } from "../householdTexts";
 import { ErrorAlert } from "./Alert";
 import { ConfirmDialog } from "./ConfirmDialog";
 
@@ -18,6 +19,11 @@ interface BackupTileProps {
   /** Everything the app keeps; this is what the backup file holds. */
   readonly data: AppData;
   readonly today: CalendarDay;
+  /**
+   * The household's shared data (stage 2): downloading works offline (from the device's copy),
+   * putting a backup in place replaces the data for both and only works online.
+   */
+  readonly shared?: boolean;
   /** Replaces all data; rejects with an `Error` whose message is shown. */
   readonly onImport: (data: AppData) => Promise<void>;
 }
@@ -48,7 +54,10 @@ function messageOf(error: unknown): string {
  * replaces everything, so the file is checked first, then the user is asked, and a copy of the
  * current data is downloaded before anything is replaced. A file with errors changes nothing.
  */
-export function BackupTile({ data, today, onImport }: BackupTileProps) {
+export function BackupTile({ data, today, shared = false, onImport }: BackupTileProps) {
+  /** Says that nothing was changed: the first thing to know after a failed import. */
+  const unchanged = (reason: string) =>
+    `${reason} ${shared ? SHARED_TEXTS.unchanged : "Deine Daten auf diesem Gerät sind unverändert."}`;
   const [status, setStatus] = useState("");
   const [problem, setProblem] = useState<ImportProblem>();
   const [pending, setPending] = useState<PendingImport>();
@@ -83,6 +92,15 @@ export function BackupTile({ data, today, onImport }: BackupTileProps) {
 
   function chooseFile(button: HTMLButtonElement) {
     importButton.current = button;
+    if (shared && !navigator.onLine) {
+      setStatus("");
+      setProblem({
+        title: "Sicherung nicht eingespielt",
+        message: unchanged(SHARED_TEXTS.importOffline),
+        details: [],
+      });
+      return;
+    }
     fileInput.current?.click();
   }
 
@@ -163,7 +181,9 @@ export function BackupTile({ data, today, onImport }: BackupTileProps) {
         Sicherung
       </h2>
       <p class="muted">
-        Alle Aufgaben, Erledigungen und die Namen als Datei, zum Aufbewahren oder zum Übertragen.
+        {shared
+          ? SHARED_TEXTS.backupIntro
+          : "Alle Aufgaben, Erledigungen und die Namen als Datei, zum Aufbewahren oder zum Übertragen."}{" "}
         „Ich bin“ und die Darstellung gehören zum Gerät und stehen nicht darin.
       </p>
 
@@ -181,8 +201,9 @@ export function BackupTile({ data, today, onImport }: BackupTileProps) {
       <div class="backup__block">
         <h3 class="backup__title">Einspielen</h3>
         <p>
-          Ersetzt alle Daten auf diesem Gerät durch die aus einer Sicherungsdatei. Vorher lädt die
-          App automatisch eine Sicherung der jetzigen Daten herunter.
+          {shared
+            ? SHARED_TEXTS.importIntro
+            : "Ersetzt alle Daten auf diesem Gerät durch die aus einer Sicherungsdatei. Vorher lädt die App automatisch eine Sicherung der jetzigen Daten herunter."}
         </p>
         <div class="button-row">
           <button
@@ -234,8 +255,9 @@ export function BackupTile({ data, today, onImport }: BackupTileProps) {
               Die Datei „{pending.fileName}“ enthält {contentsOf(pending.data)}.
             </p>
             <p>
-              Auf diesem Gerät sind jetzt {contentsOf(data)}. Sie werden alle ersetzt; das lässt
-              sich nicht rückgängig machen.
+              {shared
+                ? SHARED_TEXTS.importReplaces(contentsOf(data))
+                : `Auf diesem Gerät sind jetzt ${contentsOf(data)}. Sie werden alle ersetzt; das lässt sich nicht rückgängig machen.`}
             </p>
             <p>
               Vorher lädt die App automatisch eine Sicherung der jetzigen Daten als „
@@ -246,9 +268,4 @@ export function BackupTile({ data, today, onImport }: BackupTileProps) {
       </ConfirmDialog>
     </section>
   );
-}
-
-/** Says that nothing was changed: the first thing to know after a failed import. */
-function unchanged(reason: string): string {
-  return `${reason} Deine Daten auf diesem Gerät sind unverändert.`;
 }

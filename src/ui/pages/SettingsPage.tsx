@@ -31,12 +31,19 @@ interface SettingsPageProps {
   readonly onColorScheme: (scheme: ColorScheme) => Promise<void>;
   /** Replaces all data by the imported data; rejects with an `Error` whose message is shown. */
   readonly onImport: (data: AppData) => Promise<void>;
+  /** The data are the household's shared data (stage 2): a backup then replaces them for both. */
+  readonly shared?: boolean;
   /** How this browser puts the app on the home screen ("Als App installieren"). */
   readonly installWay: InstallWay;
   /** The browser's own install question; resolves `true` if accepted. */
   readonly onInstall: () => Promise<boolean>;
   /** Who is signed in and how to sign out (stage 2); missing when the app runs without sign-in. */
-  readonly account?: { readonly email: string; readonly onSignOut: () => Promise<void> };
+  readonly account?: {
+    readonly email: string;
+    readonly onSignOut: () => Promise<void>;
+    /** With shared data: sends what waits and says how many changes still wait. */
+    readonly onCheckPending?: () => Promise<number>;
+  };
   /** The household and how to invite the second person (stage 2); missing without sign-in. */
   readonly household?: {
     readonly info: HouseholdInfo;
@@ -59,6 +66,7 @@ export function SettingsPage({
   onSubmit,
   onColorScheme,
   onImport,
+  shared = false,
   installWay,
   onInstall,
   account,
@@ -131,15 +139,22 @@ export function SettingsPage({
           />
           {schemeError && <ErrorAlert title="Nicht gespeichert">{schemeError}</ErrorAlert>}
         </section>
-        <BackupTile data={data} today={today} onImport={importBackup} />
+        <BackupTile data={data} today={today} shared={shared} onImport={importBackup} />
         {household && (
           <HouseholdTile
             household={household.info}
-            names={household.info.names ?? names}
+            names={names}
             onCreateInvite={household.onCreateInvite}
           />
         )}
-        {account && <AccountTile email={account.email} onSignOut={account.onSignOut} />}
+        {account && (
+          <AccountTile
+            email={account.email}
+            shared={shared}
+            onSignOut={account.onSignOut}
+            {...(account.onCheckPending ? { onCheckPending: account.onCheckPending } : {})}
+          />
+        )}
         <InstallTile way={installWay} onInstall={onInstall} />
         <OtherDeviceTile address={appAddress()} />
         <VersionTile />

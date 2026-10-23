@@ -48,26 +48,38 @@ if (import.meta.env.MODE === "demo") {
 } else if (__BACKEND__ === "fake") {
   // The end-to-end tests (build mode `e2e`), no service worker. `__BACKEND__` is fixed at build
   // time, so none of this is in the real app. With a test session (`kruemel-fake:session`): the
-  // shared storage against the fake server. Without one: the sign-in pages against the fake
-  // server in front of the local storage, as in the mode `supabase` until E2-3.
+  // shared storage against the fake server, without sign-in. Without one: as in the mode
+  // `supabase`, sign-in, household and the household's shared data against the fake server.
   const { createFakeBackendStorage, FAKE_SESSION_KEY } = await import("./sync/browserFake");
   if (store.getItem(FAKE_SESSION_KEY) === null) {
-    const { FakeHttpAuth } = await import("./auth/fakeHttpAuth");
+    const { FakeHttpAuth, fakeAuthToken } = await import("./auth/fakeHttpAuth");
     const { FakeHttpHousehold } = await import("./auth/fakeHttpHousehold");
+    const { createFakeHttpRemote } = await import("./sync/fakeHttpRemote");
+    const { createBrowserSharedStorage } = await import("./sync/browserShared");
     const auth = new FakeHttpAuth({ baseUrl: __FAKE_SERVER__, store });
     const household = new FakeHttpHousehold({ baseUrl: __FAKE_SERVER__, store });
-    render(<App storage={createLocalStorage({ store })} auth={auth} household={household} />, root);
+    const local = createLocalStorage({ store });
+    const shared = (account: { householdId: string; userId: string }) =>
+      createBrowserSharedStorage(
+        createFakeHttpRemote({ baseUrl: __FAKE_SERVER__, token: fakeAuthToken(store) ?? "" }),
+        store,
+        local,
+        account,
+      );
+    render(<App storage={local} auth={auth} household={household} shared={shared} />, root);
   } else {
     const storage = createFakeBackendStorage(store, createLocalStorage({ store }));
     render(<App storage={storage} />, root);
     storage.start();
   }
 } else if (__BACKEND__ === "supabase") {
-  // Sign-in and household against the real project; the data stay in this browser until the
-  // shared storage follows (E2-3).
+  // Sign-in, household and the household's shared data against the real project (E2-3b). The
+  // local storage only keeps the device settings; the data of stage 1 stay untouched (E2-3d).
   const { createSupabaseClient } = await import("./auth/supabaseClient");
   const { SupabaseAuth } = await import("./auth/supabaseAuth");
   const { SupabaseHousehold } = await import("./auth/supabaseHousehold");
+  const { SupabaseRemote } = await import("./sync/supabaseRemote");
+  const { createBrowserSharedStorage } = await import("./sync/browserShared");
   const client = createSupabaseClient({
     url: import.meta.env.VITE_SUPABASE_URL ?? "",
     publishableKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "",
@@ -75,7 +87,10 @@ if (import.meta.env.MODE === "demo") {
   });
   const auth = new SupabaseAuth({ client, store });
   const household = new SupabaseHousehold(client);
-  render(<App storage={createLocalStorage({ store })} auth={auth} household={household} />, root);
+  const local = createLocalStorage({ store });
+  const shared = (account: { householdId: string; userId: string }) =>
+    createBrowserSharedStorage(new SupabaseRemote(client), store, local, account);
+  render(<App storage={local} auth={auth} household={household} shared={shared} />, root);
   registerServiceWorker();
 } else {
   render(<App storage={createLocalStorage({ store })} />, root);

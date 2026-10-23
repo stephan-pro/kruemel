@@ -10,13 +10,18 @@
 // - What the app shows is the server's state with the unsent changes carried out on top
 //   (`viewOf`). When that differs from what the app was given last, the storage reports it
 //   through `subscribe`.
+// - A device that has never got the data does not show anything before the first answer
+//   (`StorageUnavailableError`): an empty list would look as if all tasks were gone.
+// - When the household holds data of a newer app, the changes wait and the copy is not updated
+//   (the rows may have a format this app does not know); the storage reports `outdated`.
 // - Every read-modify-write of the stored state happens under a lock shared by all tabs.
 
-import { type AppData, emptyAppData } from "../storage/appData";
+import { type AppData, emptyAppData, SCHEMA_VERSION } from "../storage/appData";
 import type { KeyValueStore } from "../storage/localStorage";
 import {
   type AppStorage,
   StorageError,
+  StorageUnavailableError,
   type StorageUpdate,
   type SyncStatus,
 } from "../storage/storage";
@@ -35,8 +40,13 @@ export interface SyncedStorageOptions {
   readonly store: KeyValueStore;
   /** Settings of this device ("Ich bin", colour scheme …) stay local and are not synced. */
   readonly device: Pick<AppStorage, "loadDevice" | "saveDevice">;
-  /** Prefix of the key; default "kruemel". */
+  /**
+   * Prefix of the key; default "kruemel". The app puts the household and the person into it, so
+   * each account on a device has a copy of its own and nothing reaches the wrong account.
+   */
   readonly namespace?: string;
+  /** The app's `schemaVersion`; default `SCHEMA_VERSION` (tests play other versions). */
+  readonly schemaVersion?: number;
   /** Default: Web Locks if the browser has them, else locks inside the tab. */
   readonly locker?: Locker;
   /** Ids of changes; default `crypto.randomUUID`. */
@@ -63,6 +73,11 @@ export interface SyncedStorage extends AppStorage {
   replaceAll(data: AppData): Promise<void>;
   /** Starts the automatic sync (hints from the server and the `triggers`); returns the way to stop. */
   start(): () => void;
+  /**
+   * Signing out: stops the sync for good, waits for a running one and deletes the copy and the
+   * outbox. Changes still waiting are lost, so the app warns first and saves a backup file.
+   */
+  close(): Promise<void>;
 }
 
 type Connection = "ok" | "offline" | "unreachable";
@@ -95,6 +110,7 @@ export function createSyncedStorage(options: SyncedStorageOptions): SyncedStorag
   const locker = options.locker ?? browserLocker();
   const newId = options.newId ?? (() => crypto.randomUUID());
   const isOnline = options.isOnline ?? (() => globalThis.navigator?.onLine !== false);
+  const schemaVersion = options.schemaVersion ?? SCHEMA_VERSION;
   const listeners = new Set<(update: StorageUpdate) => void>();
 
   /** What the app was given last; `save` works out its changes against it. */
@@ -103,6 +119,9 @@ export function createSyncedStorage(options: SyncedStorageOptions): SyncedStorag
   let syncing = false;
   let running: Promise<void> | undefined;
   let again = false;
+  /** After `close`: no sync starts or writes any more. */
+  let closed = false;
+  const stops = new Set<() => void>();
 
   const emit = (update: StorageUpdate) => {
     for (const listener of [...listeners]) {
@@ -163,10 +182,11 @@ export function createSyncedStorage(options: SyncedStorageOptions): SyncedStorag
     syncing = true;
     emit({ type: "status", status: status() });
     const conflicts: StorageUpdate[] = [];
+    let outdated = false;
     try {
       let reachable = true;
       for (;;) {
-        const next = (await inState(() => states.read()))?.outbox[0];
+        const next = closed ? undefined : (await inState(() => states.read()))?.outbox[0];
         if (next === undefined) {
           break;
         }
@@ -177,6 +197,7 @@ export function createSyncedStorage(options: SyncedStorageOptions): SyncedStorag
         }
         if (result.status === "rejected" && result.reason === "outdated") {
           // The household holds data of a newer app: the changes wait until this app is updated.
+          outdated = true;
           break;
         }
         await inState(() => {
@@ -189,29 +210,43 @@ export function createSyncedStorage(options: SyncedStorageOptions): SyncedStorag
           conflicts.push(conflictOf(next, result));
         }
       }
-      if (reachable) {
+      if (reachable && !closed) {
         const cursor = (await inState(() => states.read()))?.cursor ?? null;
         const delta = await attempt(() => remote.pull(cursor));
         if (delta !== undefined) {
-          await inState(() => {
-            const state = states.read() ?? emptyState();
-            states.write({ ...state, base: mergeDelta(state.base, delta), cursor: delta.cursor });
-          });
           connection = "ok";
+          if (delta.schemaVersion > schemaVersion) {
+            // Rows of a newer app: kept on the server until this app is updated.
+            outdated = true;
+          } else if (!closed) {
+            await inState(() => {
+              const state = states.read() ?? emptyState();
+              states.write({ ...state, base: mergeDelta(state.base, delta), cursor: delta.cursor });
+            });
+          }
         }
       }
     } finally {
       syncing = false;
     }
+    if (closed) {
+      return;
+    }
     await refresh();
     for (const conflict of conflicts) {
       emit(conflict);
+    }
+    if (outdated) {
+      emit({ type: "outdated" });
     }
     emit({ type: "status", status: status() });
   }
 
   /** One sync at a time in this tab; a call during a run makes it run once more afterwards. */
   function sync(): Promise<void> {
+    if (closed) {
+      return Promise.resolve();
+    }
     if (running !== undefined) {
       again = true;
       return running;
@@ -222,7 +257,7 @@ export function createSyncedStorage(options: SyncedStorageOptions): SyncedStorag
           again = false;
           // Another tab may be syncing already; it picks up what this tab saved as well.
           await locker.tryExclusive(SYNC_LOCK, runSync);
-        } while (again);
+        } while (again && !closed);
       } finally {
         running = undefined;
       }
@@ -241,6 +276,11 @@ export function createSyncedStorage(options: SyncedStorageOptions): SyncedStorag
         // A device that has never synced has nothing to show before the first answer.
         await sync();
         state = await inState(() => states.read());
+        if (state === null) {
+          throw new StorageUnavailableError(
+            "Die gemeinsamen Daten sind auf diesem Gerät noch nicht da, und der Server ist gerade nicht erreichbar.",
+          );
+        }
       } else {
         syncInBackground();
       }
@@ -316,6 +356,9 @@ export function createSyncedStorage(options: SyncedStorageOptions): SyncedStorag
     },
 
     start(): () => void {
+      if (closed) {
+        return () => undefined;
+      }
       const stopHints = remote.subscribe(syncInBackground);
       const stopTriggers =
         options.triggers?.({
@@ -325,10 +368,25 @@ export function createSyncedStorage(options: SyncedStorageOptions): SyncedStorag
           },
         }) ?? (() => undefined);
       syncInBackground();
-      return () => {
-        stopHints();
-        stopTriggers();
+      // Called by `close` and later by the app as well; only the first call does something.
+      const stop = () => {
+        if (stops.delete(stop)) {
+          stopHints();
+          stopTriggers();
+        }
       };
+      stops.add(stop);
+      return stop;
+    },
+
+    async close(): Promise<void> {
+      closed = true;
+      for (const stop of [...stops]) {
+        stop();
+      }
+      await running?.catch(() => undefined);
+      await inState(() => states.clear());
+      delivered = undefined;
     },
   };
 }

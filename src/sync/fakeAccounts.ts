@@ -17,8 +17,8 @@ import { FakeHousehold } from "./fakeHousehold";
 
 interface Home {
   readonly id: string;
+  /** Also holds the names: like the database, one place for the names of the household. */
   readonly household: FakeHousehold;
-  readonly names: PersonNames;
   readonly members: Map<string, Person>; // user id → role
 }
 
@@ -48,7 +48,7 @@ export class FakeAccounts {
     return {
       id: home.id,
       me: home.members.get(userId) as Person,
-      names: home.names,
+      names: home.household.snapshot().settings.personNames ?? null,
       members: [...home.members.values()].sort(),
     };
   }
@@ -64,7 +64,6 @@ export class FakeAccounts {
         ...emptyAppData(),
         settings: { personNames: checked },
       }),
-      names: checked,
       members: new Map([[userId, "personA"]]),
     };
     this.homeOf.set(userId, home);

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import type { Auth, Session } from "../auth/auth";
 import { type HouseholdApi, HouseholdError, type HouseholdInfo } from "../auth/household";
 import type { DemoInfo } from "../demo/start";
@@ -14,6 +14,7 @@ import {
   undoInData,
 } from "../domain/taskManagement";
 import type { AppData, PersonNames } from "../storage/appData";
+import { exportData, signOutBackupFileName } from "../storage/exportImport";
 import { requestPersistentStorage } from "../storage/localStorage";
 import {
   type AppStorage,
@@ -21,13 +22,19 @@ import {
   DEFAULT_COLOR_SCHEME,
   type DeviceSettings,
   StorageError,
+  StorageUnavailableError,
+  type SyncStatus,
 } from "../storage/storage";
+import type { SharedAccount } from "../sync/browserShared";
+import type { SyncedStorage } from "../sync/syncedStorage";
 import { ACCOUNT_TEXTS } from "./accountTexts";
 import { applyColorScheme } from "./colorScheme";
 import { InstallHint } from "./components/InstallHint";
 import { Navigation } from "./components/Navigation";
 import { APP_NAME } from "./components/PageTitle";
+import { downloadTextFile } from "./download";
 import { pendingInvite, rememberInvite } from "./householdMemory";
+import { SHARED_TEXTS } from "./householdTexts";
 import { offersInstallHint, useInstallWay } from "./install";
 import { DonePage } from "./pages/DonePage";
 import { HouseholdPage, HouseholdUnavailablePage } from "./pages/HouseholdPage";
@@ -47,6 +54,7 @@ import { useHousehold } from "./useHousehold";
 import { useToday } from "./useToday";
 
 interface AppProps {
+  /** The data on this device; with `shared` only its device settings are used. */
   readonly storage: AppStorage;
   /** Only set in demo mode (`npm run demo`). */
   readonly demo?: DemoInfo;
@@ -54,7 +62,20 @@ interface AppProps {
   readonly auth?: Auth;
   /** The household (stage 2, with `auth`): the app opens only for a person who has one. */
   readonly household?: HouseholdApi;
+  /**
+   * The household's shared data of a member (stage 2, E2-3b, with `household`): the app shows
+   * them instead of the data in `storage`, which stay untouched.
+   */
+  readonly shared?: (account: SharedAccount) => SyncedStorage;
 }
+
+/** How many changes wait for the server. */
+function pendingOf(status: SyncStatus): number {
+  return status.state === "synced" ? 0 : status.pending;
+}
+
+/** How long signing out waits for the transfer of waiting changes before it asks anyway. */
+const SIGN_OUT_SYNC_MS = 5000;
 
 /**
  * The session of `auth`: `undefined` while it is read, `null` when signed out. Without `auth`
@@ -87,6 +108,8 @@ function useSession(auth: Auth | undefined) {
 type LoadState =
   | { readonly status: "loading" }
   | { readonly status: "ready"; readonly data: AppData; readonly device: DeviceSettings }
+  /** The shared data were never loaded on this device and the server cannot be reached. */
+  | { readonly status: "unavailable" }
   | {
       readonly status: "problem";
       readonly message: string;
@@ -101,6 +124,9 @@ async function loadState(storage: AppStorage): Promise<LoadState> {
     const device = await storage.loadDevice();
     return { status: "ready", data, device };
   } catch (error) {
+    if (error instanceof StorageUnavailableError) {
+      return { status: "unavailable" };
+    }
     let rawData: string | undefined;
     try {
       rawData = (await storage.loadRaw()) ?? undefined;
@@ -161,10 +187,32 @@ function useLocation(onInvite: () => void): PageLocation {
   return pageLocation;
 }
 
-export function App({ storage, demo, auth, household: householdApi }: AppProps) {
+export function App({
+  storage: deviceStorage,
+  demo,
+  auth,
+  household: householdApi,
+  shared,
+}: AppProps) {
   const [session, setSession] = useSession(auth);
   const [invite, setInvite] = useState(() => takeInvite(householdApi !== undefined));
   const household = useHousehold(householdApi, session?.userId);
+  const joined = household.state.status === "ready" ? household.state.household : null;
+  /**
+   * The shared data of the signed-in member, one storage per account (E2-3b). `undefined` while
+   * nobody is signed in or the household is not known yet: then nothing is loaded at all, so the
+   * data on the device are never shown to, or saved for, an account.
+   */
+  const sharedStorage = useMemo(
+    () =>
+      shared !== undefined && session != null && joined !== null
+        ? shared({ householdId: joined.id, userId: session.userId })
+        : undefined,
+    [shared, session?.userId, joined?.id],
+  );
+  const storage = shared === undefined ? deviceStorage : sharedStorage;
+  /** The household holds data of a newer app ("Neue Version verfügbar – Neu laden"). */
+  const [outdated, setOutdated] = useState(false);
   const [state, setStateValue] = useState<LoadState>({ status: "loading" });
   /**
    * The newest state, also between two drawings. With the shared storage the other device's data
@@ -184,9 +232,27 @@ export function App({ storage, demo, auth, household: householdApi }: AppProps) 
   const today = useToday();
   const install = useInstallWay();
 
+  /** The storage of the data shown now; only called once the app shows them. */
+  function activeStorage(): AppStorage {
+    if (storage === undefined) {
+      throw new Error("Die App ist noch nicht bereit.");
+    }
+    return storage;
+  }
+
+  /** Counts the loads; the answer of an older one (another account, a retry) is dropped. */
+  const loads = useRef(0);
+
   async function load() {
+    const mine = ++loads.current;
     setState({ status: "loading" });
+    if (storage === undefined) {
+      return;
+    }
     const loaded = await loadState(storage);
+    if (mine !== loads.current) {
+      return;
+    }
     if (loaded.status === "ready") {
       // Usually already done by the script in index.html; this keeps both in step.
       applyColorScheme(loaded.device.colorScheme ?? DEFAULT_COLOR_SCHEME);
@@ -194,23 +260,40 @@ export function App({ storage, demo, auth, household: householdApi }: AppProps) 
     setState(loaded);
   }
 
+  // A new storage (start, signed in, another account): load it, show what arrives from the other
+  // device without a reload and keep the shared data in step. The sync state and conflicts are
+  // shown from E2-3c on.
   useEffect(() => {
     void load();
-  }, []);
+    if (storage === undefined) {
+      return;
+    }
+    const stopUpdates = storage.subscribe((update) => {
+      if (update.type === "data") {
+        setState((current) =>
+          current.status === "ready" ? { ...current, data: update.data } : current,
+        );
+      } else if (update.type === "outdated") {
+        setOutdated(true);
+      }
+    });
+    const stopSync = sharedStorage?.start();
+    return () => {
+      loads.current++;
+      stopUpdates();
+      stopSync?.();
+    };
+  }, [storage]);
 
-  // Data that arrive from the other device (shared storage): show them without a reload. The
-  // sync state and conflicts are shown from E2-3 on.
-  useEffect(
-    () =>
-      storage.subscribe((update) => {
-        if (update.type === "data") {
-          setState((current) =>
-            current.status === "ready" ? { ...current, data: update.data } : current,
-          );
-        }
-      }),
-    [storage],
-  );
+  // Shared data never loaded and no connection: try again as soon as the device is online.
+  useEffect(() => {
+    if (state.status !== "unavailable") {
+      return;
+    }
+    const retry = () => void load();
+    addEventListener("online", retry);
+    return () => removeEventListener("online", retry);
+  }, [state.status, storage]);
 
   /** Setup and settings: the names (stored with the data) and "Ich bin" (stored on the device). */
   async function saveNamesAndPerson(names: PersonNameInput, person: Person) {
@@ -224,8 +307,8 @@ export function App({ storage, demo, auth, household: householdApi }: AppProps) 
     };
     // In a household the role decides, whatever the form or an old device says.
     const device: DeviceSettings = { ...state.device, currentPerson: joined?.me ?? person };
-    const saved = await storage.save(data);
-    await storage.saveDevice(device);
+    const saved = await activeStorage().save(data);
+    await activeStorage().saveDevice(device);
     setState({ status: "ready", data: saved, device });
     void requestPersistentStorage();
   }
@@ -242,7 +325,7 @@ export function App({ storage, demo, auth, household: householdApi }: AppProps) 
       return;
     }
     const device: DeviceSettings = { ...state.device, colorScheme };
-    await storage.saveDevice(device);
+    await activeStorage().saveDevice(device);
     applyColorScheme(colorScheme);
     showDevice(device);
   }
@@ -253,7 +336,7 @@ export function App({ storage, demo, auth, household: householdApi }: AppProps) 
       return;
     }
     const device: DeviceSettings = { ...state.device, currentPerson: person };
-    await storage.saveDevice(device);
+    await activeStorage().saveDevice(device);
     showDevice(device);
   }
 
@@ -262,8 +345,22 @@ export function App({ storage, demo, auth, household: householdApi }: AppProps) 
     if (latest.current.status !== "ready") {
       return;
     }
-    const saved = await storage.save(data);
+    const saved = await activeStorage().save(data);
     setState((current) => (current.status === "ready" ? { ...current, data: saved } : current));
+  }
+
+  /**
+   * "Sicherung einspielen" in the household: replaces the data for both, only online. A backup
+   * without names keeps the household's names.
+   */
+  async function importShared(data: AppData) {
+    if (sharedStorage === undefined) {
+      return;
+    }
+    const personNames = data.settings.personNames ?? names;
+    await sharedStorage.replaceAll(
+      personNames === undefined ? data : { ...data, settings: { ...data.settings, personNames } },
+    );
   }
 
   /** Creates a task, or replaces `existing` by the changed one, then goes back to the list. */
@@ -358,7 +455,7 @@ export function App({ storage, demo, auth, household: householdApi }: AppProps) 
     showDevice(device);
     focusPageHeading();
     try {
-      await storage.saveDevice(device);
+      await activeStorage().saveDevice(device);
     } catch {
       // Closed for now; it shows again after the next start. Not worth an error message.
     }
@@ -370,13 +467,40 @@ export function App({ storage, demo, auth, household: householdApi }: AppProps) 
     focusPageHeading();
   }
 
+  /** Unreadable data: deleted after the question; the shared copy then comes anew from the server. */
   async function discard() {
-    await storage.discard();
+    await activeStorage().discard();
     await load();
   }
 
-  /** "Abmelden": ends the session on this device; the data stay (until E2-3 they are local). */
+  /**
+   * Before the question "Abmelden?": sends what waits (for a few seconds at most) and says how
+   * many changes still wait.
+   */
+  async function pendingBeforeSignOut(): Promise<number> {
+    if (sharedStorage === undefined) {
+      return 0;
+    }
+    await Promise.race([
+      sharedStorage.sync().catch(() => undefined),
+      new Promise((resolve) => setTimeout(resolve, SIGN_OUT_SYNC_MS)),
+    ]);
+    return pendingOf(sharedStorage.syncStatus());
+  }
+
+  /**
+   * "Abmelden": ends the session on this device. The shared copy and its outbox are deleted; if
+   * changes still wait, a backup file with all data is downloaded first. The data of stage 1 on
+   * the device stay untouched.
+   */
   async function signOut() {
+    if (sharedStorage !== undefined) {
+      const shown = latest.current;
+      if (pendingOf(sharedStorage.syncStatus()) > 0 && shown.status === "ready") {
+        downloadTextFile(signOutBackupFileName(today), exportData(shown.data), "application/json");
+      }
+      await sharedStorage.close();
+    }
     await auth?.signOut();
     household.forget();
     setSession(null);
@@ -422,24 +546,6 @@ export function App({ storage, demo, auth, household: householdApi }: AppProps) 
     setInvite(undefined);
   }
 
-  const joined = household.state.status === "ready" ? household.state.household : null;
-
-  // A device without names (a new phone, the invited person): it takes the household's names and
-  // "Ich bin" from the role instead of asking for them in the first-time setup. Devices that
-  // already have data keep them (the shared storage of E2-3 decides about those).
-  const [adoptFailed, setAdoptFailed] = useState(false);
-  const adopting =
-    householdApi !== undefined &&
-    joined?.names != null &&
-    state.status === "ready" &&
-    state.data.settings.personNames === undefined &&
-    !adoptFailed;
-  useEffect(() => {
-    if (adopting && joined?.names) {
-      saveNamesAndPerson(joined.names, joined.me).catch(() => setAdoptFailed(true));
-    }
-  }, [adopting]);
-
   // The other person may have joined meanwhile: the settings show the household as it is now.
   useEffect(() => {
     if (route === "settings" && joined !== null) {
@@ -468,15 +574,15 @@ export function App({ storage, demo, auth, household: householdApi }: AppProps) 
                   ? "invite"
                   : joined === null
                     ? "household"
-                    : adopting
-                      ? "waiting"
-                      : "open";
-  // With a household the role decides who "Ich bin" is, and its names win over those kept on the
-  // device (until E2-3b they live in the local data and could drift apart). The local values stay
-  // untouched: a device with data from stage 1 still knows its old "Ich bin" for E2-3d.
+                    : "open";
+  // With a household the role decides who "Ich bin" is. The names are those of the shared data
+  // (they follow a change by the other device or a backup), else those the household reported.
+  // The local values stay untouched: a device with data from stage 1 still knows its old "Ich
+  // bin" for E2-3d.
   const member = householdApi === undefined ? null : joined;
+  const shownNames = state.status === "ready" ? state.data.settings.personNames : undefined;
   const names =
-    member?.names ?? (state.status === "ready" ? state.data.settings.personNames : undefined);
+    (sharedStorage === undefined ? undefined : shownNames) ?? member?.names ?? shownNames;
   const person = member?.me ?? (state.status === "ready" ? state.device.currentPerson : undefined);
   const inApp =
     gate === "open" && state.status === "ready" && names !== undefined && person !== undefined;
@@ -512,6 +618,16 @@ export function App({ storage, demo, auth, household: householdApi }: AppProps) 
             </p>
           </aside>
         )}
+        {outdated && (
+          <aside class="demo-hint update-hint" aria-label={SHARED_TEXTS.newVersionLabel}>
+            <p role="status">{SHARED_TEXTS.newVersion}</p>
+            <div class="button-row">
+              <button class="btn btn--primary" type="button" onClick={() => location.reload()}>
+                {SHARED_TEXTS.reload}
+              </button>
+            </div>
+          </aside>
+        )}
         <main id="inhalt" tabIndex={-1}>
           {(gate === "waiting" || (gate === "open" && state.status === "loading")) && (
             <p role="status">Wird geladen …</p>
@@ -532,11 +648,18 @@ export function App({ storage, demo, auth, household: householdApi }: AppProps) 
           {gate === "household" && (
             <HouseholdPage onCreate={createHousehold} onInvite={openInvite} />
           )}
+          {gate === "open" && state.status === "unavailable" && (
+            <HouseholdUnavailablePage
+              message={SHARED_TEXTS.notLoadedYet}
+              onRetry={() => void load()}
+            />
+          )}
           {gate === "open" && state.status === "problem" && (
             <StorageProblemPage
               message={state.message}
               details={state.details}
               rawData={state.rawData}
+              shared={sharedStorage !== undefined}
               onDiscard={discard}
               onRetry={() => void load()}
             />
@@ -557,10 +680,21 @@ export function App({ storage, demo, auth, household: householdApi }: AppProps) 
               colorScheme={state.device.colorScheme ?? DEFAULT_COLOR_SCHEME}
               onSubmit={saveNamesAndPerson}
               onColorScheme={saveColorScheme}
-              onImport={saveData}
+              onImport={sharedStorage === undefined ? saveData : importShared}
+              shared={sharedStorage !== undefined}
               installWay={install.way}
               onInstall={install.install}
-              {...(session ? { account: { email: session.email, onSignOut: signOut } } : {})}
+              {...(session
+                ? {
+                    account: {
+                      email: session.email,
+                      onSignOut: signOut,
+                      ...(sharedStorage === undefined
+                        ? {}
+                        : { onCheckPending: pendingBeforeSignOut }),
+                    },
+                  }
+                : {})}
               {...(householdApi && joined
                 ? {
                     household: {

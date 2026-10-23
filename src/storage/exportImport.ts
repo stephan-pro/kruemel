@@ -23,6 +23,14 @@ export function autoBackupFileName(today: CalendarDay): string {
   return `kruemel-vor-import-${today}.json`;
 }
 
+/**
+ * Name of the copy the app downloads by itself when someone signs out while changes still wait
+ * for the server (stage 2), e.g. "kruemel-vor-abmelden-2026-10-19.json".
+ */
+export function signOutBackupFileName(today: CalendarDay): string {
+  return `kruemel-vor-abmelden-${today}.json`;
+}
+
 /** Name of the file with unreadable stored data, e.g. "kruemel-rohdaten-2026-10-19.json". */
 export function rawDataFileName(today: CalendarDay): string {
   return `kruemel-rohdaten-${today}.json`;

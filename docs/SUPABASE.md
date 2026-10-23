@@ -1,6 +1,6 @@
 # Supabase – Einrichtung und Betrieb (Etappe 2)
 
-Stand: 20.10.2026 (Paket E2-1). Für den Product Owner und spätere Sitzungen. Die App nutzt Supabase erst ab E2-3; bis dahin liefert die Online-Version weiter Etappe 1 aus (Daten nur im Browser).
+Stand: 20.10.2026 (Paket E2-1). Für den Product Owner und spätere Sitzungen. Die App nutzt Supabase erst ab E2-3; bis dahin liefert die Online-Version weiter Etappe 1 aus (Daten nur im Browser). Seit E2-3b liegen im Modus `supabase` (lokal `npm run dev` mit `VITE_BACKEND=supabase`) Aufgaben, Erledigungen und Namen im Haushalt; dafür muss die Migration `…_sync.sql` im Projekt eingespielt sein.
 
 ## Was wo liegt
 

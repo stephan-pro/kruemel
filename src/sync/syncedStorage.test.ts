@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { completeInData, undoInData } from "../domain/taskManagement";
 import { emptyAppData, SCHEMA_VERSION } from "../storage/appData";
-import { StorageError } from "../storage/storage";
+import { StorageError, StorageUnavailableError } from "../storage/storage";
 import { FakeStore } from "../storage/storage.fixtures";
 import { FakeRemote } from "./fakeRemote";
 import { memoryLocker } from "./locks";
@@ -31,16 +31,15 @@ describe("Sync: Anzeigen und Speichern gehen lokal, auch offline", () => {
     expect(data.settings.personNames).toEqual(names);
   });
 
-  it("Ein Gerät ohne Verbindung und ohne Kopie zeigt leere Daten, bis es Verbindung hat", async () => {
+  it("E2-3b Ein Gerät ohne Verbindung und ohne Kopie zeigt nichts (statt leerer Daten), bis es Verbindung hat", async () => {
     const { device } = household(dataWith([weekly()]));
     const a = device("a");
     a.remote.online = false;
 
-    expect(await a.storage.load()).toEqual(emptyAppData());
+    await expect(a.storage.load()).rejects.toBeInstanceOf(StorageUnavailableError);
+    expect(await a.storage.loadRaw()).toBeNull();
     a.remote.online = true;
-    await a.storage.sync();
 
-    expect(a.updates.some((u) => u.type === "data" && u.data.tasks.length === 1)).toBe(true);
     expect((await a.storage.load()).tasks).toHaveLength(1);
   });
 
@@ -107,7 +106,7 @@ describe("Sync: Anzeigen und Speichern gehen lokal, auch offline", () => {
       isOnline: () => true, // online, but the server does not answer
     });
     unreachable.remote.online = false;
-    await reachable.load();
+    await expect(reachable.load()).rejects.toBeInstanceOf(StorageUnavailableError);
     expect(reachable.syncStatus()).toEqual({ state: "unreachable", pending: 0 });
 
     a.remote.online = true;
@@ -437,20 +436,20 @@ describe("Sync: Konflikte auf zwei Geräten", () => {
 });
 
 describe("Sync: Versionsschutz", () => {
-  /** A household that a device with a newer app already wrote to. */
+  /** Device `a` knows the household; then a device with a newer app writes to it. */
   async function writtenByNewerApp() {
     const { device, server } = household(dataWith([weekly()]));
-    const newer = device("n");
-    newer.remote.schemaVersion = SCHEMA_VERSION + 1;
+    const a = device("a");
+    await a.storage.load();
+    const newer = device("n", SCHEMA_VERSION + 1);
     await newer.storage.load();
     await newer.storage.save(dataWith([weekly({ title: "Neu" })]));
     await newer.storage.sync();
-    return { device, server };
+    return { a, device, server };
   }
 
   it("Versionsschutz: Hat der Haushalt Daten einer neueren App, warten die Änderungen (kein Konflikt) und gehen nach dem Neuladen durch", async () => {
-    const { device, server } = await writtenByNewerApp();
-    const a = device("a");
+    const { a, device, server } = await writtenByNewerApp();
     const start = await a.storage.load();
 
     await a.storage.save({ ...start, tasks: [...start.tasks, once()] });
@@ -459,20 +458,37 @@ describe("Sync: Versionsschutz", () => {
     expect(server.snapshot().tasks.map((task) => task.id)).toEqual(["t-bad"]);
     expect(a.storage.syncStatus()).toEqual({ state: "syncing", pending: 1 });
     expect(a.updates.some((update) => update.type === "conflict")).toBe(false);
-    expect((await a.storage.load()).tasks.map((task) => task.title)).toEqual([
+    expect(a.updates.some((update) => update.type === "outdated")).toBe(true);
+
+    const reloaded = device("a", SCHEMA_VERSION + 1, a.store);
+    await reloaded.storage.sync();
+    expect(server.snapshot().tasks.map((task) => task.id)).toEqual(["t-bad", "t-paket"]);
+    expect((await reloaded.storage.load()).tasks.map((task) => task.title)).toEqual([
       "Neu",
       "Paket abholen",
     ]);
+  });
 
-    a.remote.schemaVersion = SCHEMA_VERSION + 1;
+  it("E2-3b Neue Version verfügbar: Die ältere App meldet es und übernimmt die Zeilen der neueren nicht", async () => {
+    const { a } = await writtenByNewerApp();
+
     await a.storage.sync();
-    expect(server.snapshot().tasks.map((task) => task.id)).toEqual(["t-bad", "t-paket"]);
+
+    expect(a.updates.filter((update) => update.type === "outdated")).toHaveLength(1);
+    expect(a.storage.syncStatus()).toEqual({ state: "synced" });
+    expect((await a.storage.load()).tasks.map((task) => task.title)).toEqual(["Bad putzen"]);
+  });
+
+  it("E2-3b Ein neues Gerät mit älterer App zeigt nichts statt der Zeilen der neueren", async () => {
+    const { device } = await writtenByNewerApp();
+    const old = device("alt");
+
+    await expect(old.storage.load()).rejects.toBeInstanceOf(StorageUnavailableError);
+    expect(old.updates.some((update) => update.type === "outdated")).toBe(true);
   });
 
   it("Versionsschutz: Einspielen wird abgelehnt und ersetzt nichts", async () => {
-    const { device, server } = await writtenByNewerApp();
-    const a = device("a");
-    await a.storage.load();
+    const { a, server } = await writtenByNewerApp();
 
     await expect(a.storage.replaceAll(dataWith([once()]))).rejects.toThrow("neueren Version");
     expect(server.snapshot().tasks.map((task) => task.title)).toEqual(["Neu"]);
@@ -541,6 +557,11 @@ describe("Sync: mehrere Tabs und Sonderfälle", () => {
       };
     });
     const other = make();
+    // Both tabs got the (empty) household earlier; now they are offline.
+    store.items.set(
+      "kruemel:sync",
+      JSON.stringify({ base: emptyAppData(), cursor: null, outbox: [] }),
+    );
     const seen: unknown[] = [];
     watching.subscribe((update) => {
       if (update.type === "data") seen.push(update.data.tasks.length);
@@ -569,6 +590,66 @@ describe("Sync: mehrere Tabs und Sonderfälle", () => {
 
     expect(await a.storage.loadRaw()).toBeNull();
     expect((await a.storage.load()).tasks).toHaveLength(1);
+  });
+
+  it("E2-3b Abmelden: close löscht Kopie und Warteschlange und beendet den Abgleich, auch mitten in einem Lauf", async () => {
+    const { device, server } = household(dataWith([weekly()]));
+    const a = device("a");
+    const start = await a.storage.load();
+    a.storage.start();
+    a.remote.online = false;
+    await a.storage.save({ ...start, tasks: [...start.tasks, once()] });
+    a.remote.online = true;
+    // A run is under way when the person signs out; it must not write the copy back.
+    const running = a.storage.sync();
+
+    await a.storage.close();
+    await running;
+    const pushed = a.remote.pushed.length;
+    await a.storage.sync();
+    a.storage.start()();
+    server.push({ type: "deleteTask", taskId: "t-bad", id: "x-1" });
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    expect(await a.storage.loadRaw()).toBeNull();
+    expect(a.remote.pushed).toHaveLength(pushed);
+    expect(a.updates.filter((update) => update.type === "data")).toEqual([]);
+  });
+
+  it("E2-3b Jedes Konto hat eine eigene Kopie: was ein Konto wartend hinterlässt, sendet kein anderes", async () => {
+    const first = household(dataWith([weekly()]));
+    const second = household(dataWith([once()]));
+    const store = new FakeStore();
+    const options = (remote: FakeRemote, namespace: string) => ({
+      remote,
+      store,
+      namespace,
+      device: { loadDevice: async () => ({}), saveDevice: async () => undefined },
+      locker: memoryLocker(),
+      newId: idCounter(namespace),
+    });
+    const remoteA = new FakeRemote(first.server);
+    const accountA = createSyncedStorage(options(remoteA, "kruemel:h1:u1"));
+    const start = await accountA.load();
+    remoteA.online = false;
+    await accountA.save({
+      ...start,
+      tasks: [...start.tasks, weekly({ id: "t-neu", title: "Neu" })],
+    });
+
+    // The session of A ended without signing out; B signs in on the same device.
+    const accountB = createSyncedStorage(options(new FakeRemote(second.server), "kruemel:h2:u2"));
+    const shown = await accountB.load();
+    await accountB.sync();
+
+    expect(shown.tasks.map((task) => task.id)).toEqual(["t-paket"]);
+    expect(second.server.snapshot().tasks.map((task) => task.id)).toEqual(["t-paket"]);
+    expect(store.items.get("kruemel:h1:u1:sync")).toContain("t-neu");
+
+    // A signs in again: the waiting change goes to A's household.
+    remoteA.online = true;
+    await createSyncedStorage(options(remoteA, "kruemel:h1:u1")).sync();
+    expect(first.server.snapshot().tasks.map((task) => task.id)).toEqual(["t-bad", "t-neu"]);
   });
 
   it("Eine beschädigte lokale Kopie wird gemeldet statt überschrieben", async () => {

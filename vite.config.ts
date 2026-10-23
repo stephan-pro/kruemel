@@ -150,12 +150,14 @@ export default defineConfig(({ mode }) => {
           "src/auth/**/*.ts",
           "src/backend.ts",
         ],
-        // `browserFake.ts` only connects parts that have their own tests (and needs the browser).
+        // `browserFake.ts` and `browserShared.ts` only connect parts that have their own tests (and
+        // need the browser).
         exclude: [
           "src/**/*.test.ts",
           "src/**/*.fixtures.ts",
           "src/**/*.contract.ts",
           "src/sync/browserFake.ts",
+          "src/sync/browserShared.ts",
         ],
         thresholds: {
           lines: 90,

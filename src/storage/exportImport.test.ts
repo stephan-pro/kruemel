@@ -10,6 +10,7 @@ import {
   importSizeError,
   MAX_IMPORT_BYTES,
   rawDataFileName,
+  signOutBackupFileName,
 } from "./exportImport";
 import { asVersion1, asVersion2, sampleData, withoutVersion3Fields } from "./storage.fixtures";
 
@@ -68,6 +69,10 @@ describe("F7 Export", () => {
   it("F7 Die automatische Sicherung vor dem Import heißt anders als eine eigene Sicherung desselben Tages", () => {
     expect(autoBackupFileName(d("2026-10-19"))).toBe("kruemel-vor-import-2026-10-19.json");
     expect(autoBackupFileName(d("2026-10-19"))).not.toBe(exportFileName(d("2026-10-19")));
+  });
+
+  it("E2-3b Die Sicherung beim Abmelden mit wartenden Änderungen hat einen eigenen Namen", () => {
+    expect(signOutBackupFileName(d("2026-10-19"))).toBe("kruemel-vor-abmelden-2026-10-19.json");
   });
 
   it("F7 Die automatische Sicherung ist selbst eine gültige Sicherung (sie lässt sich wieder einspielen)", () => {
