@@ -14,7 +14,7 @@ import {
   undoInData,
 } from "../domain/taskManagement";
 import type { AppData, PersonNames } from "../storage/appData";
-import { exportData, signOutBackupFileName } from "../storage/exportImport";
+import { exportData, rejectedFileName, signOutBackupFileName } from "../storage/exportImport";
 import { requestPersistentStorage } from "../storage/localStorage";
 import {
   type AppStorage,
@@ -23,15 +23,18 @@ import {
   type DeviceSettings,
   StorageError,
   StorageUnavailableError,
+  type StorageUpdate,
   type SyncStatus,
 } from "../storage/storage";
 import type { SharedAccount } from "../sync/browserShared";
+import { exportRejected } from "../sync/rejected";
 import type { SyncedStorage } from "../sync/syncedStorage";
 import { ACCOUNT_TEXTS } from "./accountTexts";
 import { applyColorScheme } from "./colorScheme";
 import { InstallHint } from "./components/InstallHint";
 import { Navigation } from "./components/Navigation";
 import { APP_NAME } from "./components/PageTitle";
+import { conflictText, SyncNotices } from "./components/SyncNotices";
 import { downloadTextFile } from "./download";
 import { pendingInvite, rememberInvite } from "./householdMemory";
 import { SHARED_TEXTS } from "./householdTexts";
@@ -72,6 +75,12 @@ interface AppProps {
 /** How many changes wait for the server. */
 function pendingOf(status: SyncStatus): number {
   return status.state === "synced" ? 0 : status.pending;
+}
+
+/** A conflict reported by the shared storage, until the person closes its hint. */
+interface Conflict {
+  readonly id: number;
+  readonly conflict: Extract<StorageUpdate, { type: "conflict" }>;
 }
 
 /** How long signing out waits for the transfer of waiting changes before it asks anyway. */
@@ -213,6 +222,11 @@ export function App({
   const storage = shared === undefined ? deviceStorage : sharedStorage;
   /** The household holds data of a newer app ("Neue Version verfügbar – Neu laden"). */
   const [outdated, setOutdated] = useState(false);
+  /** Where the shared data stand, how many changes were refused for good, open conflicts (E2-3c). */
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>({ state: "synced" });
+  const [rejectedCount, setRejectedCount] = useState(0);
+  const [conflicts, setConflicts] = useState<readonly Conflict[]>([]);
+  const conflictIds = useRef(0);
   const [state, setStateValue] = useState<LoadState>({ status: "loading" });
   /**
    * The newest state, also between two drawings. With the shared storage the other device's data
@@ -261,13 +275,18 @@ export function App({
   }
 
   // A new storage (start, signed in, another account): load it, show what arrives from the other
-  // device without a reload and keep the shared data in step. The sync state and conflicts are
-  // shown from E2-3c on.
+  // device without a reload, keep the shared data in step and show where they stand.
   useEffect(() => {
     void load();
+    setConflicts([]);
     if (storage === undefined) {
       return;
     }
+    const showSync = () => {
+      setSyncStatus(storage.syncStatus());
+      setRejectedCount(sharedStorage?.rejected().length ?? 0);
+    };
+    showSync();
     const stopUpdates = storage.subscribe((update) => {
       if (update.type === "data") {
         setState((current) =>
@@ -275,6 +294,11 @@ export function App({
         );
       } else if (update.type === "outdated") {
         setOutdated(true);
+      } else if (update.type === "status") {
+        showSync();
+      } else {
+        const id = ++conflictIds.current;
+        setConflicts((current) => [...current, { id, conflict: update }]);
       }
     });
     const stopSync = sharedStorage?.start();
@@ -485,19 +509,38 @@ export function App({
       sharedStorage.sync().catch(() => undefined),
       new Promise((resolve) => setTimeout(resolve, SIGN_OUT_SYNC_MS)),
     ]);
-    return pendingOf(sharedStorage.syncStatus());
+    return pendingOf(sharedStorage.syncStatus()) + sharedStorage.rejected().length;
+  }
+
+  /** "Als Datei herunterladen": the changes the server refused for good. */
+  function downloadRejected() {
+    if (sharedStorage !== undefined) {
+      downloadTextFile(
+        rejectedFileName(today),
+        exportRejected(sharedStorage.rejected(), new Date()),
+        "application/json",
+      );
+    }
+  }
+
+  /** "Verwerfen": the refused changes are forgotten. */
+  async function discardRejected() {
+    await sharedStorage?.discardRejected();
   }
 
   /**
    * "Abmelden": ends the session on this device. The shared copy and its outbox are deleted; if
-   * changes still wait, a backup file with all data is downloaded first. The data of stage 1 on
-   * the device stay untouched.
+   * changes still wait, a backup file with all data is downloaded first, and the changes the
+   * server refused as a file of their own. The data of stage 1 on the device stay untouched.
    */
   async function signOut() {
     if (sharedStorage !== undefined) {
       const shown = latest.current;
       if (pendingOf(sharedStorage.syncStatus()) > 0 && shown.status === "ready") {
         downloadTextFile(signOutBackupFileName(today), exportData(shown.data), "application/json");
+      }
+      if (sharedStorage.rejected().length > 0) {
+        downloadRejected();
       }
       await sharedStorage.close();
     }
@@ -628,6 +671,21 @@ export function App({
             </div>
           </aside>
         )}
+        {inApp && sharedStorage !== undefined && (
+          <SyncNotices
+            status={syncStatus}
+            rejected={rejectedCount}
+            conflicts={conflicts.map(({ id, conflict }) => ({
+              id,
+              text: conflictText(conflict, names, person),
+            }))}
+            onDownload={downloadRejected}
+            onDiscard={discardRejected}
+            onCloseConflict={(id) =>
+              setConflicts((current) => current.filter((entry) => entry.id !== id))
+            }
+          />
+        )}
         <main id="inhalt" tabIndex={-1}>
           {(gate === "waiting" || (gate === "open" && state.status === "loading")) && (
             <p role="status">Wird geladen …</p>
@@ -703,6 +761,9 @@ export function App({
                     },
                   }
                 : {})}
+              {...(sharedStorage === undefined
+                ? {}
+                : { sync: { status: syncStatus, rejected: rejectedCount } })}
             />
           )}
           {inApp && route === "tasks" && (

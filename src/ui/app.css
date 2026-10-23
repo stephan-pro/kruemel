@@ -541,6 +541,49 @@ main:focus {
   margin-top: 8px;
 }
 
+/* Hints about the shared data (E2-3c): waiting changes, conflicts (with ×), refused changes. */
+.sync-hint {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sync-hint__icon {
+  flex: none;
+}
+
+.sync-hint__text {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.sync-hint__close {
+  margin: -6px -8px -6px 0;
+}
+
+.sync-conflicts {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sync-conflicts .sync-hint {
+  margin-top: 8px;
+}
+
+.sync-alert {
+  margin: 16px var(--gutter-right) 0 var(--gutter-left);
+}
+
+.sync-alert .button-row {
+  margin-top: 4px;
+}
+
+.sync-status {
+  font-weight: 700;
+}
+
 .btn {
   display: inline-flex;
   align-items: center;

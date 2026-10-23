@@ -66,6 +66,8 @@ export type StorageUpdate =
       readonly type: "conflict";
       readonly reason: ConflictReason;
       readonly taskId?: string;
+      /** The task's title as this device knew it (also of a task deleted meanwhile). */
+      readonly title?: string;
       readonly by?: Person;
     };
 

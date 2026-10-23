@@ -15,6 +15,8 @@ export class FakeRemote implements Remote {
   schemaVersion: number = SCHEMA_VERSION;
   /** The next `push` reaches the server, but its answer is lost (`RemoteError`). */
   loseNextAnswer = false;
+  /** The next `push` is refused for good (`RemoteError` with `permanent`), e.g. invalid data. */
+  refuseNext = false;
   /** Every change handed over, also those that were lost on the way back. */
   readonly pushed: Change[] = [];
 
@@ -28,6 +30,10 @@ export class FakeRemote implements Remote {
   async push(change: Change): Promise<PushResult> {
     this.requireOnline();
     this.pushed.push(change);
+    if (this.refuseNext) {
+      this.refuseNext = false;
+      throw new RemoteError("Die Änderung ist ungültig.", true);
+    }
     const result = this.household.push(change, this.schemaVersion);
     if (this.loseNextAnswer) {
       this.loseNextAnswer = false;

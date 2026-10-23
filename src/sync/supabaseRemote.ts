@@ -10,7 +10,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { SCHEMA_VERSION } from "../storage/appData";
 import type { Change, PushResult } from "./changes";
-import { type PullResult, type Remote, RemoteError } from "./remote";
+import { isTemporaryStatus, type PullResult, type Remote, RemoteError } from "./remote";
 
 export interface SupabaseRemoteOptions {
   /** The app's `schemaVersion`; default `SCHEMA_VERSION` (tests play other versions). */
@@ -80,14 +80,7 @@ export function rpcFor(
 
 /** Whether a failed call may work later (HTTP status of the answer; 0 = no answer). */
 export function isTemporary(status: number, code: string | undefined): boolean {
-  return (
-    status === 0 ||
-    status === 401 ||
-    status === 408 ||
-    status === 429 ||
-    status >= 500 ||
-    (status === 404 && code === "PGRST202")
-  );
+  return isTemporaryStatus(status) || (status === 404 && code === "PGRST202");
 }
 
 interface RpcAnswer {

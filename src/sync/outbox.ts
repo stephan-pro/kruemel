@@ -1,13 +1,25 @@
 // What a device keeps for the sync, in the browser storage (stage 2): the last state it got from the
-// server (`base`), the cursor to ask for what changed since, and the outbox, the changes the
-// server has not confirmed yet. All in one entry, so a change of the outbox and of the base are
-// never half written. Nothing in it is trusted blindly: it is read like an import file.
+// server (`base`), the cursor to ask for what changed since, the outbox, the changes the server
+// has not confirmed yet, and the changes it refused for good (E2-3c). All in one entry, so moving
+// a change from the outbox aside and a change of the base are never half written. Nothing in it
+// is trusted blindly: it is read like an import file.
 
 import type { AppData } from "../storage/appData";
 import { type KeyValueStore, readKey, removeKey, writeKey } from "../storage/localStorage";
 import { StorageError } from "../storage/storage";
 import { parseAppData } from "../storage/validate";
 import type { Change } from "./changes";
+
+/** A change the server refused for good; kept until the person downloads or discards it. */
+export interface RejectedChange {
+  readonly change: Change;
+  /** When it was refused (ISO time). */
+  readonly rejectedAt: string;
+  /** What the server said. */
+  readonly message: string;
+  /** The task it concerned, if known (for the file). */
+  readonly title?: string;
+}
 
 export interface SyncState {
   /** The server's data as of `cursor`. */
@@ -16,6 +28,8 @@ export interface SyncState {
   readonly cursor: string | null;
   /** Changes to send, oldest first. */
   readonly outbox: readonly Change[];
+  /** Changes the server refused for good, oldest first; missing in states before E2-3c. */
+  readonly rejected?: readonly RejectedChange[];
 }
 
 const CHANGE_TYPES = [
@@ -35,6 +49,19 @@ function isChange(value: unknown): value is Change {
   const { id, type } = value as { id?: unknown; type?: unknown };
   return (
     typeof id === "string" && id !== "" && typeof type === "string" && CHANGE_TYPES.includes(type)
+  );
+}
+
+function isRejectedChange(value: unknown): value is RejectedChange {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const { change, rejectedAt, message, title } = value as Record<string, unknown>;
+  return (
+    isChange(change) &&
+    typeof rejectedAt === "string" &&
+    typeof message === "string" &&
+    (title === undefined || typeof title === "string")
   );
 }
 
@@ -73,7 +100,7 @@ export class SyncStateStore {
         "Die lokale Kopie der gemeinsamen Daten ist beschädigt (kein gültiges JSON).",
       );
     }
-    const { base, cursor, outbox } = (parsed ?? {}) as Record<string, unknown>;
+    const { base, cursor, outbox, rejected } = (parsed ?? {}) as Record<string, unknown>;
     const result = parseAppData(base);
     if (!result.ok) {
       throw new StorageError(
@@ -91,6 +118,13 @@ export class SyncStateStore {
         "Kopie.outbox: erwartet eine Liste von Änderungen",
       ]);
     }
-    return { base: result.data, cursor, outbox };
+    if (
+      !(rejected === undefined || (Array.isArray(rejected) && rejected.every(isRejectedChange)))
+    ) {
+      throw new StorageError("Die nicht gespeicherten Änderungen sind beschädigt.", [
+        "Kopie.rejected: erwartet eine Liste abgelehnter Änderungen",
+      ]);
+    }
+    return { base: result.data, cursor, outbox, ...(rejected === undefined ? {} : { rejected }) };
   }
 }

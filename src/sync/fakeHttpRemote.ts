@@ -4,7 +4,7 @@
 
 import { SCHEMA_VERSION } from "../storage/appData";
 import type { Change, PushResult } from "./changes";
-import { type PullResult, type Remote, RemoteError } from "./remote";
+import { isTemporaryStatus, type PullResult, type Remote, RemoteError } from "./remote";
 
 /** The part of the browser's `EventSource` that is used. */
 export interface EventSourceLike {
@@ -41,7 +41,11 @@ export function createFakeHttpRemote(options: FakeHttpRemoteOptions): Remote {
       throw new RemoteError(`Keine Verbindung zum Server: ${String(error)}`);
     }
     if (!response.ok) {
-      throw new RemoteError(`Der Server antwortet mit ${response.status}.`);
+      // Like Supabase: a refused change (400 …) is refused for good, a failure may pass later.
+      throw new RemoteError(
+        `Der Server antwortet mit ${response.status}.`,
+        !isTemporaryStatus(response.status),
+      );
     }
     try {
       return (await response.json()) as T;

@@ -91,7 +91,7 @@ export const SHARED_TEXTS = {
   signOutExplained:
     "Eure gemeinsamen Daten werden von diesem Gerät gelöscht, im Haushalt bleiben sie erhalten. Zum Weitermachen meldest du dich wieder mit einem Code an.",
   signOutPending: (count: number) =>
-    `${changesAre(count)} noch nicht übertragen, weil die Verbindung fehlt. Beim Abmelden gehen sie auf diesem Gerät verloren. Deshalb lädt die App vorher eine Sicherungsdatei mit allen Daten herunter.`,
+    `${changesAre(count)} noch nicht übertragen. Beim Abmelden gehen sie auf diesem Gerät verloren. Deshalb lädt die App sie vorher als Datei herunter.`,
   signOutWithBackup: "Sicherung laden und abmelden",
 
   backupIntro:
@@ -113,4 +113,60 @@ export const SHARED_TEXTS = {
   fromServerConfirm: "Ja, neu laden",
   fromServerDialog:
     "Die Kopie auf diesem Gerät wird gelöscht. Im Haushalt bleiben eure Daten erhalten, die heruntergeladene Datei auch.",
+} as const;
+
+/** "1 Änderung wartet" / "3 Änderungen warten". */
+function changesWait(count: number): string {
+  return count === 1 ? "1 Änderung wartet" : `${count} Änderungen warten`;
+}
+
+/** "„Bad putzen“" or, without a title, the fallback. */
+function named(title: string | undefined, fallback: string): string {
+  return title === undefined ? fallback : `„${title}“`;
+}
+
+/** Where the transfer stands and what went wrong (E2-3c). */
+export const SYNC_TEXTS = {
+  waitingLabel: "Übertragung",
+  waitingOffline: (count: number) => `Kein Internet – ${changesWait(count)} auf Verbindung.`,
+  waitingUnreachable: (count: number) =>
+    `Krümel ist gerade nicht erreichbar – ${changesWait(count)}.`,
+  /** Read out once the waiting changes are through. */
+  allSent: "Alles übertragen.",
+
+  tileTitle: "Übertragung",
+  tileIntro: "Deine Änderungen werden mit dem Haushalt abgeglichen, sobald das Gerät Internet hat.",
+  sending: "Wird übertragen …",
+  offline: "Kein Internet. Deine Änderungen werden übertragen, sobald du wieder verbunden bist.",
+  unreachable: "Krümel ist gerade nicht erreichbar. Die App versucht es später noch einmal.",
+
+  rejectedLabel: "Nicht gespeichert",
+  rejected: (count: number) =>
+    count === 1
+      ? "1 Änderung konnte nicht gespeichert werden. Sie ist beiseitegelegt, alles andere wird weiter übertragen."
+      : `${count} Änderungen konnten nicht gespeichert werden. Sie sind beiseitegelegt, alles andere wird weiter übertragen.`,
+  rejectedHint: "Lade sie als Datei herunter, wenn du nachsehen willst, was es war.",
+  rejectedTile: (count: number) =>
+    count === 1
+      ? "1 Änderung konnte nicht gespeichert werden (Hinweis oben)."
+      : `${count} Änderungen konnten nicht gespeichert werden (Hinweis oben).`,
+  download: "Als Datei herunterladen",
+  downloaded: "Datei heruntergeladen.",
+  discard: "Verwerfen …",
+  discardQuestion: (count: number) =>
+    count === 1 ? "Änderung verwerfen?" : `${count} Änderungen verwerfen?`,
+  discardDialog:
+    "Sie werden von diesem Gerät gelöscht und nicht gespeichert. Das lässt sich nicht rückgängig machen.",
+  discardConfirm: "Ja, verwerfen",
+
+  conflictLabel: "Hinweise zu deinen Änderungen",
+  close: "Hinweis schließen",
+  alreadyDone: (title: string | undefined, by: string) =>
+    `${named(title, "Die Aufgabe")} hatte ${by} schon abgehakt.`,
+  alreadyDoneByMe: (title: string | undefined) =>
+    `${named(title, "Die Aufgabe")} hattest du schon auf einem anderen Gerät abgehakt.`,
+  taskGone: (title: string | undefined) =>
+    `${named(title, "Eine Aufgabe")} wurde inzwischen gelöscht. Deine Änderung daran entfällt.`,
+  undoGone: (title: string | undefined) =>
+    `${title === undefined ? "" : `„${title}“: `}Rückgängig ging nicht mehr, weil sich die Aufgabe inzwischen geändert hat.`,
 } as const;

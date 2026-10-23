@@ -55,6 +55,14 @@ export class RemoteError extends Error {
   }
 }
 
+/**
+ * Whether a failed call may work later, by the HTTP status of the answer (0 = no answer): no
+ * connection, a timeout, an expired session, too many calls or a server failure.
+ */
+export function isTemporaryStatus(status: number): boolean {
+  return status === 0 || status === 401 || status === 408 || status === 429 || status >= 500;
+}
+
 export interface Remote {
   /** Throws `RemoteError` if the server cannot be reached. */
   pull(cursor: string | null): Promise<PullResult>;

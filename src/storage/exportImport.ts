@@ -31,6 +31,14 @@ export function signOutBackupFileName(today: CalendarDay): string {
   return `kruemel-vor-abmelden-${today}.json`;
 }
 
+/**
+ * Name of the file with changes the server refused for good (stage 2, E2-3c), e.g.
+ * "kruemel-nicht-gespeichert-2026-10-19.json".
+ */
+export function rejectedFileName(today: CalendarDay): string {
+  return `kruemel-nicht-gespeichert-${today}.json`;
+}
+
 /** Name of the file with unreadable stored data, e.g. "kruemel-rohdaten-2026-10-19.json". */
 export function rawDataFileName(today: CalendarDay): string {
   return `kruemel-rohdaten-${today}.json`;

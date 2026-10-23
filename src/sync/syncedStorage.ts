@@ -14,6 +14,9 @@
 //   (`StorageUnavailableError`): an empty list would look as if all tasks were gone.
 // - When the household holds data of a newer app, the changes wait and the copy is not updated
 //   (the rows may have a format this app does not know); the storage reports `outdated`.
+// - A change the server refuses for good (invalid, not allowed) would block all later ones. It is
+//   moved aside (`rejected`, kept with the copy) and the rest goes on; it stays there until the
+//   person has downloaded or discarded it, so nothing is lost without a word.
 // - Every read-modify-write of the stored state happens under a lock shared by all tabs.
 
 import { type AppData, emptyAppData, SCHEMA_VERSION } from "../storage/appData";
@@ -28,7 +31,7 @@ import {
 import { type Change, diffData, isDeepEqual, type PushResult } from "./changes";
 import { browserLocker, type Locker } from "./locks";
 import { mergeDelta, viewOf } from "./merge";
-import { type SyncState, SyncStateStore } from "./outbox";
+import { type RejectedChange, type SyncState, SyncStateStore } from "./outbox";
 import { type Remote, RemoteError } from "./remote";
 
 const STATE_LOCK = "kruemel-sync-state";
@@ -74,6 +77,13 @@ export interface SyncedStorage extends AppStorage {
   /** Starts the automatic sync (hints from the server and the `triggers`); returns the way to stop. */
   start(): () => void;
   /**
+   * Changes the server refused for good, oldest first (E2-3c). They are no longer part of what
+   * the app shows and wait for the person: "Als Datei herunterladen" or "Verwerfen".
+   */
+  rejected(): readonly RejectedChange[];
+  /** "Verwerfen": forgets the refused changes; reports the new state through `subscribe`. */
+  discardRejected(): Promise<void>;
+  /**
    * Signing out: stops the sync for good, waits for a running one and deletes the copy and the
    * outbox. Changes still waiting are lost, so the app warns first and saves a backup file.
    */
@@ -86,20 +96,38 @@ function emptyState(): SyncState {
   return { base: emptyAppData(), cursor: null, outbox: [] };
 }
 
+/**
+ * The task a change concerns and its title, looked up in what the device knew before sending it:
+ * the shown data, else the server's state (a deleted task, a taken back completion).
+ */
+function taskOf(change: Change, known: readonly AppData[]): { taskId?: string; title?: string } {
+  let taskId: string | undefined;
+  if (change.type === "complete") {
+    taskId = change.completion.taskId;
+  } else if (change.type === "saveTask" || change.type === "deleteTask") {
+    taskId = change.taskId;
+  } else if (change.type === "undo") {
+    taskId = known
+      .flatMap((data) => data.completions)
+      .find((completion) => completion.id === change.completionId)?.taskId;
+  }
+  if (taskId === undefined) {
+    return {};
+  }
+  const title =
+    known.flatMap((data) => data.tasks).find((task) => task.id === taskId)?.title ??
+    (change.type === "saveTask" ? change.create?.title : undefined);
+  return title === undefined ? { taskId } : { taskId, title };
+}
+
 function conflictOf(
-  change: Change,
+  task: { taskId?: string; title?: string },
   result: Exclude<Extract<PushResult, { status: "rejected" }>, { reason: "outdated" }>,
 ) {
-  const taskId =
-    change.type === "complete"
-      ? change.completion.taskId
-      : change.type === "saveTask"
-        ? change.taskId
-        : undefined;
   return {
     type: "conflict",
     reason: result.reason,
-    ...(taskId === undefined ? {} : { taskId }),
+    ...task,
     ...(result.reason === "alreadyDone" ? { by: result.by } : {}),
   } satisfies StorageUpdate;
 }
@@ -186,14 +214,42 @@ export function createSyncedStorage(options: SyncedStorageOptions): SyncedStorag
     try {
       let reachable = true;
       for (;;) {
-        const next = closed ? undefined : (await inState(() => states.read()))?.outbox[0];
-        if (next === undefined) {
+        const before = closed ? null : await inState(() => states.read());
+        const next = before?.outbox[0];
+        if (before == null || next === undefined) {
           break;
         }
-        const result = await attempt(() => remote.push(next));
-        if (result === undefined) {
-          reachable = false;
-          break;
+        const task = taskOf(next, [show(before), before.base]);
+        let result: PushResult;
+        try {
+          result = await remote.push(next);
+        } catch (error) {
+          if (!(error instanceof RemoteError)) {
+            throw error;
+          }
+          if (!error.permanent) {
+            connection = isOnline() ? "unreachable" : "offline";
+            reachable = false;
+            break;
+          }
+          // Refused for good: moved aside, so it does not hold up the changes after it.
+          await inState(() => {
+            const state = states.read();
+            if (state !== null) {
+              const entry: RejectedChange = {
+                change: next,
+                rejectedAt: new Date().toISOString(),
+                message: error.message,
+                ...(task.title === undefined ? {} : { title: task.title }),
+              };
+              states.write({
+                ...state,
+                outbox: state.outbox.filter((c) => c.id !== next.id),
+                rejected: [...(state.rejected ?? []), entry],
+              });
+            }
+          });
+          continue;
         }
         if (result.status === "rejected" && result.reason === "outdated") {
           // The household holds data of a newer app: the changes wait until this app is updated.
@@ -207,7 +263,7 @@ export function createSyncedStorage(options: SyncedStorageOptions): SyncedStorag
           }
         });
         if (result.status === "rejected") {
-          conflicts.push(conflictOf(next, result));
+          conflicts.push(conflictOf(task, result));
         }
       }
       if (reachable && !closed) {
@@ -364,7 +420,10 @@ export function createSyncedStorage(options: SyncedStorageOptions): SyncedStorag
         options.triggers?.({
           sync: syncInBackground,
           refresh: () => {
-            refresh().catch(() => undefined);
+            // Another tab may also have moved a change aside or discarded the refused ones.
+            refresh()
+              .then(() => emit({ type: "status", status: status() }))
+              .catch(() => undefined);
           },
         }) ?? (() => undefined);
       syncInBackground();
@@ -377,6 +436,24 @@ export function createSyncedStorage(options: SyncedStorageOptions): SyncedStorag
       };
       stops.add(stop);
       return stop;
+    },
+
+    rejected(): readonly RejectedChange[] {
+      try {
+        return states.read()?.rejected ?? [];
+      } catch {
+        return [];
+      }
+    },
+
+    async discardRejected(): Promise<void> {
+      await inState(() => {
+        const state = states.read();
+        if (state !== null) {
+          states.write({ ...state, rejected: [] });
+        }
+      });
+      emit({ type: "status", status: status() });
     },
 
     async close(): Promise<void> {

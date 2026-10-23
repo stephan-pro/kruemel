@@ -49,6 +49,35 @@ describe("Fake-Server (Test-Hilfe)", () => {
     expect(seen.body).toEqual(data);
   });
 
+  it("E2-3c /test/refuse: die nächsten Änderungen werden dauerhaft abgelehnt, FakeHttpRemote meldet das wie Supabase", async () => {
+    const server = new FakeServer();
+    const { tokens, household } = server.createHousehold();
+    const remote = createFakeHttpRemote({
+      baseUrl: BASE,
+      token: tokens.personA,
+      fetch: fetchFrom(server),
+    });
+    const change = { id: "x-1", type: "deleteTask", taskId: "t-bad" } as const;
+
+    server.handle(request({ method: "POST", path: "/test/refuse", token: tokens.personA }));
+    const refused = await remote.push(change).catch((error: unknown) => error);
+    expect(refused).toBeInstanceOf(RemoteError);
+    expect((refused as RemoteError).permanent).toBe(true);
+    expect(await remote.push(change)).toEqual({ status: "applied" });
+
+    server.handle(
+      request({ method: "POST", path: "/test/refuse", token: tokens.personA, body: { count: 2 } }),
+    );
+    await expect(remote.push({ ...change, id: "x-2" })).rejects.toThrow(RemoteError);
+    await expect(remote.push({ ...change, id: "x-3" })).rejects.toThrow(RemoteError);
+    expect(await remote.push({ ...change, id: "x-4" })).toEqual({ status: "applied" });
+    expect(household.snapshot().tasks).toEqual([]);
+    // An expired session may work again later: not refused for good.
+    const outsider = createFakeHttpRemote({ baseUrl: BASE, token: "?", fetch: fetchFrom(server) });
+    const unknown = await outsider.pull(null).catch((error: unknown) => error);
+    expect((unknown as RemoteError).permanent).toBe(false);
+  });
+
   it("Zwei Haushalte sehen die Daten des anderen nicht", () => {
     const server = new FakeServer();
     const one = server.createHousehold(dataWith([weekly()]));

@@ -5,6 +5,7 @@ import { StorageError, StorageUnavailableError } from "../storage/storage";
 import { FakeStore } from "../storage/storage.fixtures";
 import { FakeRemote } from "./fakeRemote";
 import { memoryLocker } from "./locks";
+import { exportRejected } from "./rejected";
 import { RemoteError } from "./remote";
 import { completion, d, dataWith, household, idCounter, once, weekly } from "./sync.fixtures";
 import { createSyncedStorage } from "./syncedStorage";
@@ -356,6 +357,7 @@ describe("Sync: Konflikte auf zwei Geräten", () => {
       type: "conflict",
       reason: "alreadyDone",
       taskId: "t-bad",
+      title: "Bad putzen",
       by: "personA",
     });
     expect(a.updates.filter((u) => u.type === "conflict")).toEqual([]);
@@ -386,7 +388,13 @@ describe("Sync: Konflikte auf zwei Geräten", () => {
 
     expect(server.snapshot().tasks.map((task) => task.id)).toEqual(["t-paket"]);
     expect((await b.storage.load()).tasks.map((task) => task.id)).toEqual(["t-paket"]);
-    expect(b.updates).toContainEqual({ type: "conflict", reason: "taskGone", taskId: "t-bad" });
+    // E2-3c: the title as the device knew it, for the hint (the task is gone meanwhile).
+    expect(b.updates).toContainEqual({
+      type: "conflict",
+      reason: "taskGone",
+      taskId: "t-bad",
+      title: "Bearbeitet",
+    });
   });
 
   it("Konflikt: Rückgängig geht nicht, wenn die Aufgabe inzwischen erneut abgehakt wurde", async () => {
@@ -415,7 +423,13 @@ describe("Sync: Konflikte auf zwei Geräten", () => {
 
     expect(server.snapshot().completions.map((c) => c.id)).toEqual(["c-1", "c-2"]);
     expect((await a.storage.load()).completions.map((c) => c.id)).toEqual(["c-1", "c-2"]);
-    expect(a.updates).toContainEqual({ type: "conflict", reason: "notLast" });
+    // E2-3c: the task is found through the completion the device knew.
+    expect(a.updates).toContainEqual({
+      type: "conflict",
+      reason: "notLast",
+      taskId: "t-bad",
+      title: "Bad putzen",
+    });
   });
 
   it("Alles wird von beiden Geräten gesehen, auch Löschen einer Aufgabe mit Erledigungen", async () => {
@@ -776,5 +790,80 @@ describe("Sync: mehrere Tabs und Sonderfälle", () => {
     };
 
     await expect(a.storage.sync()).rejects.toThrow("kaputt");
+
+    a.remote.push = async () => {
+      throw new TypeError("auch kaputt");
+    };
+    await a.storage.save(dataWith([weekly()]));
+    await expect(a.storage.sync()).rejects.toThrow("auch kaputt");
+    expect(a.storage.syncStatus()).toMatchObject({ pending: 1 });
+  });
+});
+
+describe("Sync: dauerhaft abgelehnte Änderungen (E2-3c)", () => {
+  it("E2-3c Eine dauerhaft abgelehnte Änderung wandert in die Ablage, die übrigen werden weiter übertragen", async () => {
+    const { device, server } = household(dataWith([weekly()]));
+    const a = device("a");
+    const start = await a.storage.load();
+    a.remote.refuseNext = true;
+
+    await a.storage.save({
+      ...start,
+      tasks: [{ ...weekly(), title: "Bad sauber" }, once()],
+    });
+    await a.storage.sync();
+
+    // The edit was refused, the new task went through; the view shows the server's state.
+    expect(server.snapshot().tasks.map((task) => task.title)).toEqual([
+      "Bad putzen",
+      "Paket abholen",
+    ]);
+    expect((await a.storage.load()).tasks.map((task) => task.title)).toEqual([
+      "Bad putzen",
+      "Paket abholen",
+    ]);
+    await a.storage.sync(); // the `load` above started a sync of its own
+    expect(a.storage.syncStatus()).toEqual({ state: "synced" });
+    expect(a.storage.rejected()).toMatchObject([
+      { change: { type: "saveTask", taskId: "t-bad" }, title: "Bad sauber" },
+    ]);
+    expect(a.storage.rejected()[0]?.message).toBe("Die Änderung ist ungültig.");
+    expect(a.updates.some((update) => update.type === "conflict")).toBe(false);
+
+    const file = JSON.parse(exportRejected(a.storage.rejected(), new Date("2026-10-23T12:00:00Z")));
+    expect(file).toMatchObject({
+      app: "Krümel",
+      schemaVersion: SCHEMA_VERSION,
+      exportedAt: "2026-10-23T12:00:00.000Z",
+      changes: [{ change: { type: "saveTask" } }],
+    });
+  });
+
+  it("E2-3c Die Ablage übersteht einen Neustart, bis die Person sie verwirft", async () => {
+    const { device } = household(dataWith([weekly()]));
+    const a = device("a");
+    const start = await a.storage.load();
+    a.remote.refuseNext = true;
+    await a.storage.save({ ...start, tasks: [] });
+    await a.storage.sync();
+
+    const again = device("a2", SCHEMA_VERSION, a.store);
+    await again.storage.load();
+    expect(again.storage.rejected()).toMatchObject([
+      { change: { type: "deleteTask" }, title: "Bad putzen" },
+    ]);
+
+    await again.storage.sync();
+    again.updates.length = 0;
+    await again.storage.discardRejected();
+    expect(again.storage.rejected()).toEqual([]);
+    expect(again.updates).toEqual([{ type: "status", status: { state: "synced" } }]);
+    expect(device("a3", SCHEMA_VERSION, a.store).storage.rejected()).toEqual([]);
+    // Without a copy (never synced, or broken) there is nothing aside and nothing to discard.
+    const fresh = device("b");
+    await fresh.storage.discardRejected();
+    expect(fresh.storage.rejected()).toEqual([]);
+    a.store.items.set([...a.store.items.keys()][0] ?? "", "{kaputt");
+    expect(device("a4", SCHEMA_VERSION, a.store).storage.rejected()).toEqual([]);
   });
 });

@@ -10,6 +10,7 @@
 //   POST /push          one change
 //   GET  /events?token= server-sent events: "change" whenever the household data changed
 //   GET  /test/data     the household's data as the server has them
+//   POST /test/refuse   {count?} the next changes (default 1) are refused for good (status 400)
 //   POST /auth/code, POST /auth/verify, GET /auth/session, POST /auth/sign-out
 //                       sign-in with a code (`FakeAuth`; the app's side is `FakeHttpAuth`)
 //   GET  /test/code?email=  the last code "sent" to the address, instead of a mail

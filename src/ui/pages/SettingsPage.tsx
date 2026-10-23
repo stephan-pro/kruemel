@@ -4,7 +4,7 @@ import type { CalendarDay } from "../../domain/date";
 import type { PersonNameInput } from "../../domain/personNames";
 import type { Person } from "../../domain/task";
 import type { AppData, PersonNames } from "../../storage/appData";
-import type { ColorScheme } from "../../storage/storage";
+import type { ColorScheme, SyncStatus } from "../../storage/storage";
 import { appAddress } from "../appInfo";
 import { AccountTile } from "../components/AccountTile";
 import { ErrorAlert } from "../components/Alert";
@@ -15,6 +15,7 @@ import { InstallTile } from "../components/InstallTile";
 import { NamesForm } from "../components/NamesForm";
 import { OtherDeviceTile } from "../components/OtherDeviceTile";
 import { PageTitle } from "../components/PageTitle";
+import { SyncTile } from "../components/SyncTile";
 import { VersionTile } from "../components/VersionTile";
 import type { InstallWay } from "../install";
 import { routeHash, routeInfo } from "../route";
@@ -49,6 +50,11 @@ interface SettingsPageProps {
     readonly info: HouseholdInfo;
     readonly onCreateInvite: () => Promise<Invite>;
   };
+  /** Where the shared data stand ("Übertragung", E2-3c); missing without shared data. */
+  readonly sync?: {
+    readonly status: SyncStatus;
+    readonly rejected: number;
+  };
 }
 
 const SCHEMES: readonly Choice<ColorScheme>[] = [
@@ -71,6 +77,7 @@ export function SettingsPage({
   onInstall,
   account,
   household,
+  sync,
 }: SettingsPageProps) {
   const [schemeError, setSchemeError] = useState<string>();
   /** Counts the imported backups; the names form starts over after each one. */
@@ -139,6 +146,7 @@ export function SettingsPage({
           />
           {schemeError && <ErrorAlert title="Nicht gespeichert">{schemeError}</ErrorAlert>}
         </section>
+        {sync && <SyncTile status={sync.status} rejected={sync.rejected} />}
         <BackupTile data={data} today={today} shared={shared} onImport={importBackup} />
         {household && (
           <HouseholdTile

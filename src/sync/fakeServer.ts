@@ -59,6 +59,8 @@ function textOf(body: unknown, field: string): string {
 
 export class FakeServer {
   private readonly members = new Map<string, Member>();
+  /** How many of the next changes a household refuses for good (`/test/refuse`, E2-3c). */
+  private readonly refusals = new Map<FakeHousehold, number>();
   /** The sign-in service; tests read the codes there (`auth.lastCode`). */
   readonly auth: FakeAuth;
   private readonly accounts: FakeAccounts;
@@ -111,7 +113,17 @@ export class FakeServer {
     if (method === "GET" && path === "/pull") {
       return { status: 200, body: household.pull(request.query.cursor ?? null) };
     }
+    if (method === "POST" && path === "/test/refuse") {
+      const count = Number((request.body as { count?: unknown } | undefined)?.count ?? 1);
+      this.refusals.set(household, Number.isInteger(count) ? count : 1);
+      return { status: 200, body: {} };
+    }
     if (method === "POST" && path === "/push") {
+      const refusals = this.refusals.get(household) ?? 0;
+      if (refusals > 0) {
+        this.refusals.set(household, refusals - 1);
+        return { status: 400, body: { error: "Änderung abgelehnt (Test)" } };
+      }
       const version = Number(request.query.schemaVersion ?? SCHEMA_VERSION);
       return isChange(request.body) && Number.isInteger(version)
         ? { status: 200, body: household.push(request.body, version) }

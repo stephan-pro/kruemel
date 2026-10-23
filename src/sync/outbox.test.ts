@@ -92,6 +92,37 @@ describe("Sync: Warteschlange und lokale Kopie im Browser-Speicher (Outbox)", ()
     expect(problems(store)).toEqual(["Kopie.outbox: erwartet eine Liste von Änderungen"]);
   });
 
+  it("E2-3c Die Ablage abgelehnter Änderungen wird mitgespeichert und beim Lesen geprüft", () => {
+    const store = new FakeStore();
+    const rejected = [
+      { change, rejectedAt: "2026-10-23T10:00:00.000Z", message: "ungültig", title: "Bad" },
+      { change, rejectedAt: "2026-10-23T10:01:00.000Z", message: "ungültig" },
+    ];
+    new SyncStateStore(store, KEY).write({
+      base: emptyAppData(),
+      cursor: null,
+      outbox: [],
+      rejected,
+    });
+    expect(new SyncStateStore(store, KEY).read()?.rejected).toEqual(rejected);
+
+    for (const broken of [
+      "x",
+      [{ change, rejectedAt: 5, message: "" }],
+      [{ change: { id: "x" }, rejectedAt: "", message: "" }],
+      [{ change, rejectedAt: "", message: "", title: 1 }],
+      [null],
+    ]) {
+      store.items.set(
+        KEY,
+        JSON.stringify({ base: emptyAppData(), cursor: null, outbox: [], rejected: broken }),
+      );
+      expect(problems(store)).toEqual([
+        "Kopie.rejected: erwartet eine Liste abgelehnter Änderungen",
+      ]);
+    }
+  });
+
   it("Ein gesperrter Browser-Speicher wird als StorageError gemeldet", () => {
     const store = new FakeStore();
     store.failWith = new Error("gesperrt");
