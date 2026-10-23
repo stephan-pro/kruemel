@@ -251,11 +251,6 @@ textarea {
   font-size: 14px;
 }
 
-/* "Neue Version verfügbar" (E2-3b): the hint with its button "Neu laden". */
-.update-hint .button-row {
-  margin-top: 8px;
-}
-
 main {
   max-width: 1200px;
   padding: 24px var(--gutter-right) 40px var(--gutter-left);
@@ -539,6 +534,11 @@ main:focus {
   flex-wrap: wrap;
   align-items: center;
   gap: 12px;
+}
+
+/* "Neue Version verfügbar" (E2-3b): the hint with its button "Neu laden". */
+.update-hint .button-row {
+  margin-top: 8px;
 }
 
 .btn {
