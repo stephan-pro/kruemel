@@ -117,6 +117,7 @@ export function HouseholdTile({ household, names, onCreateInvite }: HouseholdTil
           </li>
         ))}
       </ul>
+      <p class="muted">{HOUSEHOLD_TEXTS.namesFixed}</p>
       {complete ? (
         <p class="muted">{HOUSEHOLD_TEXTS.bothJoined}</p>
       ) : (

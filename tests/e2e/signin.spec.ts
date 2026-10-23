@@ -100,7 +100,7 @@ test.describe("E2-2c Anmelden mit Code", () => {
     await createHousehold(page, "Alex", "Sam");
 
     await expectPageShown(page, greetingHeading("Alex"));
-    await expect(page.getByText(ACCOUNT_TEXTS.signedInAs)).toContainText(email);
+    await expect(page.getByText(ACCOUNT_TEXTS.signedInAs)).toContainText("Alex");
     await page.reload();
     await expect(
       page.getByRole("heading", { level: 1, name: greetingHeading("Alex") }),
@@ -228,7 +228,7 @@ test.describe("E2-2c Anmelden mit Code", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: greetingHeading("Alex") }),
     ).toBeVisible();
-    await expect(page.getByText(ACCOUNT_TEXTS.signedInAs)).toContainText(email);
+    await expect(page.getByText(ACCOUNT_TEXTS.signedInAs)).toContainText("Alex");
   });
 
   test("Abmelden mit Rückfrage: danach die Anmeldeseite, die Aufgaben bleiben auf dem Gerät", async ({

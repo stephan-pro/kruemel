@@ -99,20 +99,23 @@ export function SettingsPage({
             </a>
           </div>
         </section>
-        <section class="tile tile--narrow" aria-labelledby="namen">
-          <h2 class="tile__title" id="namen">
-            Namen und „Ich bin“
-          </h2>
-          {/* The form keeps what is typed; a new key shows the names of an imported backup. */}
-          <NamesForm
-            key={importCount}
-            initialNames={names}
-            initialPerson={currentPerson}
-            submitLabel="Speichern"
-            savedMessage="Gespeichert."
-            onSubmit={onSubmit}
-          />
-        </section>
+        {/* In a household the names and "Ich bin" come from the household; see the tile below. */}
+        {!household && (
+          <section class="tile tile--narrow" aria-labelledby="namen">
+            <h2 class="tile__title" id="namen">
+              Namen und „Ich bin“
+            </h2>
+            {/* The form keeps what is typed; a new key shows the names of an imported backup. */}
+            <NamesForm
+              key={importCount}
+              initialNames={names}
+              initialPerson={currentPerson}
+              submitLabel="Speichern"
+              savedMessage="Gespeichert."
+              onSubmit={onSubmit}
+            />
+          </section>
+        )}
         {/* N8: takes effect at once, without "Speichern": it only changes how this device looks. */}
         <section class="tile tile--narrow form" aria-labelledby="darstellung">
           <h2 class="tile__title" id="darstellung">

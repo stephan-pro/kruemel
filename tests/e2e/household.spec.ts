@@ -105,7 +105,7 @@ test.describe("E2-2d Haushalt und Einladung", () => {
     await acceptButton(dilan).click();
 
     await expectPageShown(dilan, greetingHeading("Dilan"));
-    await expect(dilan.getByText(ACCOUNT_TEXTS.signedInAs)).toContainText(email);
+    await expect(dilan.getByText(ACCOUNT_TEXTS.signedInAs)).toContainText("Dilan");
     await goToPage(dilan, "Einstellungen");
     await expect(householdTile(dilan).locator('[data-person="personB"]')).toHaveText(
       /Dilan \(du\)\s*dabei/,

@@ -26,8 +26,7 @@ export const INVITE_FAILURE_TITLES: Partial<Readonly<Record<HouseholdFailure, st
 
 export const HOUSEHOLD_TEXTS = {
   createTitle: "Haushalt anlegen",
-  createIntro:
-    "Lege euren Haushalt an. Danach lädst du die zweite Person mit einem Link ein. Die Namen kannst du später ändern.",
+  createIntro: "Lege euren Haushalt an. Danach lädst du die zweite Person mit einem Link ein.",
   ownNameLabel: "Dein Name",
   otherNameLabel: "Name der zweiten Person",
   create: "Haushalt anlegen",
@@ -56,6 +55,7 @@ export const HOUSEHOLD_TEXTS = {
   joined: "dabei",
   notJoined: "noch nicht dabei",
   bothJoined: "Ihr seid beide dabei.",
+  namesFixed: "Die Namen kommen aus dem Haushalt. Du kannst sie hier noch nicht ändern.",
   inviteIntro: `Schick der zweiten Person einen Einladungslink, zum Beispiel per Messenger. Er gilt ${INVITE_DAYS} Tage und nur einmal.`,
   createInvite: "Einladungslink erzeugen",
   newInvite: "Neuen Link erzeugen",

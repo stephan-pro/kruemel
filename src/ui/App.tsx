@@ -222,7 +222,8 @@ export function App({ storage, demo, auth, household: householdApi }: AppProps) 
       ...state.data,
       settings: { ...state.data.settings, personNames: names },
     };
-    const device: DeviceSettings = { ...state.device, currentPerson: person };
+    // In a household the role decides, whatever the form or an old device says.
+    const device: DeviceSettings = { ...state.device, currentPerson: joined?.me ?? person };
     const saved = await storage.save(data);
     await storage.saveDevice(device);
     setState({ status: "ready", data: saved, device });
@@ -300,7 +301,7 @@ export function App({ storage, demo, auth, household: householdApi }: AppProps) 
   /** Ticks a task off today, noted for the person this device belongs to ("Ich bin"). */
   async function completeTask(taskId: string): Promise<{ task: Task; completion: Completion }> {
     const state = latest.current;
-    const completedBy = state.status === "ready" ? state.device.currentPerson : undefined;
+    const completedBy = state.status === "ready" ? person : undefined;
     if (state.status !== "ready" || completedBy === undefined) {
       throw new Error("Die App ist noch nicht bereit.");
     }
@@ -328,7 +329,6 @@ export function App({ storage, demo, auth, household: householdApi }: AppProps) 
   /** "Übernehmen": the person of this device takes the task over, once or permanently (F5). */
   async function takeOverTask(taskId: string, mode: TakeOverMode): Promise<Task> {
     const state = latest.current;
-    const person = state.status === "ready" ? state.device.currentPerson : undefined;
     if (state.status !== "ready" || person === undefined) {
       throw new Error("Die App ist noch nicht bereit.");
     }
@@ -471,8 +471,13 @@ export function App({ storage, demo, auth, household: householdApi }: AppProps) 
                     : adopting
                       ? "waiting"
                       : "open";
-  const names = state.status === "ready" ? state.data.settings.personNames : undefined;
-  const person = state.status === "ready" ? state.device.currentPerson : undefined;
+  // With a household the role decides who "Ich bin" is, and its names win over those kept on the
+  // device (until E2-3b they live in the local data and could drift apart). The local values stay
+  // untouched: a device with data from stage 1 still knows its old "Ich bin" for E2-3d.
+  const member = householdApi === undefined ? null : joined;
+  const names =
+    member?.names ?? (state.status === "ready" ? state.data.settings.personNames : undefined);
+  const person = member?.me ?? (state.status === "ready" ? state.device.currentPerson : undefined);
   const inApp =
     gate === "open" && state.status === "ready" && names !== undefined && person !== undefined;
 
@@ -493,7 +498,7 @@ export function App({ storage, demo, auth, household: householdApi }: AppProps) 
         {inApp && (
           <p class="app-person">
             {session ? ACCOUNT_TEXTS.signedInAs : ACCOUNT_TEXTS.thisDevice}{" "}
-            <strong>{session ? session.email : names[person]}</strong>
+            <strong>{names[person]}</strong>
           </p>
         )}
       </header>
