@@ -101,7 +101,8 @@ test.describe("F5 Einmalige Aufgabe übernehmen: ohne Rückfrage", () => {
     await takeOverButton(todayTile(page), "Einkaufen").click();
 
     await expect(notice(page)).toContainText("„Einkaufen“ ist jetzt bei Alex.");
-    expect(await taskOf(page, "demo-einkaufen")).toMatchObject({ assignee: "personA" });
+    // Der Speicher schreibt einen Moment nach dem Hinweis.
+    await expect.poll(async () => (await taskOf(page, "demo-einkaufen"))?.assignee).toBe("personA");
     await expect(todayTile(page)).toContainText("Alex · einmalig");
   });
 });
@@ -143,6 +144,7 @@ test.describe("F5 Wiederkehrende Aufgabe übernehmen: nur dieses Mal oder dauerh
       "„Müll rausbringen“ ist jetzt bei Alex, nur dieses Mal.",
     );
     await expect(notice(page)).toBeFocused();
+    await expect.poll(async () => (await taskOf(page, "demo-muell"))?.takenOverBy).toBe("personA");
     expect(await taskOf(page, "demo-muell")).toMatchObject({
       assignee: "personB",
       takenOverBy: "personA",
@@ -181,6 +183,7 @@ test.describe("F5 Wiederkehrende Aufgabe übernehmen: nur dieses Mal oder dauerh
     await dialog.getByRole("button", { name: "Übernehmen" }).click();
 
     await expect(notice(page)).toContainText("„Müll rausbringen“ gehört jetzt dauerhaft Alex.");
+    await expect.poll(async () => (await taskOf(page, "demo-muell"))?.assignee).toBe("personA");
     const task = await taskOf(page, "demo-muell");
     expect(task).toMatchObject({ assignee: "personA" });
     expect(task).not.toHaveProperty("takenOverBy");

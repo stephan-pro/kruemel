@@ -284,8 +284,14 @@ test.describe("F4 Checkliste im Aufgabenformular", () => {
     await page.getByRole("button", { name: "Aufgabe anlegen" }).click();
 
     await expect(page.getByRole("heading", { level: 1, name: "Aufgaben" })).toBeFocused();
-    const saved = (await storedData(page)).tasks.find((task) => task.title === "Wocheneinkauf");
-    expect(saved?.checklist.map((item) => item.text)).toEqual(["Milch", "Brot"]);
+    // Der Speicher schreibt einen Moment nach der Anzeige.
+    await expect
+      .poll(async () =>
+        (await storedData(page)).tasks
+          .find((task) => task.title === "Wocheneinkauf")
+          ?.checklist.map((item) => item.text),
+      )
+      .toEqual(["Milch", "Brot"]);
   });
 
   test("F4 Einträge lassen sich löschen; der Fokus geht ins Feld, und es wird angesagt", async ({
