@@ -144,7 +144,9 @@ test.describe("F5 Wiederkehrende Aufgabe übernehmen: nur dieses Mal oder dauerh
       "„Müll rausbringen“ ist jetzt bei Alex, nur dieses Mal.",
     );
     await expect(notice(page)).toBeFocused();
-    await expect.poll(async () => (await taskOf(page, "demo-muell"))?.takenOverBy).toBe("personA");
+    await expect
+      .poll(async () => Object.hasOwn((await taskOf(page, "demo-muell")) ?? {}, "takenOverBy"))
+      .toBe(true);
     expect(await taskOf(page, "demo-muell")).toMatchObject({
       assignee: "personB",
       takenOverBy: "personA",
