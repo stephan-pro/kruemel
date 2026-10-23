@@ -1,5 +1,6 @@
 import { expect, type Page, test } from "@playwright/test";
 import { demoData } from "../../src/demo/demoData";
+import { APPEARANCE_TEXTS } from "../../src/ui/appearanceTexts";
 import { expectNoAccessibilityViolations } from "./axe";
 import { deviceKey, goToPage, startConfigured, startShared, storedData, today } from "./helpers";
 
@@ -219,5 +220,108 @@ test.describe("N1 Eigenes Design", () => {
     );
 
     expect(small).toEqual([]);
+  });
+});
+
+// E2-4c: the Krümel in the header and the switch "Krümel bewegt sich".
+
+const logo = (page: Page) => page.locator(".app-header .kruemel-logo");
+const logoSwitch = (page: Page) =>
+  page.getByRole("switch", { name: APPEARANCE_TEXTS.logoMotionLabel });
+
+/** How many animations run on the Krümel of the header (the CSS ones count, also while waiting). */
+async function logoAnimations(page: Page): Promise<number> {
+  return page.evaluate(
+    () =>
+      document
+        .getAnimations()
+        .filter((animation) =>
+          (animation.effect as KeyframeEffect | null)?.target?.closest(".kruemel-logo"),
+        ).length,
+  );
+}
+
+test.describe("E2-4c Krümel in der Kopfzeile", () => {
+  for (const scheme of ["light", "dark"] as const) {
+    test(`E2-4c Der Krümel ist Schmuck (stumm), bewegt sich und verschiebt nichts (${scheme})`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme: scheme });
+      await startConfigured(page, undefined, "#/heute");
+      await expect(logo(page)).toBeAttached();
+      await expect(logo(page)).toHaveAttribute("aria-hidden", "true");
+      // The name stays text; the picture adds nothing to the accessibility tree.
+      await expect(page.locator(".app-header").getByText("Krümel", { exact: true })).toBeAttached();
+      // It starts to move once the app has loaded its settings.
+      await expect.poll(() => logoAnimations(page)).toBeGreaterThan(0);
+
+      const layout = () =>
+        page.evaluate(() =>
+          [".kruemel-logo", ".app-name", "main"].map((selector) => {
+            const { x, y, width, height } = (
+              document.querySelector(selector) as Element
+            ).getBoundingClientRect();
+            return [selector, x, y, width, height];
+          }),
+        );
+      const before = await layout();
+      await page.waitForTimeout(900);
+      expect(await layout()).toEqual(before);
+      await expectNoAccessibilityViolations(page);
+    });
+  }
+
+  test("E2-4c Bei „Bewegung reduzieren“ des Geräts steht der Krümel still", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await startConfigured(page, undefined, "#/heute");
+    await expect(logo(page)).toBeAttached();
+    expect(await logoAnimations(page)).toBe(0);
+  });
+
+  test("E2-4c Der Schalter „Krümel bewegt sich“: per Tastatur aus und an, bleibt nach dem Neuladen", async ({
+    page,
+  }) => {
+    await startConfigured(page, undefined, "#/heute");
+    await expect.poll(() => logoAnimations(page)).toBeGreaterThan(0);
+    await goToPage(page, "Einstellungen");
+
+    await expect(logoSwitch(page)).toBeChecked();
+    await expect(logoSwitch(page)).toHaveAccessibleDescription(APPEARANCE_TEXTS.logoMotionHint);
+    await logoSwitch(page).focus();
+    await expect(logoSwitch(page)).toBeFocused();
+    await page.keyboard.press("Space");
+    await expect(logoSwitch(page)).not.toBeChecked();
+    await expect.poll(() => logoAnimations(page)).toBe(0);
+    expect(await storedDevice(page)).toMatchObject({ logoMotion: false });
+
+    await page.reload();
+    await expect(page.getByRole("heading", { level: 1, name: "Einstellungen" })).toBeVisible();
+    await expect(logoSwitch(page)).not.toBeChecked();
+    expect(await logoAnimations(page)).toBe(0);
+
+    for (const scheme of ["light", "dark"] as const) {
+      await page.emulateMedia({ colorScheme: scheme });
+      await expectNoAccessibilityViolations(page);
+    }
+
+    await logoSwitch(page).focus();
+    await page.keyboard.press("Space");
+    await expect(logoSwitch(page)).toBeChecked();
+    await expect.poll(() => logoAnimations(page)).toBeGreaterThan(0);
+    expect(await storedDevice(page)).not.toHaveProperty("logoMotion");
+  });
+
+  test("E2-4c Am Handy ist die Kopfzeile eine schmale Zeile, ohne Umbruch und Querlauf", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 360, height: 640 });
+    await startConfigured(page, undefined, "#/heute");
+    await expect(logo(page)).toBeVisible();
+    const { height, scrolls } = await page.evaluate(() => ({
+      height: document.querySelector(".app-brand")?.getBoundingClientRect().height ?? 0,
+      scrolls: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    }));
+    expect(height).toBeLessThanOrEqual(40);
+    expect(scrolls).toBe(false);
   });
 });

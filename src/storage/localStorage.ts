@@ -112,6 +112,7 @@ export function createLocalStorage(options: LocalStorageOptions): AppStorage {
         currentPerson?: unknown;
         colorScheme?: unknown;
         installHintDismissed?: unknown;
+        logoMotion?: unknown;
       } | null;
       try {
         parsed = JSON.parse(text);
@@ -124,6 +125,7 @@ export function createLocalStorage(options: LocalStorageOptions): AppStorage {
         ...(isPerson(person) ? { currentPerson: person } : {}),
         ...(isColorScheme(scheme) ? { colorScheme: scheme } : {}),
         ...(parsed?.installHintDismissed === true ? { installHintDismissed: true } : {}),
+        ...(parsed?.logoMotion === false ? { logoMotion: false as const } : {}),
       };
     },
 

@@ -308,6 +308,20 @@ describe("N3 Hinweis „Krümel als App“ auf diesem Gerät", () => {
   });
 });
 
+describe("E2-4c „Krümel bewegt sich“ auf diesem Gerät", () => {
+  it("E2-4c Nur „aus“ (false) wird gemerkt; jeder andere Wert zählt als „an“", async () => {
+    const store = new FakeStore();
+    await createLocalStorage({ store }).saveDevice({ currentPerson: "personA", logoMotion: false });
+    expect(await createLocalStorage({ store }).loadDevice()).toEqual({
+      currentPerson: "personA",
+      logoMotion: false,
+    });
+
+    store.items.set("putzplan:device", JSON.stringify({ logoMotion: "nein" }));
+    expect(await createLocalStorage({ store }).loadDevice()).toEqual({});
+  });
+});
+
 describe("Lokaler Speicher im Modus local (Etappe 2)", () => {
   it("save gibt die gespeicherten Daten zurück", async () => {
     const data = sampleData();

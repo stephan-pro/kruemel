@@ -86,7 +86,10 @@ test.describe("F5 Einmalige Aufgabe übernehmen: ohne Rückfrage", () => {
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await expect(notice(page)).toContainText("„Paket abholen“ ist jetzt bei Alex.");
     await expect(notice(page)).toBeFocused();
-    expect(await taskOf(page, "demo-paket")).toMatchObject({ kind: "oneOff", assignee: "personA" });
+    // Der Speicher schreibt einen Moment nach dem Hinweis.
+    await expect
+      .poll(async () => await taskOf(page, "demo-paket"))
+      .toMatchObject({ kind: "oneOff", assignee: "personA" });
     // Jetzt ist es Alex' eigene Aufgabe: kein „Übernehmen“ mehr, die Zeile nennt Alex.
     await expect(thursday).toContainText("Alex · einmalig");
     await expect(takeOverButton(thursday, "Paket abholen")).toHaveCount(0);

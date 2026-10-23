@@ -33,6 +33,7 @@ import type { SyncedStorage } from "../sync/syncedStorage";
 import { ACCOUNT_TEXTS } from "./accountTexts";
 import { applyColorScheme } from "./colorScheme";
 import { InstallHint } from "./components/InstallHint";
+import { KruemelLogo } from "./components/KruemelLogo";
 import { Navigation } from "./components/Navigation";
 import { APP_NAME } from "./components/PageTitle";
 import { conflictText, SyncNotices } from "./components/SyncNotices";
@@ -300,6 +301,10 @@ export function App({
         setOutdated(true);
       } else if (update.type === "status") {
         showSync();
+        // The household's name has no hint of its own: after a transfer, look at it again.
+        if (update.status.state === "synced") {
+          void household.refresh();
+        }
       } else {
         const id = ++conflictIds.current;
         setConflicts((current) => [...current, { id, conflict: update }]);
@@ -355,6 +360,18 @@ export function App({
     const device: DeviceSettings = { ...state.device, colorScheme };
     await activeStorage().saveDevice(device);
     applyColorScheme(colorScheme);
+    showDevice(device);
+  }
+
+  /** "Krümel bewegt sich" (E2-4c): saved on the device, then shown. */
+  async function saveLogoMotion(moving: boolean) {
+    const state = latest.current;
+    if (state.status !== "ready") {
+      return;
+    }
+    const { logoMotion: _before, ...rest } = state.device;
+    const device: DeviceSettings = moving ? rest : { ...rest, logoMotion: false };
+    await activeStorage().saveDevice(device);
     showDevice(device);
   }
 
@@ -593,6 +610,24 @@ export function App({
     setInvite(undefined);
   }
 
+  // Back in the app: the other person may have renamed the household meanwhile (E2-4c).
+  useEffect(() => {
+    if (joined === null) {
+      return;
+    }
+    const refresh = () => {
+      if (document.visibilityState === "visible") {
+        void household.refresh();
+      }
+    };
+    document.addEventListener("visibilitychange", refresh);
+    addEventListener("online", refresh);
+    return () => {
+      document.removeEventListener("visibilitychange", refresh);
+      removeEventListener("online", refresh);
+    };
+  }, [joined !== null, session?.userId]);
+
   // The other person may have joined meanwhile: the settings show the household as it is now.
   useEffect(() => {
     if (route === "settings" && joined !== null) {
@@ -646,7 +681,17 @@ export function App({
       </button>
       {/* Phones: a bar on top with the navigation fixed at the bottom; wide screens: a column. */}
       <header class="app-header">
-        <p class="app-name">{APP_NAME}</p>
+        <div class="app-brand">
+          <KruemelLogo moving={state.status === "ready" && state.device.logoMotion !== false} />
+          <div class="app-brand__text">
+            <p class="app-name">{APP_NAME}</p>
+            {inApp && member?.name && (
+              <p class="app-household" title={member.name}>
+                {member.name}
+              </p>
+            )}
+          </div>
+        </div>
         {inApp && <Navigation current={route} />}
         {inApp && (
           <p class="app-person">
@@ -742,6 +787,8 @@ export function App({
               colorScheme={state.device.colorScheme ?? DEFAULT_COLOR_SCHEME}
               onSubmit={saveNamesAndPerson}
               onColorScheme={saveColorScheme}
+              logoMotion={state.device.logoMotion !== false}
+              onLogoMotion={saveLogoMotion}
               onImport={sharedStorage === undefined ? saveData : importShared}
               shared={sharedStorage !== undefined}
               installWay={install.way}

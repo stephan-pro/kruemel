@@ -133,10 +133,117 @@ textarea {
   color: var(--text-muted);
 }
 
+/* The Krümel, "Krümel" and, once set, the household's name (E2-4c). */
+.app-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.app-brand__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
 .app-name {
+  margin: 0;
   font-size: 20px;
   font-weight: 800;
   letter-spacing: -0.02em;
+}
+
+/* One line, cut with "…"; the whole name is in the title and the settings. */
+.app-household {
+  margin: 0;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Fixed size, so nothing around it moves; the movement is transform and opacity only. */
+.kruemel-logo {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+}
+
+.kruemel-logo__figure {
+  transform-origin: 240px 400px;
+}
+
+.kruemel-logo__broom {
+  transform-origin: 446px 96px;
+}
+
+.kruemel-logo__lid {
+  transform: scaleY(0);
+  transform-box: fill-box;
+  transform-origin: 50% 0;
+}
+
+/* At the start: greets and sweeps once (1.4 s); then a blink of 150 ms every 9 s. */
+.kruemel-logo:not(.kruemel-logo--still) .kruemel-logo__figure {
+  animation: kruemel-greet 1.4s ease-in-out 0.3s both;
+}
+
+.kruemel-logo:not(.kruemel-logo--still) .kruemel-logo__broom {
+  animation: kruemel-sweep 1.4s ease-in-out 0.3s both;
+}
+
+.kruemel-logo:not(.kruemel-logo--still) .kruemel-logo__lid {
+  animation: kruemel-blink 9s linear 1.8s infinite;
+}
+
+@keyframes kruemel-greet {
+  20% {
+    transform: rotate(-6deg);
+  }
+  40% {
+    transform: rotate(4deg);
+  }
+  60% {
+    transform: rotate(-3deg);
+  }
+  100% {
+    transform: rotate(0);
+  }
+}
+
+@keyframes kruemel-sweep {
+  20% {
+    transform: rotate(-14deg);
+  }
+  40% {
+    transform: rotate(10deg);
+  }
+  60% {
+    transform: rotate(-10deg);
+  }
+  80% {
+    transform: rotate(6deg);
+  }
+  100% {
+    transform: rotate(0);
+  }
+}
+
+@keyframes kruemel-blink {
+  0%,
+  94%,
+  100% {
+    transform: scaleY(0);
+  }
+  94.8% {
+    transform: scaleY(1);
+  }
+  95.7% {
+    transform: scaleY(0);
+  }
 }
 
 .app-person {
@@ -296,9 +403,35 @@ main:focus {
 /* Phones: the pages begin with their own heading; the name of the app and "Ich bin" sit in the
    column of wide screens only. */
 @media (max-width: 899px) {
-  .app--with-nav .app-name,
   .app--with-nav .app-person {
     display: none;
+  }
+
+  /* A slim line above the page heading: the Krümel, its name and the household's name. */
+  .app--with-nav .app-brand {
+    flex: 1 1 100%;
+    gap: 8px;
+  }
+
+  .app--with-nav .kruemel-logo {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+  }
+
+  .app--with-nav .app-header {
+    padding-top: calc(8px + env(safe-area-inset-top, 0px));
+  }
+
+  .app--with-nav .app-brand__text {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .app--with-nav .app-name {
+    flex: none;
+    font-size: 17px;
   }
 
   .app--with-nav .app-header {
@@ -307,7 +440,7 @@ main:focus {
 
   /* Little room above the first content: the overdue tasks of "Heute" must be in sight. */
   .app--with-nav main {
-    padding-top: 12px;
+    padding-top: 8px;
   }
 }
 
@@ -336,8 +469,17 @@ main:focus {
     background: var(--surface-solid);
   }
 
-  .app--with-nav .app-name {
+  .app--with-nav .app-brand {
     padding: 0 12px 18px;
+    gap: 12px;
+  }
+
+  .app--with-nav .kruemel-logo {
+    width: 40px;
+    height: 40px;
+  }
+
+  .app--with-nav .app-name {
     font-size: 22px;
   }
 
@@ -884,6 +1026,21 @@ main:focus {
   border-color: var(--accent);
   background: var(--accent);
   box-shadow: inset 0 0 0 4px var(--surface);
+}
+
+/* A switch (E2-4c): the same row, a track with a knob instead of the circle. */
+.choice__input--switch {
+  width: 44px;
+  height: 26px;
+  border-radius: 13px;
+  background:
+    radial-gradient(circle at 13px 50%, var(--control-border) 8px, transparent 9px), var(--surface);
+}
+
+.choice__input--switch:checked {
+  background:
+    radial-gradient(circle at calc(100% - 13px) 50%, var(--bg) 8px, transparent 9px), var(--accent);
+  box-shadow: none;
 }
 
 /* Windows contrast themes: the browser's own radio buttons know the system colours. */

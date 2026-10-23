@@ -25,6 +25,8 @@ export interface DeviceSettings {
   readonly colorScheme?: ColorScheme;
   /** The hint "Krümel als App" in the week view was closed; missing means it may show. */
   readonly installHintDismissed?: boolean;
+  /** `false`: the Krümel in the header stands still (E2-4c); missing means it moves. */
+  readonly logoMotion?: false;
 }
 
 /**

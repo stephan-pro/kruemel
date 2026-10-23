@@ -17,8 +17,8 @@ async function newDevice(browser: Browser): Promise<Page> {
   return context.newPage();
 }
 
-const householdTile = (page: Page) =>
-  page.getByRole("region", { name: HOUSEHOLD_TEXTS.tileTitle, exact: true });
+// The tile's title is the household's name once it has one (E2-4c): found by its heading's id.
+const householdTile = (page: Page) => page.locator('section[aria-labelledby="haushalt"]');
 const linkField = (page: Page) => page.getByLabel(HOUSEHOLD_TEXTS.inviteLinkField);
 const createInviteButton = (page: Page) =>
   householdTile(page).getByRole("button", { name: HOUSEHOLD_TEXTS.createInvite });
@@ -343,5 +343,91 @@ test.describe("E2-3g Namen ändern", () => {
     await expect(alex.getByRole("heading", { level: 1, name: "Einstellungen" })).toBeVisible();
     await expect(householdNameField(alex)).toHaveValue("Zuhause");
     await expect(ownNameField(alex)).toHaveValue("Alexa");
+  });
+});
+
+// E2-4c: the household's name in the header and as the title of the tile.
+const headerHousehold = (page: Page) => page.locator(".app-household");
+const tileTitle = (page: Page) => householdTile(page).getByRole("heading", { level: 2 }).first();
+
+test.describe("E2-4c Haushaltsname anzeigen", () => {
+  test("Ohne Namen steht „Haushalt“ in der Kachel und nichts in der Kopfzeile", async ({
+    browser,
+  }) => {
+    const alex = await founder(browser);
+    await expect(headerHousehold(alex)).toHaveCount(0);
+    await goToPage(alex, "Einstellungen");
+    await expect(tileTitle(alex)).toHaveText(HOUSEHOLD_TEXTS.tileTitle);
+  });
+
+  test("Mit Namen: Kachel-Überschrift und Kopfzeile; die andere Person sieht Änderungen ohne Neuladen", async ({
+    browser,
+  }) => {
+    const alex = await founder(browser);
+    const dilan = await invited(browser, await inviteLink(alex));
+    await acceptButton(dilan.page).click();
+    await expectPageShown(dilan.page, greetingHeading("Dilan"));
+
+    // `inviteLink` left Alex in the settings.
+    await householdNameField(alex).fill("WG Sonnenweg");
+    await saveNamesButton(alex).click();
+    await expect(namesStatus(alex)).toHaveText(HOUSEHOLD_TEXTS.namesSaved);
+    await expect(tileTitle(alex)).toHaveText("WG Sonnenweg");
+    await expect(headerHousehold(alex)).toHaveText("WG Sonnenweg");
+    await expectNoAccessibilityViolations(alex);
+
+    // Dilan sieht ihn nach dem nächsten Abgleich (hier: beim Zurückkehren in die App).
+    await dilan.page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+    await expect(headerHousehold(dilan.page)).toHaveText("WG Sonnenweg");
+    await goToPage(dilan.page, "Einstellungen");
+    await expect(tileTitle(dilan.page)).toHaveText("WG Sonnenweg");
+
+    // Dilan ändert ihn nur; Alex sieht den neuen Namen, ohne neu zu laden.
+    await householdNameField(dilan.page).fill("Zuhause");
+    await saveNamesButton(dilan.page).click();
+    await expect(namesStatus(dilan.page)).toHaveText(HOUSEHOLD_TEXTS.namesSaved);
+    await alex.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+    await expect(headerHousehold(alex)).toHaveText("Zuhause");
+    await expect(tileTitle(alex)).toHaveText("Zuhause");
+
+    // Leer gemacht: wieder „Haushalt“, nichts in der Kopfzeile.
+    await householdNameField(dilan.page).fill("");
+    await saveNamesButton(dilan.page).click();
+    await expect(namesStatus(dilan.page)).toHaveText(HOUSEHOLD_TEXTS.namesSaved);
+    await alex.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+    await expect(headerHousehold(alex)).toHaveCount(0);
+    await expect(tileTitle(alex)).toHaveText(HOUSEHOLD_TEXTS.tileTitle);
+  });
+
+  test("Ein langer Name wird in der Kopfzeile gekürzt, am Handy bleibt die Seite ohne Querlauf", async ({
+    browser,
+  }) => {
+    const alex = await founder(browser);
+    await goToPage(alex, "Einstellungen");
+    const long = "Wohngemeinschaft Sonnenweg 12";
+    await householdNameField(alex).fill(long);
+    await saveNamesButton(alex).click();
+    await expect(namesStatus(alex)).toHaveText(HOUSEHOLD_TEXTS.namesSaved);
+
+    // Am PC: Seitenleiste, der Name steht unter „Krümel“, einzeilig mit „…“.
+    await alex.setViewportSize({ width: 1280, height: 800 });
+    const household = headerHousehold(alex);
+    await expect(household).toHaveAttribute("title", long);
+    const box = await household.evaluate((element) => ({
+      clipped: element.scrollWidth > element.clientWidth,
+      ellipsis: getComputedStyle(element).textOverflow,
+    }));
+    expect(box).toEqual({ clipped: true, ellipsis: "ellipsis" });
+
+    // Am Handy: schmale Zeile über der Überschrift, nichts läuft über den Rand.
+    await alex.setViewportSize({ width: 360, height: 640 });
+    await expect(household).toBeVisible();
+    const phone = await alex.evaluate(() => ({
+      overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      brandHeight: document.querySelector(".app-brand")?.getBoundingClientRect().height ?? 0,
+    }));
+    expect(phone.overflow).toBe(false);
+    expect(phone.brandHeight).toBeLessThanOrEqual(40);
+    await expectNoAccessibilityViolations(alex);
   });
 });

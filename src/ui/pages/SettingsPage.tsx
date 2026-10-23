@@ -5,6 +5,7 @@ import type { PersonNameInput } from "../../domain/personNames";
 import type { Person } from "../../domain/task";
 import type { AppData, PersonNames } from "../../storage/appData";
 import type { ColorScheme, SyncStatus } from "../../storage/storage";
+import { APPEARANCE_TEXTS } from "../appearanceTexts";
 import { appAddress } from "../appInfo";
 import { AccountTile } from "../components/AccountTile";
 import { ErrorAlert } from "../components/Alert";
@@ -30,6 +31,10 @@ interface SettingsPageProps {
   readonly onSubmit: (names: PersonNameInput, person: Person) => Promise<void>;
   /** Saves and shows the colour scheme; rejects with an `Error` whose message is shown. */
   readonly onColorScheme: (scheme: ColorScheme) => Promise<void>;
+  /** Whether the Krümel in the header moves (E2-4c). */
+  readonly logoMotion: boolean;
+  /** Saves and shows "Krümel bewegt sich"; rejects like `onColorScheme`. */
+  readonly onLogoMotion: (moving: boolean) => Promise<void>;
   /** Replaces all data by the imported data; rejects with an `Error` whose message is shown. */
   readonly onImport: (data: AppData) => Promise<void>;
   /** The data are the household's shared data (stage 2): a backup then replaces them for both. */
@@ -73,6 +78,8 @@ export function SettingsPage({
   colorScheme,
   onSubmit,
   onColorScheme,
+  logoMotion,
+  onLogoMotion,
   onImport,
   shared = false,
   installWay,
@@ -88,6 +95,15 @@ export function SettingsPage({
   async function importBackup(imported: AppData) {
     await onImport(imported);
     setImportCount((count) => count + 1);
+  }
+
+  async function chooseLogoMotion(moving: boolean) {
+    try {
+      setSchemeError(undefined);
+      await onLogoMotion(moving);
+    } catch (error) {
+      setSchemeError(error instanceof Error ? error.message : String(error));
+    }
   }
 
   async function chooseScheme(scheme: ColorScheme) {
@@ -134,6 +150,24 @@ export function SettingsPage({
             onChange={chooseScheme}
           />
           {schemeError && <ErrorAlert title="Nicht gespeichert">{schemeError}</ErrorAlert>}
+          <div class="choice">
+            <input
+              class="choice__input choice__input--switch"
+              type="checkbox"
+              role="switch"
+              id="kruemel-bewegt-sich"
+              checked={logoMotion}
+              aria-checked={logoMotion}
+              aria-describedby="kruemel-bewegt-sich-hinweis"
+              onChange={(event) => void chooseLogoMotion(event.currentTarget.checked)}
+            />
+            <label class="choice__label" for="kruemel-bewegt-sich">
+              {APPEARANCE_TEXTS.logoMotionLabel}
+            </label>
+          </div>
+          <p class="muted" id="kruemel-bewegt-sich-hinweis">
+            {APPEARANCE_TEXTS.logoMotionHint}
+          </p>
         </section>
         {sync && <SyncTile status={sync.status} rejected={sync.rejected} />}
         <BackupTile data={data} today={today} shared={shared} onImport={importBackup} />

@@ -86,6 +86,7 @@ Die bisherige Überfällig-Regel aus F6 bleibt erfüllt: Überfällige Aufgaben 
 
 - Abhaken: kurzer Übergang des Kreises (unter 200 ms); Ring und Zahlen zählen sanft hoch.
 - Bei `prefers-reduced-motion: reduce` keine Animationen.
+- **Krümel in der Kopfzeile (E2-4c):** Beim Start neigt er sich und wischt mit dem Besen (1,4 s), danach blinzelt er alle 9 s (150 ms). Nur CSS (Transform), feste Größe, dekorativ (`aria-hidden`). Weil Bewegung über 5 s pausierbar sein muss (WCAG 2.2.2), steht er bei „Bewegung reduzieren“ still und lässt sich in „Darstellung“ mit dem Schalter „Krümel bewegt sich“ pro Gerät ausschalten (Standard: an).
 
 ## 9. App-Symbol und Figur „Krümel“
 

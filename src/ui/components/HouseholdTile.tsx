@@ -111,7 +111,7 @@ export function HouseholdTile({
   return (
     <section class="tile tile--narrow form" aria-labelledby="haushalt">
       <h2 class="tile__title" id="haushalt">
-        {HOUSEHOLD_TEXTS.tileTitle}
+        {household.name ?? HOUSEHOLD_TEXTS.tileTitle}
       </h2>
       <ul class="member-list">
         {PEOPLE.map((person) => (
