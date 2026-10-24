@@ -8,6 +8,7 @@ import {
   type JobResult,
   type JobsBackend,
   type LogEntry,
+  messageOf,
   type PushBackend,
   type PushConfig,
   type PushDeps,
@@ -22,6 +23,7 @@ import {
   fromBase64Url,
   keyIdOf,
   MAX_PUSH_BODY_BYTES,
+  PARTNER_TTL_SECONDS,
   retryAfterSeconds,
   sameSecret,
 } from "./rules";
@@ -276,7 +278,7 @@ describe("NT-a Edge Function push: Testbenachrichtigung", () => {
     expect(headers).toMatchObject({
       ttl: "300",
       topic: "test",
-      urgency: "normal",
+      urgency: "high",
       "content-encoding": "aes128gcm",
       "content-type": "application/octet-stream",
     });
@@ -688,13 +690,67 @@ describe("NT-c Edge Function push: Senden für den Zeitplan (flush)", () => {
     expect(request?.init.headers).toMatchObject({
       ttl: "21600",
       topic: "daily",
-      urgency: "normal",
+      urgency: "high",
       "content-encoding": "aes128gcm",
     });
     expect(await decrypt(request?.init.body as Uint8Array, browser)).toBe(
       '{"v":1,"k":"daily","due":3,"overdue":1}',
     );
     expect(queue.finished).toEqual([[{ id: 1, outcome: "sent" }]]);
+  });
+
+  it("NT-d Meldung über die andere Person und Beitritt: nur Name und Zahlen verschlüsselt, eigenes Thema, Dringlichkeit „high“, Ergebnis an die Datenbank", async () => {
+    const base = await flushSetup([]);
+    const keyId = await keyIdOf(base.vapid.publicKey);
+    const target = (name: string) => ({
+      endpoint: `https://fcm.googleapis.com/fcm/send/device-${name}`,
+      p256dh: base.browser.p256dh,
+      auth: base.browser.auth,
+      keyId,
+    });
+    const jobs: PushJob[] = [
+      { id: 7, kind: "partner", ...target("a"), name: "Robin", done: 2, took: 1 },
+      { id: 8, kind: "partner", ...target("b"), done: 1, took: 0 },
+      { id: 9, kind: "joined", ...target("c"), name: "Robin" },
+      { id: 10, kind: "joined", ...target("d") },
+    ];
+    const queue = jobQueue(jobs);
+    const logs: object[] = [];
+    const deps: PushDeps = {
+      ...base.deps,
+      jobs: queue.backend,
+      log: (entry) => logs.push(entry),
+    };
+
+    const response = await handlePush(cronRequest(CRON), deps);
+
+    expect(await failureOf(response)).toMatchObject({ status: 200, body: { sent: 4 } });
+    // Sent at the same time: in the order of the devices.
+    const sent = [...base.service.sent].sort((one, two) => one.url.localeCompare(two.url));
+    expect(sent.map((request) => request.init.headers)).toEqual([
+      expect.objectContaining({ ttl: "43200", topic: "partner", urgency: "high" }),
+      expect.objectContaining({ ttl: "43200", topic: "partner", urgency: "high" }),
+      expect.objectContaining({ ttl: "86400", topic: "joined", urgency: "high" }),
+      expect.objectContaining({ ttl: "86400", topic: "joined", urgency: "high" }),
+    ]);
+    const payloads = await Promise.all(
+      sent.map((request) => decrypt(request.init.body as Uint8Array, base.browser)),
+    );
+    expect(payloads).toEqual([
+      '{"v":1,"k":"partner","name":"Robin","done":2,"took":1}',
+      '{"v":1,"k":"partner","done":1,"took":0}',
+      '{"v":1,"k":"joined","name":"Robin"}',
+      '{"v":1,"k":"joined"}',
+    ]);
+    expect(queue.finished.flat().map((result) => result.id)).toEqual([7, 8, 9, 10]);
+    expect(queue.finished.flat().every((result) => result.outcome === "sent")).toBe(true);
+    // The log has counts only: no name, no address.
+    expect(JSON.stringify(logs)).not.toMatch(/Robin|device-/);
+    expect(messageOf(jobs[0] as PushJob).options).toEqual({
+      ttl: PARTNER_TTL_SECONDS,
+      topic: "partner",
+      urgency: "high",
+    });
   });
 
   it("NT-c Antworten des Push-Dienstes: 404/410 Gerät weg, 429/5xx/kein Netz später erneut (mit Retry-After), sonst verworfen", async () => {

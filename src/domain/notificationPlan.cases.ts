@@ -262,3 +262,212 @@ export const COUNT_CASES: readonly CountCase[] = [
   ),
   count("Keine Aufgaben", [], "personA", 0, 0),
 ];
+
+// Messages about the other person (NT-d) ----------------------------------------------------------
+
+export interface PartnerCompletionCase {
+  readonly name: string;
+  readonly completion: {
+    readonly completedBy: Person;
+    readonly assigneeAtCompletion?: Assignee;
+    readonly completedAt?: string;
+  };
+  /** Whose device ticked it off (the signed-in person of the change). */
+  readonly actor: Person;
+  readonly recipient: Person;
+  /** When it reached the server. */
+  readonly arrivedAt: string;
+  readonly expected: boolean;
+}
+
+const ARRIVED = "2027-01-13T10:00:00.000Z";
+
+/** `undefined` leaves the field out (old data). */
+type CompletionChange = {
+  readonly [Key in keyof PartnerCompletionCase["completion"]]?:
+    | PartnerCompletionCase["completion"][Key]
+    | undefined;
+};
+
+const completed = (
+  name: string,
+  expected: boolean,
+  completion: CompletionChange = {},
+  overrides: Partial<Omit<PartnerCompletionCase, "name" | "completion" | "expected">> = {},
+): PartnerCompletionCase => ({
+  name,
+  completion: Object.fromEntries(
+    Object.entries({
+      completedBy: "personB",
+      assigneeAtCompletion: "personA",
+      completedAt: "2027-01-13T09:58:00.000Z",
+      ...completion,
+    }).filter(([, value]) => value !== undefined),
+  ) as PartnerCompletionCase["completion"],
+  actor: "personB",
+  recipient: "personA",
+  arrivedAt: ARRIVED,
+  expected,
+  ...overrides,
+});
+
+export const PARTNER_COMPLETION_CASES: readonly PartnerCompletionCase[] = [
+  completed("B erledigt eine Aufgabe von A: Meldung an A", true),
+  completed("B erledigt eine gemeinsame Aufgabe: Meldung an A", true, {
+    assigneeAtCompletion: "both",
+  }),
+  completed("B erledigt die eigene Aufgabe: keine Meldung", false, {
+    assigneeAtCompletion: "personB",
+  }),
+  completed(
+    "A erledigt die eigene Aufgabe: keine Meldung an sich selbst",
+    false,
+    {
+      completedBy: "personA",
+    },
+    { actor: "personA" },
+  ),
+  completed(
+    "Nie an sich selbst, auch bei „beide“",
+    false,
+    {
+      completedBy: "personA",
+      assigneeAtCompletion: "both",
+    },
+    { actor: "personA", recipient: "personA" },
+  ),
+  completed("Abgehakt im Namen der anderen Person (anderes Gerät): keine Meldung", false, {
+    completedBy: "personA",
+  }),
+  completed("Ohne Zuständigkeit (alte Daten): keine Meldung", false, {
+    assigneeAtCompletion: undefined,
+  }),
+  completed("Ohne Zeitpunkt: keine Meldung", false, { completedAt: undefined }),
+  completed("Unlesbarer Zeitpunkt: keine Meldung", false, { completedAt: "gestern" }),
+  completed("Nach dem Abgleich: vor 23 Stunden abgehakt zählt noch", true, {
+    completedAt: "2027-01-12T11:00:00.000Z",
+  }),
+  completed("Genau 24 Stunden alt zählt noch", true, { completedAt: "2027-01-12T10:00:00.000Z" }),
+  completed("Älter als 24 Stunden: keine Meldung (nach dem Urlaub keine Flut)", false, {
+    completedAt: "2027-01-12T09:59:00.000Z",
+  }),
+];
+
+export interface TakeOverCase {
+  readonly name: string;
+  readonly before: Task;
+  readonly after: Task;
+  readonly actor: Person;
+  readonly recipient: Person;
+  readonly expected: boolean;
+}
+
+const takeOver = (
+  name: string,
+  before: Task,
+  after: Task,
+  expected: boolean,
+  actor: Person = "personB",
+): TakeOverCase => ({ name, before, after, actor, recipient: "personA", expected });
+
+const weekly = recurring(TODAY, "personA");
+
+export const TAKE_OVER_CASES: readonly TakeOverCase[] = [
+  takeOver(
+    "B übernimmt nur dieses Mal: Meldung an A",
+    weekly,
+    { ...weekly, takenOverBy: "personB" },
+    true,
+  ),
+  takeOver("B übernimmt dauerhaft: Meldung an A", weekly, { ...weekly, assignee: "personB" }, true),
+  takeOver(
+    "B übernimmt eine gemeinsame Aufgabe: Meldung an A",
+    recurring(TODAY, "both"),
+    { ...recurring(TODAY, "both"), takenOverBy: "personB" },
+    true,
+  ),
+  takeOver(
+    "B übernimmt eine einmalige Aufgabe von A: Meldung an A",
+    oneOff(TODAY, "personA", false),
+    { ...oneOff(TODAY, "personA", false), assignee: "personB" },
+    true,
+  ),
+  takeOver(
+    "A gibt die eigene Aufgabe an B ab: keine Meldung (A hat es selbst getan)",
+    weekly,
+    { ...weekly, assignee: "personB" },
+    false,
+    "personA",
+  ),
+  takeOver("B ändert nur den Titel: keine Meldung", weekly, { ...weekly, title: "Neu" }, false),
+  takeOver(
+    "B gibt eine übernommene Aufgabe zurück: keine Meldung",
+    { ...weekly, takenOverBy: "personB" },
+    weekly,
+    false,
+  ),
+  takeOver(
+    "Aufgabe gehörte schon B: keine Meldung",
+    recurring(TODAY, "personB"),
+    { ...recurring(TODAY, "personB"), title: "Neu" },
+    false,
+  ),
+  takeOver(
+    "B macht eine Aufgabe von A zu „beide“: keine Meldung",
+    weekly,
+    { ...weekly, assignee: "both" },
+    false,
+  ),
+];
+
+export interface QuietEndCase {
+  readonly name: string;
+  readonly now: string;
+  readonly timeZone: string;
+  readonly quietEnabled: boolean;
+  readonly quietFrom: string;
+  readonly quietTo: string;
+  /** When the quiet hours end, in UTC, or `null` if `now` is not in them. */
+  readonly expected: string | null;
+}
+
+const quietEnd = (
+  name: string,
+  now: string,
+  expected: string | null,
+  overrides: Partial<Omit<QuietEndCase, "name" | "now" | "expected">> = {},
+): QuietEndCase => ({
+  name,
+  now,
+  timeZone: "Europe/Berlin",
+  quietEnabled: true,
+  quietFrom: "21:00",
+  quietTo: "07:00",
+  expected,
+  ...overrides,
+});
+
+export const QUIET_END_CASES: readonly QuietEndCase[] = [
+  quietEnd("Tagsüber keine Ruhezeit", "2027-01-13T11:00:00Z", null),
+  quietEnd("22 Uhr: bis 7 Uhr am nächsten Morgen", "2027-01-13T21:00:00Z", "2027-01-14T06:00:00Z"),
+  quietEnd("3 Uhr nachts: bis 7 Uhr am selben Tag", "2027-01-14T02:00:00Z", "2027-01-14T06:00:00Z"),
+  quietEnd("Beginn zählt dazu: genau 21 Uhr", "2027-01-13T20:00:00Z", "2027-01-14T06:00:00Z"),
+  quietEnd("Ende zählt nicht dazu: genau 7 Uhr", "2027-01-14T06:00:00Z", null),
+  quietEnd("Sommerzeit: 7 Uhr ist 05:00 UTC", "2027-06-16T21:00:00Z", "2027-06-17T05:00:00Z"),
+  quietEnd(
+    "Über die Zeitumstellung: Ende nach Ortszeit (Winterzeit beginnt in der Nacht)",
+    "2027-10-30T21:00:00Z",
+    "2027-10-31T06:00:00Z",
+  ),
+  quietEnd("Ruhezeit ausgeschaltet", "2027-01-13T21:00:00Z", null, { quietEnabled: false }),
+  quietEnd("Ruhezeit am Tag", "2027-01-13T12:30:00Z", "2027-01-13T14:00:00Z", {
+    quietFrom: "13:00",
+    quietTo: "15:00",
+  }),
+  quietEnd("New York: 7 Uhr dort", "2027-01-14T03:00:00Z", "2027-01-14T12:00:00Z", {
+    timeZone: "America/New_York",
+  }),
+  quietEnd("Unbekannte Zeitzone zählt als Berlin", "2027-01-13T21:00:00Z", "2027-01-14T06:00:00Z", {
+    timeZone: "Mars/Olymp",
+  }),
+];

@@ -8,9 +8,9 @@
 // new files and drops the old ones.
 //
 // Notifications (NT-a): a push shows a message (`notificationFor`, texts on the device); a tap on
-// it brings the app to the front or opens it (`openApp`).
+// it brings the app to the front or opens it (`openApp`), on the message's page (NT-d).
 
-import { notificationFor, openApp, payloadOf } from "./push/messages";
+import { notificationFor, openApp, openPageOf, payloadOf } from "./push/messages";
 import { isAppRequest } from "./swScope";
 
 const sw = self as unknown as ServiceWorkerGlobalScope;
@@ -123,11 +123,12 @@ sw.addEventListener("push", (event) => {
       tag: shown.tag,
       lang: "de",
       icon: new URL("icon-192.png", SCOPE).href,
+      data: { open: shown.open },
     }),
   );
 });
 
 sw.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  event.waitUntil(openApp(sw.clients, SCOPE));
+  event.waitUntil(openApp(sw.clients, SCOPE, openPageOf(event.notification.data)));
 });

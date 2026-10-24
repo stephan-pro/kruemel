@@ -122,6 +122,52 @@ export function dailyPayload(due: number, overdue: number): DailyPayload {
 export const DAILY_TTL_SECONDS = 6 * 60 * 60;
 
 /**
+ * The message about the other person (NT-d): their name in the household (at most 30 characters;
+ * missing if the household has no names) and how many tasks they did for the person (`done`) and
+ * took over from them (`took`). Never a task.
+ */
+export type PartnerPayload = {
+  readonly v: 1;
+  readonly k: "partner";
+  readonly name?: string;
+  readonly done: number;
+  readonly took: number;
+};
+
+export function partnerPayload(
+  name: string | undefined,
+  done: number,
+  took: number,
+): PartnerPayload {
+  return { v: 1, k: "partner", ...(name === undefined ? {} : { name }), done, took };
+}
+
+/** How long the push service keeps a message about the other person: 12 hours. */
+export const PARTNER_TTL_SECONDS = 12 * 60 * 60;
+
+/** Somebody joined the household (NT-d): only their name in it, if the household has names. */
+export type JoinedPayload = { readonly v: 1; readonly k: "joined"; readonly name?: string };
+
+export function joinedPayload(name: string | undefined): JoinedPayload {
+  return { v: 1, k: "joined", ...(name === undefined ? {} : { name }) };
+}
+
+/** How long the push service keeps a message about joining: 24 hours. */
+export const JOINED_TTL_SECONDS = 24 * 60 * 60;
+
+/**
+ * The `Urgency` of every push (RFC 8030, 5.3): "high". Without the header a push counts as
+ * "normal", which a device should get "on neither power nor Wi-Fi"; "high" also on low battery
+ * ("time-sensitive alert"). On Android, Google's FCM delivers high priority at once, also in Doze,
+ * normal priority may wait (Firebase, "Set the priority of a message"); whether Mozilla passes the
+ * header on to FCM for Firefox on Android, its documentation does not say (device test NT-e).
+ * Krümel sends few pushes, each a visible message the person asked for (the daily
+ * overview at its time, a message about the other person, the test), so "high" is the right
+ * value and no misuse of it (docs/BENACHRICHTIGUNGEN.md, 10.4).
+ */
+export const PUSH_URGENCY = "high";
+
+/**
  * The header with which the schedule of the database (`private.push_tick`) calls the route `flush`;
  * its value is the token `PUSH_CRON_TOKEN` (docs/BENACHRICHTIGUNGEN.md, 7.4).
  */

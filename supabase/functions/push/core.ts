@@ -37,12 +37,19 @@ import {
   isPushEndpoint,
   isVapidPrivateKey,
   isVapidPublicKey,
+  JOINED_TTL_SECONDS,
   type JobOutcome,
+  type JoinedPayload,
   jobOutcome,
+  joinedPayload,
   keyIdOf,
   MAX_PUSH_BODY_BYTES,
   MIN_CRON_TOKEN_LENGTH,
+  PARTNER_TTL_SECONDS,
+  type PartnerPayload,
+  PUSH_URGENCY,
   type PushFailure,
+  partnerPayload,
   pushAnswerFailure,
   raisedPushFailure,
   retryAfterSeconds,
@@ -99,18 +106,24 @@ export interface PushBackend {
   forget(token: string, deviceId: string): Promise<void>;
 }
 
-/** A due message as `claim_push_jobs` hands it out: the address and what to tell (NT-c). */
-export interface PushJob extends TestTarget {
-  readonly id: number;
-  readonly kind: "daily";
-  readonly due: number;
-  readonly overdue: number;
-}
+/** A due message as `claim_push_jobs` hands it out: the address and what to tell (NT-c, NT-d). */
+export type PushJob = TestTarget & { readonly id: number } & (
+    | { readonly kind: "daily"; readonly due: number; readonly overdue: number }
+    | {
+        readonly kind: "partner";
+        readonly name?: string;
+        readonly done: number;
+        readonly took: number;
+      }
+    | { readonly kind: "joined"; readonly name?: string }
+  );
 
 /** What `claim_push_jobs` answers: the messages to send, and how many it left out. */
 export interface ClaimedJobs {
   readonly jobs: readonly PushJob[];
-  /** Daily overviews with nothing to do (or for somebody without a household): no message. */
+  /**
+   * Messages with nothing to tell (nothing to do, undone, switched off, no household): none sent.
+   */
   readonly empty: number;
   /** Over the limit of messages a day for the device. */
   readonly dropped: number;
@@ -139,8 +152,8 @@ export interface EncryptedPush {
 
 export type Encrypt = (
   message: {
-    data: typeof TEST_PAYLOAD | DailyPayload;
-    options: { ttl: number; topic: string; urgency: "normal" };
+    data: typeof TEST_PAYLOAD | DailyPayload | PartnerPayload | JoinedPayload;
+    options: { ttl: number; topic: string; urgency: typeof PUSH_URGENCY };
   },
   subscription: {
     endpoint: string;
@@ -411,7 +424,10 @@ export async function handlePush(request: Request, deps: PushDeps): Promise<Resp
     ...seen
   } = await deliver(
     target,
-    { data: TEST_PAYLOAD, options: { ttl: TEST_TTL_SECONDS, topic: "test", urgency: "normal" } },
+    {
+      data: TEST_PAYLOAD,
+      options: { ttl: TEST_TTL_SECONDS, topic: "test", urgency: PUSH_URGENCY },
+    },
     config,
     await keyIdOf(config.publicKey),
     deps,
@@ -427,12 +443,26 @@ export async function handlePush(request: Request, deps: PushDeps): Promise<Resp
   return failure === undefined ? finish(200, { sent: true }) : fail(failure);
 }
 
-/** The message of a due job (only the daily overview so far). */
-function messageOf(job: PushJob): Parameters<Encrypt>[0] {
-  return {
-    data: dailyPayload(job.due, job.overdue),
-    options: { ttl: DAILY_TTL_SECONDS, topic: "daily", urgency: "normal" },
-  };
+/** The message of a due job; a newer one of the same kind replaces it at the push service. */
+export function messageOf(job: PushJob): Parameters<Encrypt>[0] {
+  const urgency = PUSH_URGENCY;
+  switch (job.kind) {
+    case "daily":
+      return {
+        data: dailyPayload(job.due, job.overdue),
+        options: { ttl: DAILY_TTL_SECONDS, topic: "daily", urgency },
+      };
+    case "partner":
+      return {
+        data: partnerPayload(job.name, job.done, job.took),
+        options: { ttl: PARTNER_TTL_SECONDS, topic: "partner", urgency },
+      };
+    case "joined":
+      return {
+        data: joinedPayload(job.name),
+        options: { ttl: JOINED_TTL_SECONDS, topic: "joined", urgency },
+      };
+  }
 }
 
 /** The route `flush`: sends what the database has due, in batches, and reports back. */
