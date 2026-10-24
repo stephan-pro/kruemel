@@ -56,6 +56,7 @@ npx supabase db push
 | `20261024120000_household_name.sql` (E2-3g) | Spalte `households.name`, Funktion `rename_household` (nur Mitglieder, eigener Haushalt) | eingespielt (23.10.2026) |
 | `20261025120000_leave.sql` (E2-5a) | `remove_member`, `leave_household`, `delete_account` | spielt der PO ein |
 | `20261026120000_friend_invites.sql` (E2-5b) | Freundes-Einladungen (`friend_invites`, Grenzen), Hook `before_user_created` (danach im Dashboard einschalten, siehe oben) | spielt der PO ein |
+| `20261027120000_checks.sql` (K2b) | Trigger prüfen jede Aufgabe und Erledigung beim Schreiben (`invalid_change`); höchstens 500 Aufgaben und 50 000 Erledigungen je Haushalt (`too_many_tasks`, `too_many_completions`) | spielt der PO ein |
 
 ## Kostenloser Tarif: Grenzen
 
