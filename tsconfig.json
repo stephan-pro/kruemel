@@ -23,6 +23,7 @@
     "tests",
     "scripts",
     "supabase/tests",
+    "supabase/functions",
     "vite.config.ts",
     "vitest.db.config.ts",
     "playwright.config.ts"

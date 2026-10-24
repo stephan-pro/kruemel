@@ -3,6 +3,7 @@ import type { HouseholdInfo, Invite } from "../../auth/household";
 import type { CalendarDay } from "../../domain/date";
 import type { PersonNameInput } from "../../domain/personNames";
 import type { Person } from "../../domain/task";
+import type { Notifications } from "../../push/notifications";
 import type { AppData, PersonNames } from "../../storage/appData";
 import type { ColorScheme, SyncStatus } from "../../storage/storage";
 import { APPEARANCE_TEXTS } from "../appearanceTexts";
@@ -16,6 +17,7 @@ import { HouseholdTile } from "../components/HouseholdTile";
 import { InstallTile } from "../components/InstallTile";
 import { LegalLinks } from "../components/LegalLinks";
 import { NamesForm } from "../components/NamesForm";
+import { NotificationTile } from "../components/NotificationTile";
 import { OtherDeviceTile } from "../components/OtherDeviceTile";
 import { PageTitle } from "../components/PageTitle";
 import { SyncTile } from "../components/SyncTile";
@@ -82,6 +84,10 @@ interface SettingsPageProps {
     readonly status: SyncStatus;
     readonly rejected: number;
   };
+  /** Notifications on this device (NT-a); missing without sign-in (the tile says why). */
+  readonly notifications?: Notifications | undefined;
+  /** The test build: notifications are only recorded. */
+  readonly notificationsTestOnly?: boolean;
 }
 
 /** The name of the other member, or `undefined` when nobody else has joined. */
@@ -114,6 +120,8 @@ export function SettingsPage({
   household,
   friends,
   sync,
+  notifications,
+  notificationsTestOnly = false,
 }: SettingsPageProps) {
   const [schemeError, setSchemeError] = useState<string>();
   /** Counts the imported backups; the names form starts over after each one. */
@@ -196,6 +204,7 @@ export function SettingsPage({
             {APPEARANCE_TEXTS.logoMotionHint}
           </p>
         </section>
+        <NotificationTile notifications={notifications} testOnly={notificationsTestOnly} />
         {sync && <SyncTile status={sync.status} rejected={sync.rejected} />}
         <BackupTile data={data} today={today} shared={shared} onImport={importBackup} />
         {household && (

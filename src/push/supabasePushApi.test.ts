@@ -1,0 +1,165 @@
+import {
+  FunctionsFetchError,
+  FunctionsHttpError,
+  FunctionsRelayError,
+  type SupabaseClient,
+} from "@supabase/supabase-js";
+import { describe, expect, it } from "vitest";
+import { isVapidPublicKey } from "../../supabase/functions/push/rules";
+import { FAKE_VAPID_KEY_OVERRIDE, FakeHttpPushApi, fakeVapidPublicKey } from "./fakeHttpPushApi";
+import { PushError } from "./pushApi";
+import { SupabasePushApi } from "./supabasePushApi";
+
+// The rules are tested against the database (supabase/tests/push.test.ts) and the Edge Function
+// (supabase/functions/push/core.test.ts). Here: how the app calls them and reads their answers.
+
+const DEVICE = {
+  deviceId: "11111111-1111-4111-8111-111111111111",
+  endpoint: "https://fcm.googleapis.com/fcm/send/abc",
+  p256dh: `B${"p".repeat(86)}`,
+  auth: "a".repeat(22),
+  keyId: "schluessel-1",
+  timeZone: "Europe/Berlin",
+  locale: "de",
+};
+
+interface Stub {
+  rpcError?: { message: string; code?: string };
+  invokeError?: unknown;
+  calls: unknown[];
+}
+
+function client(stub: Stub): SupabaseClient {
+  return {
+    rpc: async (name: string, args: unknown) => {
+      stub.calls.push([name, args]);
+      return { data: null, error: stub.rpcError ?? null };
+    },
+    functions: {
+      invoke: async (name: string, options: unknown) => {
+        stub.calls.push([name, options]);
+        return { data: null, error: stub.invokeError ?? null };
+      },
+    },
+  } as unknown as SupabaseClient;
+}
+
+async function failureOf(promise: Promise<unknown>): Promise<string> {
+  try {
+    await promise;
+  } catch (error) {
+    expect(error).toBeInstanceOf(PushError);
+    return (error as PushError).failure;
+  }
+  throw new Error("Sollte scheitern");
+}
+
+const httpError = (status: number, body: unknown) =>
+  new FunctionsHttpError(new Response(JSON.stringify(body), { status }));
+
+describe("NT-a SupabasePushApi", () => {
+  it("NT-a Ein- und Ausschalten über die Datenbankfunktionen, Test über die Edge Function in Paris", async () => {
+    const stub: Stub = { calls: [] };
+    const api = new SupabasePushApi(client(stub));
+
+    await api.register(DEVICE);
+    await api.unregister(DEVICE.deviceId);
+    await api.sendTest(DEVICE.deviceId);
+
+    expect(stub.calls).toEqual([
+      [
+        "register_push_device",
+        {
+          p_device_id: DEVICE.deviceId,
+          p_endpoint: DEVICE.endpoint,
+          p_p256dh: DEVICE.p256dh,
+          p_auth: DEVICE.auth,
+          p_key_id: "schluessel-1",
+          p_time_zone: "Europe/Berlin",
+          p_locale: "de",
+        },
+      ],
+      ["unregister_push_device", { p_device_id: DEVICE.deviceId }],
+      ["push/test", { body: { deviceId: DEVICE.deviceId }, region: "eu-west-3" }],
+    ]);
+  });
+
+  it("NT-a Fehler der Datenbank und der Edge Function werden zu klaren Gründen", async () => {
+    const rpc = (rpcError: Stub["rpcError"]) =>
+      new SupabasePushApi(client({ calls: [], ...(rpcError ? { rpcError } : {}) }));
+    expect(
+      await failureOf(rpc({ message: "push_endpoint_invalid", code: "P0001" }).register(DEVICE)),
+    ).toBe("endpointInvalid");
+    expect(await failureOf(rpc({ message: "Failed to fetch" }).unregister("x"))).toBe("offline");
+    expect(await failureOf(rpc({ message: "anders", code: "42501" }).unregister("x"))).toBe(
+      "unknown",
+    );
+
+    const invoke = (invokeError: unknown) =>
+      new SupabasePushApi(client({ calls: [], invokeError })).sendTest("x");
+    expect(await failureOf(invoke(httpError(429, { error: "testWait" })))).toBe("testWait");
+    expect(await failureOf(invoke(httpError(500, { error: "geheim" })))).toBe("unknown");
+    expect(await failureOf(invoke(new FunctionsHttpError(new Response("kaputt"))))).toBe("unknown");
+    expect(await failureOf(invoke(new FunctionsFetchError(new Error("x"))))).toBe("offline");
+    expect(await failureOf(invoke(new FunctionsRelayError(new Error("x"))))).toBe("unknown");
+  });
+});
+
+describe("NT-a FakeHttpPushApi", () => {
+  it("NT-a Ruft den Fake-Server mit der Sitzung des Geräts und liest seine Fehlercodes", async () => {
+    const sent: [string, RequestInit][] = [];
+    const answers = [
+      new Response("{}"),
+      new Response(JSON.stringify({ error: "testToday" }), { status: 429 }),
+      new Response("kaputt", { status: 500 }),
+    ];
+    const store = new Map([
+      [
+        "kruemel-fake:auth",
+        JSON.stringify({ token: "geheim", session: { userId: "u", email: "e" } }),
+      ],
+    ]);
+    const api = new FakeHttpPushApi({
+      baseUrl: "http://fake",
+      store: {
+        getItem: (key) => store.get(key) ?? null,
+        setItem: () => undefined,
+        removeItem: () => undefined,
+      },
+      fetch: (async (input: RequestInfo | URL, init?: RequestInit) => {
+        sent.push([String(input), init ?? {}]);
+        const next = answers.shift();
+        if (next === undefined) {
+          throw new TypeError("offline");
+        }
+        return next;
+      }) as typeof fetch,
+    });
+
+    await api.register(DEVICE);
+    expect(await failureOf(api.sendTest("x"))).toBe("testToday");
+    expect(await failureOf(api.unregister("x"))).toBe("unknown");
+    expect(await failureOf(api.unregister("x"))).toBe("offline");
+    expect(sent.map(([url]) => url)).toEqual([
+      "http://fake/push/register",
+      "http://fake/push/test",
+      "http://fake/push/unregister",
+      "http://fake/push/unregister",
+    ]);
+    const headers = (sent[0]?.[1].headers ?? {}) as Record<string, string>;
+    expect(headers.Authorization).toBe("Bearer geheim");
+  });
+
+  it("NT-a Testschlüssel des Fake-Modus: sieht aus wie ein öffentlicher Schlüssel, ein Test kann ihn entfernen", () => {
+    const items = new Map<string, string>();
+    const store = {
+      getItem: (key: string) => items.get(key) ?? null,
+      setItem: () => undefined,
+      removeItem: () => undefined,
+    };
+
+    expect(isVapidPublicKey(fakeVapidPublicKey(store))).toBe(true);
+    items.set(FAKE_VAPID_KEY_OVERRIDE, "");
+    expect(fakeVapidPublicKey(store)).toBe("");
+  });
+});

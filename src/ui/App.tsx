@@ -13,6 +13,7 @@ import {
   takeOverInData,
   undoInData,
 } from "../domain/taskManagement";
+import type { Notifications } from "../push/notifications";
 import { onNewVersion } from "../registerServiceWorker";
 import type { AppData, PersonNames } from "../storage/appData";
 import {
@@ -93,6 +94,12 @@ interface AppProps {
    * them instead of the data in `storage`, which stay untouched.
    */
   readonly shared?: (account: SharedAccount) => SyncedStorage;
+  /** Notifications (NT-a, with `auth`): one controller per signed-in account. */
+  readonly push?: {
+    readonly create: (userId: string) => Notifications;
+    /** The test build: notifications are only recorded. */
+    readonly testOnly?: boolean;
+  };
 }
 
 /** How many changes wait for the server. */
@@ -240,8 +247,13 @@ export function App({
   auth,
   household: householdApi,
   shared,
+  push,
 }: AppProps) {
   const [session, setSession] = useSession(auth);
+  const notifications = useMemo(
+    () => (push !== undefined && session != null ? push.create(session.userId) : undefined),
+    [push, session?.userId],
+  );
   const [invite, setInvite] = useState(() => takeInvite(householdApi !== undefined));
   const [friendInvite, setFriendInvite] = useState(() =>
     takeFriendInvite(householdApi !== undefined),
@@ -1035,6 +1047,8 @@ export function App({
               {...(sharedStorage === undefined
                 ? {}
                 : { sync: { status: syncStatus, rejected: rejectedCount } })}
+              notifications={notifications}
+              notificationsTestOnly={push?.testOnly === true}
             />
           )}
           {inApp && route === "tasks" && (

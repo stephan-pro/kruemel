@@ -22,6 +22,10 @@
 //                       the household of a signed-in person (`FakeAccounts`; the app's side is
 //                       `FakeHttpHousehold`); their secret also opens /pull, /push and /events
 //
+//   POST /push/register, /push/unregister, /push/test; GET /test/pushes, /test/push-devices;
+//   POST /test/push-answer {status}
+//                       notifications (NT-a, `FakePushService`; the app's side is `FakeHttpPushApi`)
+//
 // Test-only: wide-open CORS, nothing is kept after the process ends.
 
 import { createServer, type IncomingMessage } from "node:http";

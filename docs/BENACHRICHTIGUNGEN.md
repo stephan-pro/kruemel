@@ -359,6 +359,17 @@ Jedes Paket endet wie bisher mit grünem `npm run check`, Job `db`, Pages und ei
 
 Der Skill `/paket` kennt bisher die Pakete aus `PLAN.md` und `ETAPPE2-PLAN.md`; NT-a prüft beim Start, ob er NT-Pakete findet (Zeilen in `PLAN.md`, Abschnitt „Benachrichtigungen“), und ergänzt sonst den Skill um diese Datei.
 
+### 10.1 Tatsächliche Namen nach NT-a (24.10.2026, nur Abweichungen und Ergänzungen)
+
+Gleich wie geplant: Tabelle `public.push_devices`, Funktionen `register_push_device`, `unregister_push_device`, `request_test_push`, Edge Function `push` mit Route `test`, Secrets `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, GitHub-Variable `VITE_VAPID_PUBLIC_KEY`, Gerätespeicher `kruemel:push-device`, Bibliothek `@block65/webcrypto-web-push` 2.0.0.
+
+- **Migration** `supabase/migrations/20261029120000_push_devices.sql`. `push_devices` hat schon `locale` (Standard `de`) und `last_seen_at`; die Einstellungsspalten kommen in NT-b. Lesen nur eigene Zeilen **ohne** `endpoint`, `p256dh`, `auth` (Spaltenrechte). Erlaubtliste als `private.is_push_endpoint` (auch als Tabellenprüfung).
+- **Grenzen der Testbenachrichtigung** in einer eigenen kleinen Tabelle `private.push_tests` (Anfragen des letzten Tages) statt `push_counters` (bleibt NT-c).
+- **Edge Function ohne Secret Key:** Sie prüft die Anmeldung (`auth.getUser`) und ruft `request_test_push` und (bei 404/410) `unregister_push_device` **als die Person** auf; `SUPABASE_SECRET_KEYS` braucht NT-a nicht. Dateien: `supabase/functions/push/` mit `index.ts` (Deno), `core.ts` (Ablauf, getestet), `rules.ts` (Erlaubtliste, Schlüsselformate, Fehlercodes, Grenzen; auch von App und Fake-Server genutzt), `rules.cases.ts` (gemeinsame Fälle für Vitest und Job `db`), `deno.json` (exakte Versionen).
+- **Fehlercodes** der Funktion: `{"error": "<Code>"}` mit `notSignedIn` 401, `notConfigured` 503, `badRequest` 400, `deviceUnknown` 404, `deviceGone` 410, `testWait`/`testToday` 429, `keyChanged` 409, `endpointInvalid` 422, `pushFailed` 502, `notFound` 404.
+- **App:** `src/push/` mit `notifications.ts` (Status, Einschalten, Test, Ausschalten; `pushSupport`, `notificationWay` liegen hier statt in `install.ts`), `browserPush.ts` (Push API), `supabasePushApi.ts`, `fakeHttpPushApi.ts`, `fakePush.ts` (Fake-Server), `messages.ts` (`notificationFor`, `openApp`). Texte der Meldungen in `src/push/messageTexts.ts` (der Service Worker darf keine Datei mit der Seite teilen, sonst startet er nicht; der Build bricht jetzt ab, wenn `sw.js` etwas importiert), Texte der Kachel in `src/ui/notificationTexts.ts`. Kachel `src/ui/components/NotificationTile.tsx`.
+- **Fake-Server:** `/push/register`, `/push/unregister`, `/push/test`, Testwege `/test/pushes`, `/test/push-devices`, `/test/push-answer` (Antwort des „Push-Dienstes“ je Konto). E2E nutzen kein Fake-`PushPort`, sondern spielen die Push API des Browsers nach (`tests/e2e/pushMock.ts`), damit `browserPush.ts` mitläuft; Spec `tests/e2e/notifications.spec.ts`.
+
 ## 11. Risiken und offene Punkte
 
 **Risiken**

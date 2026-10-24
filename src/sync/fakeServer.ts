@@ -8,10 +8,13 @@
 // household, created and joined through `/household/*`, E2-2b), or with one of the two random
 // secrets `/test/household` hands out for a ready-made household without sign-in.
 
+import { FAILURE_STATUS, type PushFailure } from "../../supabase/functions/push/rules";
 import { AuthError } from "../auth/auth";
 import { FakeAuth, type FakeAuthOptions } from "../auth/fakeAuth";
 import { HouseholdError, type HouseholdFailure } from "../auth/household";
 import type { Person } from "../domain/task";
+import { FakePushService } from "../push/fakePush";
+import { PushError } from "../push/pushApi";
 import { type AppData, type PersonNames, SCHEMA_VERSION } from "../storage/appData";
 import type { Change } from "./changes";
 import { FakeAccounts } from "./fakeAccounts";
@@ -64,8 +67,11 @@ export class FakeServer {
   /** The sign-in service; tests read the codes there (`auth.lastCode`). */
   readonly auth: FakeAuth;
   private readonly accounts: FakeAccounts;
+  /** The devices and test notifications (NT-a). */
+  private readonly push: FakePushService;
 
   constructor(options: FakeServerOptions = {}) {
+    this.push = new FakePushService(options.auth?.now);
     // New accounts only with an invite (E2-5b), checked where the invites are.
     this.auth = new FakeAuth({
       ...options.auth,
@@ -109,6 +115,9 @@ export class FakeServer {
     }
     if (path.startsWith("/household")) {
       return this.handleHousehold(request);
+    }
+    if (path.startsWith("/push/") || path.startsWith("/test/push")) {
+      return this.handlePush(request);
     }
     const household = this.householdFor(request.token);
     if (household === undefined) {
@@ -218,6 +227,56 @@ export class FakeServer {
       throw error;
     }
     return { status: 404, body: { error: "Unbekannte Adresse" } };
+  }
+
+  /**
+   * Notifications (NT-a, `FakePushService`), for a signed-in person:
+   *   POST /push/register   {deviceId, endpoint, p256dh, auth, keyId, timeZone, locale} → {}
+   *   POST /push/unregister {deviceId} → {}
+   *   POST /push/test       {deviceId} → {sent: true}, recorded instead of delivered
+   *   GET  /test/pushes          → {pushes}, what "reached" the person's devices
+   *   GET  /test/push-devices    → {devices}, the person's devices
+   *   POST /test/push-answer {status} how the "push service" answers the next tests
+   * A refused step answers `{error}` (a `PushFailure`) with the status of the Edge Function.
+   */
+  private handlePush(request: ApiRequest): ApiResponse {
+    const { method, path, body } = request;
+    const session = this.auth.sessionFor(request.token);
+    if (session === undefined) {
+      return { status: 401, body: { error: "notSignedIn" satisfies PushFailure } };
+    }
+    const userId = session.userId;
+    try {
+      if (method === "POST" && path === "/push/register") {
+        this.push.register(userId, body);
+        return { status: 200, body: {} };
+      }
+      if (method === "POST" && path === "/push/unregister") {
+        this.push.unregister(userId, textOf(body, "deviceId"));
+        return { status: 200, body: {} };
+      }
+      if (method === "POST" && path === "/push/test") {
+        this.push.test(userId, textOf(body, "deviceId"));
+        return { status: 200, body: { sent: true } };
+      }
+      if (method === "GET" && path === "/test/pushes") {
+        return { status: 200, body: { pushes: this.push.pushesOf(userId) } };
+      }
+      if (method === "GET" && path === "/test/push-devices") {
+        return { status: 200, body: { devices: this.push.devicesOf(userId) } };
+      }
+      if (method === "POST" && path === "/test/push-answer") {
+        const status = Number((body as { status?: unknown } | undefined)?.status ?? 201);
+        this.push.setAnswer(userId, Number.isInteger(status) ? status : 201);
+        return { status: 200, body: {} };
+      }
+    } catch (error) {
+      if (error instanceof PushError) {
+        return { status: FAILURE_STATUS[error.failure], body: { error: error.failure } };
+      }
+      throw error;
+    }
+    return { status: 404, body: { error: "notFound" satisfies PushFailure } };
   }
 
   /**

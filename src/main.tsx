@@ -63,6 +63,9 @@ if (import.meta.env.MODE === "demo") {
     const { FakeHttpHousehold } = await import("./auth/fakeHttpHousehold");
     const { createFakeHttpRemote } = await import("./sync/fakeHttpRemote");
     const { createBrowserSharedStorage } = await import("./sync/browserShared");
+    const { FakeHttpPushApi, fakeVapidPublicKey } = await import("./push/fakeHttpPushApi");
+    const { Notifications } = await import("./push/notifications");
+    const { browserPushPort } = await import("./push/browserPush");
     const auth = new FakeHttpAuth({ baseUrl: __FAKE_SERVER__, store });
     const household = new FakeHttpHousehold({ baseUrl: __FAKE_SERVER__, store });
     const local = createLocalStorage({ store });
@@ -73,7 +76,19 @@ if (import.meta.env.MODE === "demo") {
         local,
         account,
       );
-    show(<App storage={local} auth={auth} household={household} shared={shared} />);
+    // Notifications against the fake server; the tests mock the browser's Push API.
+    const push = {
+      create: (userId: string) =>
+        new Notifications({
+          port: browserPushPort(),
+          api: new FakeHttpPushApi({ baseUrl: __FAKE_SERVER__, store }),
+          store,
+          publicKey: fakeVapidPublicKey(store),
+          userId,
+        }),
+      testOnly: true,
+    };
+    show(<App storage={local} auth={auth} household={household} shared={shared} push={push} />);
   } else {
     const storage = createFakeBackendStorage(store, createLocalStorage({ store }));
     show(<App storage={storage} />);
@@ -89,12 +104,18 @@ if (import.meta.env.MODE === "demo") {
     { SupabaseHousehold },
     { SupabaseRemote },
     { createBrowserSharedStorage },
+    { SupabasePushApi },
+    { Notifications },
+    { browserPushPort },
   ] = await Promise.all([
     import("./auth/supabaseClient"),
     import("./auth/supabaseAuth"),
     import("./auth/supabaseHousehold"),
     import("./sync/supabaseRemote"),
     import("./sync/browserShared"),
+    import("./push/supabasePushApi"),
+    import("./push/notifications"),
+    import("./push/browserPush"),
   ]);
   const client = createSupabaseClient({
     url: import.meta.env.VITE_SUPABASE_URL ?? "",
@@ -106,7 +127,19 @@ if (import.meta.env.MODE === "demo") {
   const local = createLocalStorage({ store });
   const shared = (account: { householdId: string; userId: string }) =>
     createBrowserSharedStorage(new SupabaseRemote(client), store, local, account);
-  show(<App storage={local} auth={auth} household={household} shared={shared} />);
+  // Notifications (NT-a); the public key is a repository variable read at build time. Without it
+  // the tile says "noch nicht eingerichtet".
+  const push = {
+    create: (userId: string) =>
+      new Notifications({
+        port: browserPushPort(),
+        api: new SupabasePushApi(client),
+        store,
+        publicKey: import.meta.env.VITE_VAPID_PUBLIC_KEY ?? "",
+        userId,
+      }),
+  };
+  show(<App storage={local} auth={auth} household={household} shared={shared} push={push} />);
   registerServiceWorker();
 } else {
   show(<App storage={createLocalStorage({ store })} />);

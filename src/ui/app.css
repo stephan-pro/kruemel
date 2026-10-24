@@ -652,6 +652,14 @@ main:focus {
   cursor: pointer;
 }
 
+/* A guide folded away in a tile ("So erlaubst du Benachrichtigungen wieder", NT-a). */
+.tile-guide summary {
+  min-height: 44px;
+  padding: 10px 0;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 .success-note {
   padding: 14px 16px;
   border-radius: var(--radius-control);

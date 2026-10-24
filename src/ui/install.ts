@@ -24,7 +24,10 @@ export interface BrowserTraits {
   readonly canPrompt: boolean;
 }
 
-export function isIos({ userAgent, maxTouchPoints }: BrowserTraits): boolean {
+export function isIos({
+  userAgent,
+  maxTouchPoints,
+}: Pick<BrowserTraits, "userAgent" | "maxTouchPoints">): boolean {
   return /iPhone|iPad|iPod/.test(userAgent) || (/Macintosh/.test(userAgent) && maxTouchPoints > 1);
 }
 

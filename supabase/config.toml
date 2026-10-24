@@ -39,6 +39,11 @@ enabled = false
 [edge_runtime]
 enabled = false
 
+# The Edge Function of the notifications (NT-a) checks the sign-in itself (Supabase advises that
+# with the new API keys); deployed by hand with `npx supabase functions deploy push`.
+[functions.push]
+verify_jwt = false
+
 [analytics]
 enabled = false
 

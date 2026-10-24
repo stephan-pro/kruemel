@@ -12,6 +12,9 @@ const PATTERNS = [
   ["privater Schlüssel", /-----BEGIN [A-Z ]*PRIVATE KEY-----/],
   ["GitHub-Token", /\b(ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{30,}\b|github_pat_[A-Za-z0-9_]{40,}/],
   ["Passwort im Quelltext", /(passwor[dt]|secret|app_?password)\s*[:=]\s*["'][^"'\s]{8,}["']/i],
+  // NT-a: a bare private VAPID key (32 bytes base64url) cannot be told from other text; only one
+  // written next to its name can.
+  ["privater VAPID-Schlüssel", /VAPID_PRIVATE_KEY\S*\s*[:=]\s*["']?[A-Za-z0-9_-]{43}\b/],
 ];
 // A JWT is only a problem if it is a service-role key (the anon key is public).
 const JWT = /eyJ[A-Za-z0-9_-]{10,}\.(eyJ[A-Za-z0-9_-]{10,})\.[A-Za-z0-9_-]{10,}/g;

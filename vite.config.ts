@@ -70,6 +70,13 @@ function serviceWorker(): Plugin {
         if (worker?.type !== "chunk") {
           throw new Error("sw.js fehlt im Build");
         }
+        // A classic service worker cannot import: a file it shares with the page would become a
+        // chunk of its own and the worker would not start at all (no offline use, no pushes).
+        if (worker.imports.length > 0 || worker.dynamicImports.length > 0) {
+          throw new Error(
+            `sw.js importiert ${[...worker.imports, ...worker.dynamicImports].join(", ")}: Dateien des Service Workers dürfen nicht auch von der Seite genutzt werden`,
+          );
+        }
         const placeholder = /(["'`])__BUILD_INFO__\1/;
         if (!placeholder.test(worker.code)) {
           throw new Error("Platzhalter __BUILD_INFO__ fehlt in sw.js");
@@ -139,7 +146,8 @@ export default defineConfig(({ mode }) => {
       __FAKE_SERVER__: JSON.stringify(FAKE_SERVER),
     },
     test: {
-      include: ["src/**/*.test.ts"],
+      // `supabase/functions/`: the core of the Edge Functions (NT-a), tested without Deno.
+      include: ["src/**/*.test.ts", "supabase/functions/**/*.test.ts"],
       // `tokens.test.ts` reads the design tokens; other CSS stays empty in unit tests.
       css: { include: [/tokens\.css/] },
       // No `passWithNoTests`: `npm run check` must fail if no unit tests are found.
@@ -151,16 +159,23 @@ export default defineConfig(({ mode }) => {
           "src/demo/**/*.ts",
           "src/sync/**/*.ts",
           "src/auth/**/*.ts",
+          "src/push/**/*.ts",
           "src/backend.ts",
+          "supabase/functions/**/*.ts",
         ],
-        // `browserFake.ts` and `browserShared.ts` only connect parts that have their own tests (and
-        // need the browser).
+        // `browserFake.ts`, `browserShared.ts` and `browserPush.ts` only connect parts that have
+        // their own tests (and need the browser); `index.ts` of an Edge Function only connects its
+        // core to Deno.
         exclude: [
           "src/**/*.test.ts",
           "src/**/*.fixtures.ts",
           "src/**/*.contract.ts",
           "src/sync/browserFake.ts",
           "src/sync/browserShared.ts",
+          "src/push/browserPush.ts",
+          "supabase/functions/**/*.test.ts",
+          "supabase/functions/**/*.cases.ts",
+          "supabase/functions/*/index.ts",
         ],
         thresholds: {
           lines: 90,

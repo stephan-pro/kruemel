@@ -6,7 +6,11 @@
 // `__BUILD_INFO__`: the list of all files of the build (hashed names) and a version derived from
 // them. A new build means a new version, so the browser installs the new worker, which keeps the
 // new files and drops the old ones.
+//
+// Notifications (NT-a): a push shows a message (`notificationFor`, texts on the device); a tap on
+// it brings the app to the front or opens it (`openApp`).
 
+import { notificationFor, openApp, payloadOf } from "./push/messages";
 import { isAppRequest } from "./swScope";
 
 const sw = self as unknown as ServiceWorkerGlobalScope;
@@ -109,4 +113,21 @@ sw.addEventListener("fetch", (event) => {
     return;
   }
   event.respondWith(request.mode === "navigate" ? page(request) : file(request));
+});
+
+sw.addEventListener("push", (event) => {
+  const shown = notificationFor(payloadOf(event.data));
+  event.waitUntil(
+    sw.registration.showNotification(shown.title, {
+      body: shown.body,
+      tag: shown.tag,
+      lang: "de",
+      icon: new URL("icon-192.png", SCOPE).href,
+    }),
+  );
+});
+
+sw.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil(openApp(sw.clients, SCOPE));
 });
