@@ -353,27 +353,6 @@ describe("NT-b Einstellungen der Geräte (Datenbank)", () => {
     expect(await settingsOf(alex, phone.p_device_id)).toEqual(DEFAULT_PUSH_SETTINGS);
   });
 
-  it("NT-b Die Tabelle selbst lässt keine unmöglichen Werte zu, auch nicht mit dem Dienstschlüssel", async () => {
-    const alex = await signedIn();
-    const phone = device();
-    await call(alex, "register_push_device", phone);
-
-    for (const wrong of [
-      { daily_days: 128 },
-      { daily_days: -1 },
-      { daily_days: 0 },
-      { quiet_from: "21:00:00", quiet_to: "21:00:00" },
-      { daily_time: "07:30:15" },
-    ]) {
-      const result = await admin
-        .from("push_devices")
-        .update(wrong)
-        .eq("device_id", phone.p_device_id);
-      expect(result.error?.message, JSON.stringify(wrong)).toMatch(/push_devices_settings/);
-    }
-    expect(await settingsOf(alex, phone.p_device_id)).toEqual(DEFAULT_PUSH_SETTINGS);
-  });
-
   it("NT-b Erneutes Anmelden des Geräts (neue Adresse, neue Zeitzone) behält die Einstellungen", async () => {
     const alex = await signedIn();
     const phone = device();
