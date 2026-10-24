@@ -212,17 +212,23 @@ test.describe("N1 Eigenes Design", () => {
     await startConfigured(page);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 
-    const small = await page.evaluate(() =>
-      [...document.querySelectorAll("main button, main a, nav a")]
-        .filter((element) => (element as HTMLElement).offsetParent !== null)
-        .map((element) => {
-          const { width, height } = element.getBoundingClientRect();
-          return { name: element.textContent?.trim(), width, height };
-        })
-        .filter(({ width, height }) => width < 44 || height < 44),
-    );
+    // K2c: not only the start page; links inside running text are exempt (WCAG 2.5.8).
+    for (const link of [undefined, "Statistik", "Einstellungen"]) {
+      if (link !== undefined) {
+        await goToPage(page, link, link === "Statistik" ? "Eure Bilanz" : link);
+      }
+      const small = await page.evaluate(() =>
+        [...document.querySelectorAll("main button, main a:not(p a), nav a")]
+          .filter((element) => (element as HTMLElement).offsetParent !== null)
+          .map((element) => {
+            const { width, height } = element.getBoundingClientRect();
+            return { name: element.textContent?.trim(), width, height };
+          })
+          .filter(({ width, height }) => width < 44 || height < 44),
+      );
 
-    expect(small).toEqual([]);
+      expect(small, link ?? "Woche").toEqual([]);
+    }
   });
 });
 

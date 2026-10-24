@@ -7,7 +7,7 @@ import { ErrorAlert } from "../components/Alert";
 import { TextField, useFieldErrorFocus } from "../components/fields";
 import { PageTitle } from "../components/PageTitle";
 import { HOUSEHOLD_TEXTS, LEAVE_TEXTS } from "../householdTexts";
-import { inviteTokenFrom } from "../route";
+import { friendInviteTokenFrom, inviteTokenFrom } from "../route";
 
 const OWN_NAME_FIELD = "haushalt-name-ich";
 const OTHER_NAME_FIELD = "haushalt-name-andere";
@@ -68,8 +68,12 @@ export function HouseholdPage({ onCreate, onInvite, notice }: HouseholdPageProps
     event.preventDefault();
     const token = inviteTokenFrom(link);
     if (token === undefined) {
-      setLinkError(HOUSEHOLD_TEXTS.notAnInvite);
-      report(LINK_FIELD, HOUSEHOLD_TEXTS.notAnInvite);
+      const message =
+        friendInviteTokenFrom(link) !== undefined
+          ? HOUSEHOLD_TEXTS.friendLinkHere
+          : HOUSEHOLD_TEXTS.notAnInvite;
+      setLinkError(message);
+      report(LINK_FIELD, message);
       return;
     }
     onInvite(token);
@@ -150,7 +154,7 @@ export function HouseholdUnavailablePage({ message, onRetry }: HouseholdUnavaila
     <>
       <PageTitle title={HOUSEHOLD_TEXTS.unavailableTitle} />
       <div class="tile tile--narrow form">
-        <ErrorAlert title={HOUSEHOLD_TEXTS.unavailableTitle}>{message}</ErrorAlert>
+        <ErrorAlert title={HOUSEHOLD_TEXTS.unavailableAlert}>{message}</ErrorAlert>
         <div class="button-row">
           <button class="btn btn--primary" type="button" onClick={onRetry}>
             {HOUSEHOLD_TEXTS.retry}

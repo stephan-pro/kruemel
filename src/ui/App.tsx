@@ -883,9 +883,17 @@ export function App({
             </p>
           </aside>
         )}
+        {/* The status line is there from the start; a line inserted together with its role is often not read out. */}
+        <p class="visually-hidden" role="status">
+          {outdated || appUpdated
+            ? outdated
+              ? SHARED_TEXTS.newVersion
+              : SHARED_TEXTS.appUpdated
+            : ""}
+        </p>
         {(outdated || appUpdated) && (
           <aside class="demo-hint update-hint" aria-label={SHARED_TEXTS.newVersionLabel}>
-            <p role="status">{outdated ? SHARED_TEXTS.newVersion : SHARED_TEXTS.appUpdated}</p>
+            <p>{outdated ? SHARED_TEXTS.newVersion : SHARED_TEXTS.appUpdated}</p>
             <div class="button-row">
               <button class="btn btn--primary" type="button" onClick={() => location.reload()}>
                 {SHARED_TEXTS.reload}

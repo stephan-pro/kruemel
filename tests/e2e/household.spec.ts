@@ -244,6 +244,12 @@ test.describe("E2-2d Haushalt und Einladung", () => {
     await page.getByRole("button", { name: HOUSEHOLD_TEXTS.openInvite }).click();
     await expect(field).toBeFocused();
     await expect(field).toHaveAccessibleDescription(HOUSEHOLD_TEXTS.notAnInvite);
+    // K2c: a link for friends in this field is recognised and explained.
+    await field.fill(
+      "https://beispiel.de/kruemel/#/freunde/abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG",
+    );
+    await page.getByRole("button", { name: HOUSEHOLD_TEXTS.openInvite }).click();
+    await expect(field).toHaveAccessibleDescription(HOUSEHOLD_TEXTS.friendLinkHere);
     await expectNoAccessibilityViolations(page);
 
     await page.getByRole("button", { name: HOUSEHOLD_TEXTS.create }).click();

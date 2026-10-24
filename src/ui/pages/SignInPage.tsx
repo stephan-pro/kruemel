@@ -193,7 +193,9 @@ export function SignInPage({ auth, onSignedIn, notice: farewell, invite }: SignI
           </p>
           {status}
         </form>
-        {!canResend && <p class="muted">{ACCOUNT_TEXTS.resendWait}</p>}
+        <p class="muted" role="status">
+          {canResend ? ACCOUNT_TEXTS.resendReady : ACCOUNT_TEXTS.resendWait}
+        </p>
         <div class="button-row">
           {canResend && (
             <button class="btn btn--secondary" type="button" onClick={resend}>

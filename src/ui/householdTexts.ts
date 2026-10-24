@@ -42,8 +42,11 @@ export const HOUSEHOLD_TEXTS = {
   inviteLinkField: "Einladungslink",
   openInvite: "Einladung öffnen",
   notAnInvite: "Das ist kein Einladungslink. Bitte kopiere den ganzen Link aus der Nachricht.",
+  friendLinkHere:
+    "Das ist ein Link für Freunde, nicht für einen Haushalt. Öffne ihn direkt im Browser, dann kannst du dich anmelden.",
 
   unavailableTitle: "Keine Verbindung",
+  unavailableAlert: "Der Haushalt konnte nicht geladen werden",
   retry: "Erneut versuchen",
 
   acceptTitle: "Einladung annehmen",
@@ -93,7 +96,7 @@ export const HOUSEHOLD_TEXTS = {
 export const FRIEND_TEXTS = {
   tileTitle: "Freunde einladen",
   intro: `Kennst du jemanden, der Krümel auch nutzen möchte? Mit einem Einladungslink legt die Person ein eigenes Konto und einen eigenen Haushalt an. Eure Aufgaben bleiben getrennt. Der Link gilt ${INVITE_DAYS} Tage und nur einmal.`,
-  limits: `Du kannst bis zu ${FRIEND_INVITES_OPEN} offene Links haben und ${FRIEND_INVITES_PER_DAY} am Tag erzeugen.`,
+  limits: `Du kannst bis zu ${FRIEND_INVITES_OPEN} offene Links haben und ${FRIEND_INVITES_PER_DAY} in 24 Stunden erzeugen.`,
   create: "Link für Freunde erzeugen",
   createAnother: "Noch einen Link erzeugen",
   failed: "Kein Link erzeugt",

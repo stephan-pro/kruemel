@@ -363,7 +363,7 @@ test.describe("Unlesbare Daten (Speicher)", () => {
     // The file is a blob of the page; reading it there avoids needing Node types for one line.
     const content = await page.evaluate((url) => fetch(url).then((r) => r.text()), download.url());
     expect(content).toBe(broken);
-    await expect(page.getByRole("status")).toContainText("heruntergeladen");
+    await expect(page.getByRole("status").filter({ hasText: "heruntergeladen" })).toBeVisible();
   });
 
   test("Weg 2 gibt es erst nach dem Herunterladen", async ({ page }) => {

@@ -34,12 +34,13 @@ export const ACCOUNT_TEXTS = {
   verifyCode: "Anmelden",
   resendWait:
     "Kein Code da? Schau auch im Spam-Ordner nach. In einer Minute kannst du einen neuen anfordern.",
+  resendReady: "Du kannst jetzt einen neuen Code anfordern.",
   resendCode: "Code erneut senden",
   codeResent: "Wir haben dir einen neuen Code geschickt.",
   otherEmail: "Andere E-Mail-Adresse",
   busy: "Einen Moment …",
 
-  accountTile: "Anmeldung",
+  accountTile: "Konto",
   accountSignedIn: (email: string) => `Du bist angemeldet als ${email}.`,
   signOut: "Abmelden",
   signOutQuestion: "Abmelden?",

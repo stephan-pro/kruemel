@@ -21,7 +21,7 @@ import { FAKE_SERVER } from "./shared";
 const DATA = dataWith([weekly({ assignee: "personB" })]);
 
 const householdTile = (page: Page) => page.getByRole("region", { name: /Haushalt/ }).first();
-const accountTile = (page: Page) => page.getByRole("region", { name: "Anmeldung" });
+const accountTile = (page: Page) => page.getByRole("region", { name: "Konto" });
 const dialog = (page: Page) => page.getByRole("dialog");
 
 /** The household of a member as the server has it. */

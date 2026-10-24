@@ -42,7 +42,7 @@ export function writeKey(store: KeyValueStore, key: string, value: string): void
     store.setItem(key, value);
   } catch (error) {
     throw new StorageError(
-      "Speichern nicht möglich: Der Browser-Speicher ist voll oder gesperrt. Bitte jetzt eine Sicherung exportieren.",
+      "Speichern nicht möglich: Der Browser-Speicher ist voll oder gesperrt. Bitte jetzt eine Sicherung herunterladen.",
       [String(error)],
     );
   }

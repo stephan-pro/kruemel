@@ -16,8 +16,8 @@ export function VersionTile() {
       </p>
       <p class="muted">
         Neue Versionen kommen von selbst, wenn Krümel mit Internet geöffnet wird. Lief die App im
-        Hintergrund weiter, bleibt sie bei der alten Version, bis man sie neu lädt oder ganz
-        schließt und wieder öffnet.
+        Hintergrund weiter, bleibt sie bei der alten Version, bis du sie neu lädst oder ganz
+        schließt und wieder öffnest.
       </p>
       <div class="button-row">
         <button class="btn btn--secondary" type="button" onClick={() => location.reload()}>
