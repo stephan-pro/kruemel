@@ -13,6 +13,7 @@ Das erste Wort ist die Kennung des Pakets. Alles danach sind Zusatzhinweise des 
 
 - **Etappe 1:** eine Nummer (`12`) oder `R1`/`R2`. Quelle ist die Tabelle in `docs/PLAN.md` (Abschnitt „Arbeitspakete“).
 - **Etappe 2:** `E2-0` bis `E2-5` (Groß-/Kleinschreibung egal; `E2-4a` und `E2-4b` sind die beiden Commits von E2-4, `E2-4` allein heißt beide nacheinander). Quelle ist `docs/ETAPPE2-PLAN.md` Abschnitt 3 (ausführlich) und die Tabelle im Kapitel „Etappe 2“ in `docs/PLAN.md` (Kurzfassung, dort wird der Haken gesetzt).
+- **Benachrichtigungen:** `NT-a` bis `NT-e` (Reihenfolge a → b → c → d → e, b und c tauschbar). Quelle ist die Tabelle im Kapitel „Benachrichtigungen“ in `docs/PLAN.md` (dort wird der Haken gesetzt) und `docs/BENACHRICHTIGUNGEN.md` (Entscheidungen des PO, Datenmodell, Schlüssel Abschnitt 7, Tests, tatsächliche Namen Abschnitt 10.1). Es gelten die Zusatzregeln für Etappe 2 (Abschnitt 2), dazu: der private VAPID-Schlüssel und `PUSH_CRON_TOKEN` kommen nie ins Repo, in den Chat oder in Logs; Schritte des PO (Schlüssel/Secrets vor NT-a, Token und Vault vor NT-c, Gerätetest) als nummerierte Liste übergeben. NT-c und NT-d haben Datenbank-Tests (nur CI, Job `db`).
 
 Fehlt die Kennung oder gibt es kein solches Paket, frag nach, statt zu raten. Ist das Paket in der Tabelle schon mit ✅ markiert, sag das und frag, ob es trotzdem (erneut) bearbeitet werden soll. Bei Etappe 2 gilt: Ein Paket setzt voraus, dass die Pakete davor abgeschlossen sind (E2-1 nach E2-0 usw.); ist das nicht so, sag es und frag.
 

@@ -2,13 +2,12 @@
 // Silent on success: one summary line. On failure: only what failed (file, line, message).
 // `node scripts/check.mjs`        – Biome, tsc, unit tests, builds, E2E in Chromium / desktop.
 // `node scripts/check.mjs --full` – the same, E2E in the full matrix (`npm run check:full`).
-// Locally Biome fixes formatting; in CI (env CI set) it only checks.
+// Purely checking: Biome never rewrites files here (`npm run fix` does that).
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { stripVTControlCharacters } from "node:util";
 import { chromium, webkit } from "@playwright/test";
 
-const isCi = Boolean(process.env.CI);
 const full = process.argv.includes("--full");
 const MAX_FAILURE_LINES = 40;
 const started = Date.now();
@@ -69,8 +68,10 @@ function unitFailures() {
 }
 
 // 1. Biome
-const lint = run(isCi ? "biome ci ." : "biome check --write .");
-if (!lint.ok) fail("Formatierung und Linting (Biome)", tail(lint.output));
+const lint = run("biome check .");
+if (!lint.ok) {
+  fail("Formatierung und Linting (Biome; Korrektur mit `npm run fix`)", tail(lint.output));
+}
 
 // 2. TypeScript
 const types = run("tsc --noEmit");

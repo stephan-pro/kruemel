@@ -1,10 +1,9 @@
 #!/bin/sh
 # Before each commit: look for secrets in the staged changes only (scripts/scan-secrets.mjs),
-# then format and lint staged files (Q10).
-# Fixed files are staged again; remaining errors stop the commit.
+# then check formatting and linting of staged files (Q10). Purely checking, nothing is rewritten;
+# fix with `npm run fix`, stage again, commit again.
 node scripts/scan-secrets.mjs || exit 1
-npx biome check --write --staged --no-errors-on-unmatched || {
-  echo "❌ Commit abgebrochen: Biome hat Fehler gefunden (siehe oben)."
+npx biome check --staged --no-errors-on-unmatched || {
+  echo "❌ Commit abgebrochen: Biome hat Fehler gefunden (siehe oben). Korrektur: npm run fix"
   exit 1
 }
-git update-index --again

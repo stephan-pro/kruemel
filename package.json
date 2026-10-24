@@ -15,6 +15,7 @@
     "preview": "vite preview",
     "check": "node scripts/check.mjs",
     "check:full": "node scripts/check.mjs --full",
+    "fix": "biome check --write .",
     "check:db": "node scripts/check-db.mjs",
     "try:sign-in": "node scripts/try-sign-in.mjs",
     "test": "vitest",
