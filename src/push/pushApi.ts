@@ -3,7 +3,7 @@
 // Function `push`; `FakeHttpPushApi` to the fake server of the end-to-end tests. Both follow the
 // rules of `supabase/functions/push/rules.ts`.
 
-import type { PushFailure } from "../../supabase/functions/push/rules";
+import type { PushFailure, PushSettings } from "../../supabase/functions/push/rules";
 
 /** What a device registers (`register_push_device`). */
 export interface DeviceRegistration {
@@ -23,6 +23,10 @@ export interface PushApi {
   unregister(deviceId: string): Promise<void>;
   /** A test notification to this device, at once. */
   sendTest(deviceId: string): Promise<void>;
+  /** The settings of the device, or `null` when the server does not know the device (any more). */
+  settings(deviceId: string): Promise<PushSettings | null>;
+  /** Saves the settings of the device. Throws `settingsInvalid` for settings that break the rules. */
+  updateSettings(deviceId: string, settings: PushSettings): Promise<void>;
 }
 
 /** A step of the notifications that failed, with the reason (`NOTIFICATION_TEXTS` has the words). */

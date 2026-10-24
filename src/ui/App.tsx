@@ -254,6 +254,17 @@ export function App({
     () => (push !== undefined && session != null ? push.create(session.userId) : undefined),
     [push, session?.userId],
   );
+  // At every start, and when the internet is back: tell the server this device is still in use,
+  // with the time zone it is in now (NT-b), and finish what waited for the internet.
+  useEffect(() => {
+    if (notifications === undefined) {
+      return;
+    }
+    void notifications.sync();
+    const again = () => void notifications.sync(true);
+    window.addEventListener("online", again);
+    return () => window.removeEventListener("online", again);
+  }, [notifications]);
   const [invite, setInvite] = useState(() => takeInvite(householdApi !== undefined));
   const [friendInvite, setFriendInvite] = useState(() =>
     takeFriendInvite(householdApi !== undefined),
@@ -628,6 +639,8 @@ export function App({
       }
       await sharedStorage.close();
     }
+    // Notifications of this account stop on this device (the server is told while the sign-in lasts).
+    await notifications?.release();
     await auth?.signOut();
     household.forget();
     setSession(null);
@@ -712,6 +725,8 @@ export function App({
       saveBeforeGoing(joined.members.length < 2);
       await householdApi.deleteAccount();
       await sharedStorage?.close();
+      // The server deleted the devices with the account; the browser's address goes too.
+      await notifications?.forget();
       await auth?.signOut();
       household.forget();
       setSignInNotice(DELETE_ACCOUNT_TEXTS.deleted);

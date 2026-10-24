@@ -5,12 +5,15 @@
 // Test-only.
 
 import {
+  DEFAULT_PUSH_SETTINGS,
   isAuthSecret,
   isP256dh,
   isPushEndpoint,
   PUSH_LIMITS,
   type PushFailure,
+  type PushSettings,
   pushAnswerFailure,
+  pushSettingsProblems,
   TEST_PAYLOAD,
 } from "../../supabase/functions/push/rules";
 import type { DeviceRegistration } from "./pushApi";
@@ -19,6 +22,7 @@ import { PushError } from "./pushApi";
 interface Device extends DeviceRegistration {
   readonly userId: string;
   readonly seen: number;
+  readonly settings: PushSettings;
 }
 
 export interface RecordedPush {
@@ -32,6 +36,21 @@ const DAY_MS = 24 * 60 * 60_000;
 function text(body: unknown, field: string): string {
   const value = (body as Record<string, unknown> | undefined)?.[field];
   return typeof value === "string" ? value : "";
+}
+
+/** The settings in a request, or `undefined` when a value has the wrong kind. */
+function settingsIn(body: unknown): PushSettings | undefined {
+  const value = (body ?? {}) as Record<string, unknown>;
+  const switches = ["dailyEnabled", "partnerEnabled", "householdEnabled", "quietEnabled"] as const;
+  const clocks = ["dailyTime", "quietFrom", "quietTo"] as const;
+  if (
+    switches.some((name) => typeof value[name] !== "boolean") ||
+    clocks.some((name) => typeof value[name] !== "string") ||
+    typeof value.dailyDays !== "number"
+  ) {
+    return undefined;
+  }
+  return value as unknown as PushSettings;
 }
 
 function knownTimeZone(zone: string): boolean {
@@ -78,7 +97,12 @@ export class FakePushService {
     }
     const zone = text(body, "timeZone");
     const locale = text(body, "locale");
+    // Registering again keeps what the device chose.
+    const settings =
+      this.devices.find((other) => other.userId === userId && other.deviceId === deviceId)
+        ?.settings ?? DEFAULT_PUSH_SETTINGS;
     const device: Device = {
+      settings,
       userId,
       deviceId,
       endpoint,
@@ -97,6 +121,42 @@ export class FakePushService {
       .sort((a, b) => b.seen - a.seen)
       .slice(0, PUSH_LIMITS.devicesPerAccount);
     this.devices = [...others.filter((other) => other.userId !== userId), ...mine];
+  }
+
+  /** The settings of a device of the account, or `null` when it is not known. */
+  settingsOf(userId: string, deviceId: string): PushSettings | null {
+    return (
+      this.devices.find((device) => device.userId === userId && device.deviceId === deviceId)
+        ?.settings ?? null
+    );
+  }
+
+  /** `update_push_settings`. Throws `PushError`. */
+  updateSettings(userId: string, deviceId: string, body: unknown): void {
+    const settings = settingsIn(body);
+    if (settings === undefined || pushSettingsProblems(settings).length > 0) {
+      throw new PushError("settingsInvalid");
+    }
+    if (this.settingsOf(userId, deviceId) === null) {
+      throw new PushError("deviceUnknown");
+    }
+    this.devices = this.devices.map((device) =>
+      device.userId === userId && device.deviceId === deviceId
+        ? {
+            ...device,
+            settings: {
+              dailyEnabled: settings.dailyEnabled,
+              dailyTime: settings.dailyTime,
+              dailyDays: settings.dailyDays,
+              partnerEnabled: settings.partnerEnabled,
+              householdEnabled: settings.householdEnabled,
+              quietEnabled: settings.quietEnabled,
+              quietFrom: settings.quietFrom,
+              quietTo: settings.quietTo,
+            },
+          }
+        : device,
+    );
   }
 
   /** `unregister_push_device`. */

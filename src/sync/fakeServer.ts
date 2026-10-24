@@ -234,6 +234,8 @@ export class FakeServer {
    *   POST /push/register   {deviceId, endpoint, p256dh, auth, keyId, timeZone, locale} → {}
    *   POST /push/unregister {deviceId} → {}
    *   POST /push/test       {deviceId} → {sent: true}, recorded instead of delivered
+   *   POST /push/settings   {deviceId} → {settings}, `null` for a device the server does not know
+   *   POST /push/update-settings {deviceId, …PushSettings} → {}
    *   GET  /test/pushes          → {pushes}, what "reached" the person's devices
    *   GET  /test/push-devices    → {devices}, the person's devices
    *   POST /test/push-answer {status} how the "push service" answers the next tests
@@ -258,6 +260,16 @@ export class FakeServer {
       if (method === "POST" && path === "/push/test") {
         this.push.test(userId, textOf(body, "deviceId"));
         return { status: 200, body: { sent: true } };
+      }
+      if (method === "POST" && path === "/push/settings") {
+        return {
+          status: 200,
+          body: { settings: this.push.settingsOf(userId, textOf(body, "deviceId")) },
+        };
+      }
+      if (method === "POST" && path === "/push/update-settings") {
+        this.push.updateSettings(userId, textOf(body, "deviceId"), body);
+        return { status: 200, body: {} };
       }
       if (method === "GET" && path === "/test/pushes") {
         return { status: 200, body: { pushes: this.push.pushesOf(userId) } };

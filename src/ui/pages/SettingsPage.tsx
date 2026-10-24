@@ -204,7 +204,11 @@ export function SettingsPage({
             {APPEARANCE_TEXTS.logoMotionHint}
           </p>
         </section>
-        <NotificationTile notifications={notifications} testOnly={notificationsTestOnly} />
+        <NotificationTile
+          notifications={notifications}
+          testOnly={notificationsTestOnly}
+          otherName={household ? otherMember(household.info, names) : undefined}
+        />
         {sync && <SyncTile status={sync.status} rejected={sync.rejected} />}
         <BackupTile data={data} today={today} shared={shared} onImport={importBackup} />
         {household && (
@@ -234,6 +238,7 @@ export function SettingsPage({
             email={account.email}
             shared={shared}
             onSignOut={account.onSignOut}
+            notifications={notifications}
             {...(account.onCheckPending ? { onCheckPending: account.onCheckPending } : {})}
             {...(household && account.onDeleteAccount
               ? {

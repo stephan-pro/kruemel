@@ -122,6 +122,7 @@ export const MAX_PUSH_BODY_BYTES = 2744;
  * - `testToday`: ten tests a day per account.
  * - `keyChanged`: the device was switched on with another key; switch it off and on again.
  * - `endpointInvalid`: the address is not one of `PUSH_HOSTS` (this browser is not supported).
+ * - `settingsInvalid`: the settings of the device break `pushSettingsProblems` (NT-b).
  * - `pushFailed`: the push service did not answer in time, was not reachable, was busy (429) or
  *   failed itself (5xx); worth another try later.
  * - `pushRejected`: the push service refused the message (400, 401, 403, 413 …): the server's setup
@@ -141,6 +142,7 @@ export const PUSH_FAILURES = [
   "testToday",
   "keyChanged",
   "endpointInvalid",
+  "settingsInvalid",
   "pushFailed",
   "pushRejected",
   "notFound",
@@ -162,6 +164,7 @@ export const FAILURE_STATUS: Readonly<Record<PushFailure, number>> = {
   testToday: 429,
   keyChanged: 409,
   endpointInvalid: 422,
+  settingsInvalid: 422,
   pushFailed: 502,
   pushRejected: 502,
   notFound: 404,
@@ -197,6 +200,7 @@ export const RAISED_PUSH_FAILURES: Readonly<Record<string, PushFailure>> = {
   push_endpoint_invalid: "endpointInvalid",
   push_keys_invalid: "badRequest",
   push_device_unknown: "deviceUnknown",
+  push_settings_invalid: "settingsInvalid",
   push_test_wait: "testWait",
   push_test_today: "testToday",
 };
@@ -204,6 +208,118 @@ export const RAISED_PUSH_FAILURES: Readonly<Record<string, PushFailure>> = {
 /** The failure a database message stands for, or `undefined`. */
 export function raisedPushFailure(message: string): PushFailure | undefined {
   return Object.entries(RAISED_PUSH_FAILURES).find(([raised]) => message.includes(raised))?.[1];
+}
+
+// Settings per device (NT-b) -------------------------------------------------------------------
+
+/**
+ * What a device chooses (docs/BENACHRICHTIGUNGEN.md, 1.2): which kinds of notifications it gets,
+ * when the daily overview comes and its quiet hours. `dailyDays` is a bit mask of the weekdays
+ * (Monday = 1, Tuesday = 2 … Sunday = 64). Times are "HH:MM" local to the device. The database
+ * keeps the same rules (`…_push_settings.sql`); `rules.cases.ts` holds the cases both are tested
+ * with.
+ */
+export interface PushSettings {
+  readonly dailyEnabled: boolean;
+  readonly dailyTime: string;
+  readonly dailyDays: number;
+  readonly partnerEnabled: boolean;
+  readonly householdEnabled: boolean;
+  readonly quietEnabled: boolean;
+  readonly quietFrom: string;
+  readonly quietTo: string;
+}
+
+/** Monday to Sunday: all seven bits. */
+export const ALL_WEEKDAYS = 127;
+
+/** What a device has until it chooses otherwise. */
+export const DEFAULT_PUSH_SETTINGS: PushSettings = {
+  dailyEnabled: true,
+  dailyTime: "07:30",
+  dailyDays: ALL_WEEKDAYS,
+  partnerEnabled: true,
+  householdEnabled: true,
+  quietEnabled: true,
+  quietFrom: "21:00",
+  quietTo: "07:00",
+};
+
+/** A time of day as "HH:MM" (24 hours, to the minute). */
+export function isClockTime(text: unknown): boolean {
+  return typeof text === "string" && /^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(text);
+}
+
+/** Which setting is wrong, named after the field it belongs to. */
+export type PushSettingsProblem = "dailyTime" | "dailyDays" | "quietFrom" | "quietTo" | "quietSame";
+
+/**
+ * What is wrong with the settings, empty when they are fine: times that are none, a daily overview
+ * on no weekday at all, quiet hours that start and end at the same time.
+ */
+export function pushSettingsProblems(settings: PushSettings): PushSettingsProblem[] {
+  const problems: PushSettingsProblem[] = [];
+  if (!isClockTime(settings.dailyTime)) {
+    problems.push("dailyTime");
+  }
+  const days = settings.dailyDays;
+  const noDay = settings.dailyEnabled && days === 0;
+  if (!Number.isInteger(days) || days < 0 || days > ALL_WEEKDAYS || noDay) {
+    problems.push("dailyDays");
+  }
+  if (!isClockTime(settings.quietFrom)) {
+    problems.push("quietFrom");
+  }
+  if (!isClockTime(settings.quietTo)) {
+    problems.push("quietTo");
+  } else if (settings.quietEnabled && settings.quietFrom === settings.quietTo) {
+    problems.push("quietSame");
+  }
+  return problems;
+}
+
+/** The settings as the database functions take them (`update_push_settings`). */
+export function settingsArguments(settings: PushSettings) {
+  return {
+    p_daily_enabled: settings.dailyEnabled,
+    p_daily_time: settings.dailyTime,
+    p_daily_days: settings.dailyDays,
+    p_partner_enabled: settings.partnerEnabled,
+    p_household_enabled: settings.householdEnabled,
+    p_quiet_enabled: settings.quietEnabled,
+    p_quiet_from: settings.quietFrom,
+    p_quiet_to: settings.quietTo,
+  };
+}
+
+/** The columns of `push_devices` that hold the settings, as the app reads them. */
+export interface SettingsRow {
+  readonly daily_enabled: boolean;
+  readonly daily_time: string;
+  readonly daily_days: number;
+  readonly partner_enabled: boolean;
+  readonly household_enabled: boolean;
+  readonly quiet_enabled: boolean;
+  readonly quiet_from: string;
+  readonly quiet_to: string;
+}
+
+/** `SETTINGS_COLUMNS` as one `select` list. */
+export const SETTINGS_COLUMNS =
+  "daily_enabled, daily_time, daily_days, partner_enabled, household_enabled, quiet_enabled, quiet_from, quiet_to";
+
+/** A row of `push_devices` as settings (the database writes times as "HH:MM:SS"). */
+export function settingsFromRow(row: SettingsRow): PushSettings {
+  return {
+    dailyEnabled: row.daily_enabled,
+    dailyTime: row.daily_time.slice(0, 5),
+    dailyDays: row.daily_days,
+    partnerEnabled: row.partner_enabled,
+    householdEnabled: row.household_enabled,
+    quietEnabled: row.quiet_enabled,
+    quietFrom: row.quiet_from.slice(0, 5),
+    quietTo: row.quiet_to.slice(0, 5),
+  };
 }
 
 /** The limits (also in the migration and the fake server). */

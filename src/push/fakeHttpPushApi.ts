@@ -1,7 +1,7 @@
 // `PushApi` against the fake server of the end-to-end tests (`/push/*`, `FakePushService`), with
 // the secret of the session `FakeHttpAuth` keeps in the device's storage. Test-only.
 
-import { isPushFailure } from "../../supabase/functions/push/rules";
+import { isPushFailure, type PushSettings } from "../../supabase/functions/push/rules";
 import { fakeAuthToken } from "../auth/fakeHttpAuth";
 import type { KeyValueStore } from "../storage/localStorage";
 import { type DeviceRegistration, type PushApi, PushError } from "./pushApi";
@@ -47,7 +47,16 @@ export class FakeHttpPushApi implements PushApi {
     await this.call("/push/test", { deviceId });
   }
 
-  private async call(path: string, body: object): Promise<void> {
+  async settings(deviceId: string): Promise<PushSettings | null> {
+    const answer = await this.call("/push/settings", { deviceId });
+    return (answer as { settings?: PushSettings | null } | null)?.settings ?? null;
+  }
+
+  async updateSettings(deviceId: string, settings: PushSettings): Promise<void> {
+    await this.call("/push/update-settings", { deviceId, ...settings });
+  }
+
+  private async call(path: string, body: object): Promise<unknown> {
     const token = fakeAuthToken(this.options.store);
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (token !== undefined) {
@@ -67,5 +76,6 @@ export class FakeHttpPushApi implements PushApi {
       const answer = (await response.json().catch(() => null)) as { error?: unknown } | null;
       throw new PushError(isPushFailure(answer?.error) ? answer.error : "unknown");
     }
+    return response.json().catch(() => null);
   }
 }

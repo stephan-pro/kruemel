@@ -11,7 +11,12 @@ import {
 import {
   isPushFailure,
   type PushFailure,
+  type PushSettings,
   raisedPushFailure,
+  SETTINGS_COLUMNS,
+  type SettingsRow,
+  settingsArguments,
+  settingsFromRow,
 } from "../../supabase/functions/push/rules";
 import { type DeviceRegistration, type PushApi, PushError } from "./pushApi";
 
@@ -58,6 +63,29 @@ export class SupabasePushApi implements PushApi {
 
   async unregister(deviceId: string): Promise<void> {
     const { error } = await this.client.rpc("unregister_push_device", { p_device_id: deviceId });
+    if (error) {
+      throw rpcFailure(error);
+    }
+  }
+
+  async settings(deviceId: string): Promise<PushSettings | null> {
+    // Row level security lets a person read only their own devices.
+    const { data, error } = await this.client
+      .from("push_devices")
+      .select(SETTINGS_COLUMNS)
+      .eq("device_id", deviceId)
+      .maybeSingle();
+    if (error) {
+      throw rpcFailure(error);
+    }
+    return data === null ? null : settingsFromRow(data as unknown as SettingsRow);
+  }
+
+  async updateSettings(deviceId: string, settings: PushSettings): Promise<void> {
+    const { error } = await this.client.rpc("update_push_settings", {
+      p_device_id: deviceId,
+      ...settingsArguments(settings),
+    });
     if (error) {
       throw rpcFailure(error);
     }

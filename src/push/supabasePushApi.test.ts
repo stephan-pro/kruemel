@@ -5,7 +5,7 @@ import {
   type SupabaseClient,
 } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
-import { isVapidPublicKey } from "../../supabase/functions/push/rules";
+import { DEFAULT_PUSH_SETTINGS, isVapidPublicKey } from "../../supabase/functions/push/rules";
 import { FAKE_VAPID_KEY_OVERRIDE, FakeHttpPushApi, fakeVapidPublicKey } from "./fakeHttpPushApi";
 import { PushError } from "./pushApi";
 import { SupabasePushApi } from "./supabasePushApi";
@@ -26,11 +26,23 @@ const DEVICE = {
 interface Stub {
   rpcError?: { message: string; code?: string };
   invokeError?: unknown;
+  /** The row `select` finds ("HH:MM:SS" times), or `null` for none. */
+  row?: Record<string, unknown> | null;
   calls: unknown[];
 }
 
 function client(stub: Stub): SupabaseClient {
   return {
+    from: (table: string) => ({
+      select: (columns: string) => ({
+        eq: (column: string, value: string) => ({
+          maybeSingle: async () => {
+            stub.calls.push([table, columns.split(", ").length, column, value]);
+            return { data: stub.row ?? null, error: stub.rpcError ?? null };
+          },
+        }),
+      }),
+    }),
     rpc: async (name: string, args: unknown) => {
       stub.calls.push([name, args]);
       return { data: null, error: stub.rpcError ?? null };
@@ -105,6 +117,81 @@ describe("NT-a SupabasePushApi", () => {
   });
 });
 
+describe("NT-b SupabasePushApi: Einstellungen", () => {
+  it("NT-b Lesen aus der eigenen Zeile der Tabelle, Speichern über die Datenbankfunktion", async () => {
+    const stub: Stub = {
+      calls: [],
+      row: {
+        daily_enabled: false,
+        daily_time: "06:30:00",
+        daily_days: 31,
+        partner_enabled: true,
+        household_enabled: false,
+        quiet_enabled: true,
+        quiet_from: "22:00:00",
+        quiet_to: "06:00:00",
+      },
+    };
+    const api = new SupabasePushApi(client(stub));
+
+    const settings = await api.settings(DEVICE.deviceId);
+    await api.updateSettings(DEVICE.deviceId, DEFAULT_PUSH_SETTINGS);
+
+    expect(settings).toEqual({
+      dailyEnabled: false,
+      dailyTime: "06:30",
+      dailyDays: 31,
+      partnerEnabled: true,
+      householdEnabled: false,
+      quietEnabled: true,
+      quietFrom: "22:00",
+      quietTo: "06:00",
+    });
+    expect(stub.calls).toEqual([
+      ["push_devices", 8, "device_id", DEVICE.deviceId],
+      [
+        "update_push_settings",
+        {
+          p_device_id: DEVICE.deviceId,
+          p_daily_enabled: true,
+          p_daily_time: "07:30",
+          p_daily_days: 127,
+          p_partner_enabled: true,
+          p_household_enabled: true,
+          p_quiet_enabled: true,
+          p_quiet_from: "21:00",
+          p_quiet_to: "07:00",
+        },
+      ],
+    ]);
+  });
+
+  it("NT-b Ein Gerät, das der Server nicht kennt, ist kein Fehler; Fehler werden zu klaren Gründen", async () => {
+    const none = new SupabasePushApi(client({ calls: [], row: null }));
+    expect(await none.settings("x")).toBeNull();
+
+    const failing = (rpcError: Stub["rpcError"]) =>
+      new SupabasePushApi(client({ calls: [], ...(rpcError ? { rpcError } : {}) }));
+    expect(await failureOf(failing({ message: "Failed to fetch" }).settings("x"))).toBe("offline");
+    expect(
+      await failureOf(
+        failing({ message: "push_settings_invalid", code: "P0001" }).updateSettings(
+          "x",
+          DEFAULT_PUSH_SETTINGS,
+        ),
+      ),
+    ).toBe("settingsInvalid");
+    expect(
+      await failureOf(
+        failing({ message: "push_device_unknown", code: "P0001" }).updateSettings(
+          "x",
+          DEFAULT_PUSH_SETTINGS,
+        ),
+      ),
+    ).toBe("deviceUnknown");
+  });
+});
+
 describe("NT-a FakeHttpPushApi", () => {
   it("NT-a Ruft den Fake-Server mit der Sitzung des Geräts und liest seine Fehlercodes", async () => {
     const sent: [string, RequestInit][] = [];
@@ -148,6 +235,33 @@ describe("NT-a FakeHttpPushApi", () => {
     ]);
     const headers = (sent[0]?.[1].headers ?? {}) as Record<string, string>;
     expect(headers.Authorization).toBe("Bearer geheim");
+  });
+
+  it("NT-b Einstellungen lesen und speichern über den Fake-Server", async () => {
+    const sent: [string, unknown][] = [];
+    const answers = [
+      new Response(JSON.stringify({ settings: DEFAULT_PUSH_SETTINGS })),
+      new Response(JSON.stringify({ settings: null })),
+      new Response("{}"),
+    ];
+    const api = new FakeHttpPushApi({
+      baseUrl: "http://fake",
+      store: { getItem: () => null, setItem: () => undefined, removeItem: () => undefined },
+      fetch: (async (input: RequestInfo | URL, init?: RequestInit) => {
+        sent.push([String(input), JSON.parse(String(init?.body))]);
+        return answers.shift() ?? new Response("{}");
+      }) as typeof fetch,
+    });
+
+    expect(await api.settings("a")).toEqual(DEFAULT_PUSH_SETTINGS);
+    expect(await api.settings("b")).toBeNull();
+    await api.updateSettings("a", DEFAULT_PUSH_SETTINGS);
+
+    expect(sent).toEqual([
+      ["http://fake/push/settings", { deviceId: "a" }],
+      ["http://fake/push/settings", { deviceId: "b" }],
+      ["http://fake/push/update-settings", { deviceId: "a", ...DEFAULT_PUSH_SETTINGS }],
+    ]);
   });
 
   it("NT-a Testschlüssel des Fake-Modus: sieht aus wie ein öffentlicher Schlüssel, ein Test kann ihn entfernen", () => {

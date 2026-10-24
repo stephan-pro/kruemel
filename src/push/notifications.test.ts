@@ -1,4 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  DEFAULT_PUSH_SETTINGS,
+  keyIdOf,
+  type PushSettings,
+} from "../../supabase/functions/push/rules";
 import type { KeyValueStore } from "../storage/localStorage";
 import { FAKE_VAPID_PUBLIC_KEY } from "./fakeHttpPushApi";
 import {
@@ -7,6 +12,7 @@ import {
   notificationWay,
   type Permission,
   PUSH_DEVICE_KEY,
+  PUSH_SETTINGS_KEY,
   type PushAddress,
   type PushPort,
   type PushSupport,
@@ -75,30 +81,56 @@ function browser(
   };
 }
 
-/** The server: devices by id; `failure` makes every call fail with it. */
+type ApiCall = "register" | "unregister" | "sendTest" | "settings" | "updateSettings";
+
+/**
+ * The server: devices by id and their settings; `failure` makes every call fail with it, `fail`
+ * only the named calls. `apiCalls` lists what was asked.
+ */
 function server() {
   const devices = new Map<string, DeviceRegistration>();
+  const settings = new Map<string, PushSettings>();
   const tests: string[] = [];
-  const state: { failure?: PushError } = {};
+  const apiCalls: string[] = [];
+  const state: { failure?: PushError; fail: Partial<Record<ApiCall, PushError>> } = { fail: {} };
+  const enter = (call: ApiCall) => {
+    apiCalls.push(call);
+    const failure = state.fail[call] ?? state.failure;
+    if (failure) throw failure;
+  };
   const api: PushApi = {
     register: async (device) => {
-      if (state.failure) throw state.failure;
+      enter("register");
       devices.set(device.deviceId, device);
+      if (!settings.has(device.deviceId)) settings.set(device.deviceId, DEFAULT_PUSH_SETTINGS);
     },
     unregister: async (deviceId) => {
-      if (state.failure) throw state.failure;
+      enter("unregister");
       devices.delete(deviceId);
+      settings.delete(deviceId);
     },
     sendTest: async (deviceId) => {
-      if (state.failure) throw state.failure;
+      enter("sendTest");
       tests.push(deviceId);
     },
+    settings: async (deviceId) => {
+      enter("settings");
+      return settings.get(deviceId) ?? null;
+    },
+    updateSettings: async (deviceId, next) => {
+      enter("updateSettings");
+      settings.set(deviceId, next);
+    },
   };
-  return { api, devices, tests, state };
+  return { api, devices, settings, tests, apiCalls, state };
 }
 
 function setup(
-  options: Parameters<typeof browser>[0] & { publicKey?: string; userId?: string } = {},
+  options: Parameters<typeof browser>[0] & {
+    publicKey?: string;
+    userId?: string;
+    timeZone?: () => string;
+  } = {},
 ) {
   const b = browser(options);
   const s = server();
@@ -110,7 +142,7 @@ function setup(
       store,
       publicKey: options.publicKey ?? KEY,
       userId,
-      timeZone: () => "Europe/Berlin",
+      timeZone: options.timeZone ?? (() => "Europe/Berlin"),
     });
   return { ...b, ...s, store, notifications: make(), make };
 }
@@ -245,12 +277,7 @@ describe("NT-a Berechtigungsstatus", () => {
     expect(await failureOf(make("u-robin").sendTest())).toBe("deviceUnknown");
   });
 
-  it("NT-a Status aus, wenn der Browser die Adresse verloren hat oder der Speicher kaputt ist", async () => {
-    const lost = setup();
-    await lost.notifications.enable();
-    lost.setAddress(null);
-    expect(await lost.notifications.status()).toBe("off");
-
+  it("NT-a Status aus, wenn der Speicher kaputt ist", async () => {
     const broken = setup({ permission: "granted" });
     broken.store.setItem(PUSH_DEVICE_KEY, "{kaputt");
     expect(await broken.notifications.status()).toBe("off");
@@ -268,14 +295,14 @@ describe("NT-a Testbenachrichtigung und Abmelden des Geräts", () => {
     expect(tests).toEqual([...devices.keys()]);
   });
 
-  it("NT-a Gerät beim Server weg (abgelaufen, unbekannt, neuer Schlüssel): danach aus", async () => {
+  it("NT-b Gerät beim Server weg (abgelaufen, unbekannt, neuer Schlüssel): danach „abgemeldet“", async () => {
     for (const failure of ["deviceGone", "deviceUnknown", "keyChanged"] as const) {
       const { notifications, state } = setup();
       await notifications.enable();
       state.failure = new PushError(failure);
 
       expect(await failureOf(notifications.sendTest())).toBe(failure);
-      expect(await notifications.status()).toBe("off");
+      expect(await notifications.status()).toBe("lost");
     }
     const waiting = setup();
     await waiting.notifications.enable();
@@ -307,5 +334,349 @@ describe("NT-a Testbenachrichtigung und Abmelden des Geräts", () => {
     expect(calls).not.toContain("unsubscribe");
     delete state.failure;
     expect(await notifications.status()).toBe("active");
+  });
+});
+
+const NEW_ADDRESS: PushAddress = {
+  endpoint: "https://fcm.googleapis.com/fcm/send/vom-browser-ersetzt",
+  p256dh: `B${"q".repeat(86)}`,
+  auth: "b".repeat(22),
+};
+
+describe("NT-b Abgleich beim Start", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("NT-b Zeitzone und neue Adresse des Browsers werden nachgeführt, die Einstellungen bleiben", async () => {
+    let zone = "Europe/Berlin";
+    const { notifications, make, setAddress, devices, settings, store } = setup({
+      timeZone: () => zone,
+    });
+    await notifications.enable();
+    const deviceId = [...devices.keys()][0] ?? "";
+    const chosen = { ...DEFAULT_PUSH_SETTINGS, dailyTime: "06:45" };
+    await notifications.saveSettings(chosen);
+    zone = "America/New_York";
+    setAddress(NEW_ADDRESS);
+
+    await make().sync();
+
+    expect(devices.get(deviceId)).toMatchObject({
+      endpoint: NEW_ADDRESS.endpoint,
+      timeZone: "America/New_York",
+    });
+    expect(settings.get(deviceId)).toEqual(chosen);
+    expect(JSON.parse(store.getItem(PUSH_DEVICE_KEY) ?? "{}")).toMatchObject({
+      endpoint: NEW_ADDRESS.endpoint,
+      timeZone: "America/New_York",
+    });
+    expect(await notifications.status()).toBe("active");
+  });
+
+  it("NT-b Hat der Browser die Adresse verloren, macht die App still eine neue; gelingt das nicht: abgemeldet", async () => {
+    const lost = setup();
+    await lost.notifications.enable();
+    lost.setAddress(null);
+    await lost.make().sync();
+    expect(lost.calls).toEqual(["ask", "subscribe 65", "subscribe 65"]);
+    expect(await lost.notifications.status()).toBe("active");
+
+    const stuck = setup();
+    await stuck.notifications.enable();
+    stuck.setAddress(null);
+    stuck.port.subscribe = async () => {
+      throw new PushError("pushFailed");
+    };
+    await stuck.make().sync();
+    expect(await stuck.notifications.status()).toBe("lost");
+    // "Neu einschalten" is a tap on "Aktivieren" again.
+    stuck.port.subscribe = browser().port.subscribe;
+    expect(await stuck.make().enable()).toBe("active");
+    expect(await stuck.notifications.status()).toBe("active");
+  });
+
+  it("NT-b Kennt der Server das Gerät nicht mehr (90 Tage nicht benutzt), ist es abgemeldet", async () => {
+    const { notifications, make, settings, store, devices } = setup();
+    await notifications.enable();
+    settings.clear();
+    devices.clear();
+
+    await make().sync();
+
+    expect(await notifications.status()).toBe("lost");
+    expect(store.getItem(PUSH_SETTINGS_KEY)).toBeNull();
+    expect(await failureOf(notifications.saveSettings(DEFAULT_PUSH_SETTINGS))).toBe(
+      "deviceUnknown",
+    );
+  });
+
+  it("NT-b Ohne Internet, ohne Erlaubnis, für ein anderes Konto oder ohne Einschalten ändert der Abgleich nichts", async () => {
+    const offline = setup();
+    await offline.notifications.enable();
+    offline.state.failure = new PushError("offline");
+    await offline.make().sync();
+    expect(offline.apiCalls.at(-1)).toBe("settings");
+    expect(await offline.notifications.status()).toBe("active");
+
+    const robin = setup();
+    await robin.notifications.enable();
+    robin.apiCalls.length = 0;
+    await robin.make("u-robin").sync();
+    expect(robin.apiCalls).toEqual([]);
+
+    const blocked = setup({ permission: "denied" });
+    blocked.store.setItem(
+      PUSH_DEVICE_KEY,
+      JSON.stringify({
+        deviceId: "d-1",
+        userId: "u-alex",
+        keyId: await keyIdOf(KEY),
+        endpoint: "https://fcm.googleapis.com/fcm/send/x",
+      }),
+    );
+    await blocked.make().sync();
+    expect(blocked.apiCalls).toEqual([]);
+    expect(await setup({ publicKey: "" }).make().sync()).toBeUndefined();
+  });
+
+  it("NT-b Gleich noch einmal angestoßen, passiert nichts; „wieder online“ erzwingt den Abgleich", async () => {
+    const { notifications, make, apiCalls } = setup();
+    await notifications.enable();
+    const same = make();
+    const asked = () => apiCalls.filter((call) => call === "settings").length;
+
+    await Promise.all([same.sync(), same.sync()]);
+    await same.sync();
+    expect(asked()).toBe(1);
+    await same.sync(true);
+    expect(asked()).toBe(2);
+  });
+
+  it("NT-b Abmelden schaltet aus, ohne Verbindung holt der nächste Start desselben Kontos es nach", async () => {
+    const { notifications, make, state, devices, calls, store } = setup();
+    await notifications.enable();
+    const deviceId = [...devices.keys()][0] ?? "";
+    state.fail.unregister = new PushError("offline");
+
+    await notifications.release();
+
+    expect(calls.at(-1)).toBe("unsubscribe");
+    expect(devices.size).toBe(1);
+    expect(JSON.parse(store.getItem(PUSH_DEVICE_KEY) ?? "{}")).toEqual({
+      deviceId,
+      unregisterFor: "u-alex",
+    });
+    expect(await notifications.status()).toBe("off");
+
+    // Somebody else on the same browser leaves it alone.
+    await make("u-robin").sync();
+    expect(devices.size).toBe(1);
+    state.fail = {};
+    await make().sync();
+    expect(devices.size).toBe(0);
+    expect(JSON.parse(store.getItem(PUSH_DEVICE_KEY) ?? "{}")).toEqual({ deviceId });
+  });
+
+  it("NT-b Abmelden: erst der Server, dann der Browser; bei einem Gerät ohne Einschalten nichts; hängt das Netz, wartet es nicht ewig", async () => {
+    const on = setup();
+    await on.notifications.enable();
+    await on.notifications.release();
+    expect(on.devices.size).toBe(0);
+    expect(await on.notifications.status()).toBe("off");
+
+    const off = setup();
+    await off.notifications.release();
+    expect(off.calls).toEqual([]);
+
+    vi.useFakeTimers();
+    const hanging = setup();
+    await hanging.notifications.enable();
+    hanging.api.unregister = () => new Promise(() => undefined);
+    const released = hanging.notifications.release();
+    await vi.advanceTimersByTimeAsync(4_000);
+    await released;
+    expect(JSON.parse(hanging.store.getItem(PUSH_DEVICE_KEY) ?? "{}").unregisterFor).toBe("u-alex");
+  });
+
+  it("NT-b Konto gelöscht: nur die Adresse des Browsers endet, der Server wird nicht gefragt", async () => {
+    const { notifications, calls, store, devices, make } = setup();
+    await notifications.enable();
+    calls.length = 0;
+
+    await make("u-robin").forget();
+    expect(calls).toEqual([]);
+    await notifications.forget();
+
+    expect(calls).toEqual(["unsubscribe"]);
+    expect(Object.keys(JSON.parse(store.getItem(PUSH_DEVICE_KEY) ?? "{}"))).toEqual(["deviceId"]);
+    expect(devices.size).toBe(1);
+  });
+});
+
+describe("NT-b Einstellungen des Geräts", () => {
+  it("NT-b Laden: Standardwerte vom Server, andere Konten und abgemeldete Geräte bekommen nichts", async () => {
+    const { notifications, make, settings, devices } = setup();
+    expect(await failureOf(notifications.loadSettings())).toBe("deviceUnknown");
+    await notifications.enable();
+
+    expect(await notifications.loadSettings()).toEqual({
+      settings: DEFAULT_PUSH_SETTINGS,
+      pending: false,
+    });
+    expect(await failureOf(make("u-robin").loadSettings())).toBe("deviceUnknown");
+
+    // The server forgot the device: the settings cannot be read, the device is "lost".
+    settings.clear();
+    devices.clear();
+    expect(await failureOf(notifications.loadSettings())).toBe("deviceUnknown");
+    expect(await notifications.status()).toBe("lost");
+  });
+
+  it("NT-b Ohne Internet zeigt das Laden die zuletzt bekannten Einstellungen, ohne sie gibt es einen Fehler", async () => {
+    const { notifications, state } = setup();
+    await notifications.enable();
+    state.fail.settings = new PushError("offline");
+    expect(await failureOf(notifications.loadSettings())).toBe("offline");
+    delete state.fail.settings;
+    await notifications.loadSettings();
+
+    state.fail.settings = new PushError("offline");
+    expect(await notifications.loadSettings()).toEqual({
+      settings: DEFAULT_PUSH_SETTINGS,
+      pending: false,
+    });
+    state.fail.settings = new PushError("unknown");
+    expect(await failureOf(notifications.loadSettings())).toBe("unknown");
+  });
+
+  it("NT-b Speichern: prüft die Werte, schickt sie zum Server und merkt sie sich", async () => {
+    const { notifications, settings, devices, apiCalls, store } = setup();
+    await notifications.enable();
+    const deviceId = [...devices.keys()][0] ?? "";
+    const chosen: PushSettings = {
+      ...DEFAULT_PUSH_SETTINGS,
+      dailyTime: "06:00",
+      dailyDays: 0b0011111,
+      partnerEnabled: false,
+      quietEnabled: false,
+    };
+
+    expect(await notifications.saveSettings(chosen)).toBe("saved");
+
+    expect(settings.get(deviceId)).toEqual(chosen);
+    expect(JSON.parse(store.getItem(PUSH_SETTINGS_KEY) ?? "{}")).toMatchObject({
+      pending: false,
+      settings: chosen,
+    });
+    apiCalls.length = 0;
+    expect(await failureOf(notifications.saveSettings({ ...chosen, dailyTime: "25:00" }))).toBe(
+      "settingsInvalid",
+    );
+    expect(await failureOf(notifications.saveSettings({ ...chosen, dailyDays: 0 }))).toBe(
+      "settingsInvalid",
+    );
+    expect(apiCalls).toEqual([]);
+  });
+
+  it("NT-b Ohne Internet bleibt die Änderung „noch nicht übertragen“ und geht später von selbst hinaus", async () => {
+    const { notifications, make, state, settings, devices, store } = setup();
+    await notifications.enable();
+    const deviceId = [...devices.keys()][0] ?? "";
+    const chosen = { ...DEFAULT_PUSH_SETTINGS, householdEnabled: false };
+    state.fail.updateSettings = new PushError("offline");
+
+    expect(await notifications.saveSettings(chosen)).toBe("pending");
+
+    expect(settings.get(deviceId)).toEqual(DEFAULT_PUSH_SETTINGS);
+    expect(JSON.parse(store.getItem(PUSH_SETTINGS_KEY) ?? "{}").pending).toBe(true);
+    // Still no internet: the form shows what was chosen, marked as waiting.
+    expect(await notifications.loadSettings()).toEqual({ settings: chosen, pending: true });
+    expect(await notifications.sendWaitingSettings()).toBe(true);
+
+    // The next start with internet sends it.
+    delete state.fail.updateSettings;
+    await make().sync();
+    expect(settings.get(deviceId)).toEqual(chosen);
+    expect(await notifications.loadSettings()).toEqual({ settings: chosen, pending: false });
+    expect(await notifications.sendWaitingSettings()).toBe(false);
+  });
+
+  it("NT-b Lehnt der Server die Einstellungen ab, bleibt das Bisherige; ist das Gerät weg, ist es abgemeldet", async () => {
+    const { notifications, state, settings, devices, store } = setup();
+    await notifications.enable();
+    const deviceId = [...devices.keys()][0] ?? "";
+
+    // Nothing kept before: nothing kept after.
+    state.fail.updateSettings = new PushError("settingsInvalid");
+    expect(await failureOf(notifications.saveSettings(DEFAULT_PUSH_SETTINGS))).toBe(
+      "settingsInvalid",
+    );
+    expect(store.getItem(PUSH_SETTINGS_KEY)).toBeNull();
+
+    // Something kept before: that stays.
+    delete state.fail.updateSettings;
+    await notifications.loadSettings();
+    state.fail.updateSettings = new PushError("unknown");
+    const other = { ...DEFAULT_PUSH_SETTINGS, quietEnabled: false };
+    expect(await failureOf(notifications.saveSettings(other))).toBe("unknown");
+    expect(await notifications.loadSettings()).toEqual({
+      settings: DEFAULT_PUSH_SETTINGS,
+      pending: false,
+    });
+    expect(settings.get(deviceId)).toEqual(DEFAULT_PUSH_SETTINGS);
+
+    state.fail.updateSettings = new PushError("deviceUnknown");
+    expect(await failureOf(notifications.saveSettings(other))).toBe("deviceUnknown");
+    expect(await notifications.status()).toBe("lost");
+  });
+
+  it("NT-b Eine wartende Änderung, die der Server nie annimmt, wird verworfen; ein weg gewordenes Gerät ist abgemeldet", async () => {
+    const refused = setup();
+    await refused.notifications.enable();
+    refused.state.fail.updateSettings = new PushError("offline");
+    await refused.notifications.saveSettings({ ...DEFAULT_PUSH_SETTINGS, quietEnabled: false });
+    refused.state.fail.updateSettings = new PushError("settingsInvalid");
+
+    expect(await refused.notifications.sendWaitingSettings()).toBe(false);
+    expect(refused.store.getItem(PUSH_SETTINGS_KEY)).toBeNull();
+    expect(await refused.notifications.status()).toBe("active");
+
+    const gone = setup();
+    await gone.notifications.enable();
+    gone.state.fail.updateSettings = new PushError("offline");
+    await gone.notifications.saveSettings({ ...DEFAULT_PUSH_SETTINGS, quietEnabled: false });
+    gone.state.fail.updateSettings = new PushError("deviceGone");
+
+    expect(await gone.notifications.sendWaitingSettings()).toBe(false);
+    expect(await gone.notifications.status()).toBe("lost");
+  });
+
+  it("NT-b Kaputte oder fremde Einstellungen im Gerätespeicher werden nicht benutzt", async () => {
+    const { notifications, store, make } = setup();
+    await notifications.enable();
+    store.setItem(PUSH_SETTINGS_KEY, "{kaputt");
+    expect((await notifications.loadSettings()).settings).toEqual(DEFAULT_PUSH_SETTINGS);
+
+    store.setItem(
+      PUSH_SETTINGS_KEY,
+      JSON.stringify({
+        userId: "u-alex",
+        deviceId: "ein-anderes-geraet",
+        pending: true,
+        settings: { ...DEFAULT_PUSH_SETTINGS, dailyEnabled: false },
+      }),
+    );
+    expect((await make().loadSettings()).pending).toBe(false);
+    store.setItem(
+      PUSH_SETTINGS_KEY,
+      JSON.stringify({
+        userId: "u-alex",
+        deviceId: JSON.parse(store.getItem(PUSH_DEVICE_KEY) ?? "{}").deviceId,
+        pending: true,
+        settings: { ...DEFAULT_PUSH_SETTINGS, dailyDays: 0 },
+      }),
+    );
+    expect((await make().loadSettings()).pending).toBe(false);
   });
 });

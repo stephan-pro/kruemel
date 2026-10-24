@@ -68,6 +68,11 @@ test.describe("E2-5c Impressum und Datenschutzerklärung", () => {
     await expect(page.getByRole("region", { name: MAIL_PROVIDER_SECTION.title })).toContainText(
       "Google",
     );
+    // NT-b: notifications have a section of their own, with the push services and the deadlines.
+    const notifications = page.getByRole("region", { name: "Benachrichtigungen", exact: true });
+    for (const word of ["Google", "Mozilla", "Apple", "Microsoft", "90 Tage", "verschlüsselt"]) {
+      await expect(notifications).toContainText(word);
+    }
     await expect(page.getByText("Kavalleriestraße 2–4, 40213 Düsseldorf")).toBeVisible();
     await expect(page.getByText("www.ldi.nrw.de")).toBeVisible();
     // No external addresses are loaded: only the app's own and the Landesbeauftragte's name.

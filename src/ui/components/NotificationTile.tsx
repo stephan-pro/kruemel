@@ -15,12 +15,15 @@ import {
 } from "../notificationTexts";
 import { ErrorAlert } from "./Alert";
 import { InstallSteps } from "./InstallSteps";
+import { NotificationSettings } from "./NotificationSettings";
 
 interface NotificationTileProps {
   /** Missing where there are no notifications (the mode `local`, without sign-in). */
   readonly notifications?: Notifications | undefined;
   /** The test build: nothing reaches a real device (a hint says so). */
   readonly testOnly?: boolean;
+  /** The other person's name, for the settings; missing without a household. */
+  readonly otherName?: string | undefined;
 }
 
 type Shown = NotificationStatus | "checking" | "unavailable";
@@ -30,13 +33,18 @@ function failureText(error: unknown): string {
 }
 
 /**
- * "Benachrichtigungen" in the settings (NT-a): where they stand on this device, switching them on
- * (the browser asks only after the tap on "Aktivieren"), a test notification and switching them
- * off. Blocked: how to allow them again in this browser; iPhone in Safari: how to put Krümel on the
- * home screen first. Messages go to a status line; when a button goes away with the focus in it,
- * the focus goes to the heading of the tile.
+ * "Benachrichtigungen" in the settings (NT-a, NT-b): where they stand on this device, switching
+ * them on (the browser asks only after the tap on "Aktivieren"), the settings of the device while
+ * they are on, a test notification and switching them off. Blocked: how to allow them again in
+ * this browser; iPhone in Safari: how to put Krümel on the home screen first; lost (the server or
+ * the browser ended them): "Neu einschalten". Messages go to a status line; when a button goes
+ * away with the focus in it, the focus goes to the heading of the tile.
  */
-export function NotificationTile({ notifications, testOnly = false }: NotificationTileProps) {
+export function NotificationTile({
+  notifications,
+  testOnly = false,
+  otherName,
+}: NotificationTileProps) {
   const [status, setStatus] = useState<Shown>(notifications ? "checking" : "unavailable");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string>();
@@ -53,7 +61,11 @@ export function NotificationTile({ notifications, testOnly = false }: Notificati
     let current = true;
     const read = () => {
       if (document.visibilityState === "visible") {
-        void notifications.status().then((next) => current && setStatus(next));
+        // `sync` mends what the browser or the server changed; the app started it already.
+        void notifications
+          .sync()
+          .then(() => notifications.status())
+          .then((next) => current && setStatus(next));
       }
     };
     read();
@@ -63,6 +75,13 @@ export function NotificationTile({ notifications, testOnly = false }: Notificati
       document.removeEventListener("visibilitychange", read);
     };
   }, [notifications]);
+
+  /** The settings found out that the server forgot this device. */
+  function refresh() {
+    if (notifications !== undefined) {
+      void notifications.status().then(setStatus);
+    }
+  }
 
   async function run(title: string, action: (n: Notifications) => Promise<void>) {
     if (busy || notifications === undefined) {
@@ -138,13 +157,20 @@ export function NotificationTile({ notifications, testOnly = false }: Notificati
         </details>
       )}
       {failed && <ErrorAlert title={failed.title}>{failed.message}</ErrorAlert>}
-      {status === "off" && (
+      {(status === "off" || status === "lost") && (
         <div class="button-row">
           <button class="btn btn--primary" type="button" onClick={enable}>
             <Bell size={20} />
-            {NOTIFICATION_TEXTS.enable}
+            {status === "lost" ? NOTIFICATION_TEXTS.reenable : NOTIFICATION_TEXTS.enable}
           </button>
         </div>
+      )}
+      {status === "active" && notifications !== undefined && (
+        <NotificationSettings
+          notifications={notifications}
+          otherName={otherName}
+          onStatusChange={refresh}
+        />
       )}
       {status === "active" && (
         <div class="button-row">

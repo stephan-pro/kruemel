@@ -107,7 +107,7 @@ function FieldFrame({
 interface TextFieldProps extends FieldProps {
   readonly value: string;
   readonly onInput: (value: string) => void;
-  readonly type?: "text" | "date" | "email";
+  readonly type?: "text" | "date" | "email" | "time";
   readonly inputMode?: "numeric";
   /** What the browser may fill in ("email", "one-time-code"); default nothing. */
   readonly autocomplete?: string;
@@ -146,6 +146,8 @@ export function TextField(props: TextFieldProps) {
         <input {...common} type="date" min={min} max={max} />
       ) : type === "email" ? (
         <input {...common} type="email" spellcheck={false} />
+      ) : type === "time" ? (
+        <input {...common} type="time" />
       ) : (
         <input {...common} type="text" />
       )}

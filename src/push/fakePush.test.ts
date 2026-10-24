@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { DEFAULT_PUSH_SETTINGS } from "../../supabase/functions/push/rules";
+import { INVALID_SETTINGS, VALID_SETTINGS } from "../../supabase/functions/push/rules.cases";
 import { FakeServer } from "../sync/fakeServer";
 import { FakePushService } from "./fakePush";
 import { PushError } from "./pushApi";
@@ -105,6 +107,41 @@ describe("NT-a Fake-Server: Geräte und Testbenachrichtigung", () => {
     expect(push.devicesOf("u1")).toHaveLength(9);
   });
 
+  it("NT-b Einstellungen: Standardwerte, Speichern prüft wie die Datenbank, erneutes Einschalten behält sie, nur eigene Geräte", () => {
+    const push = new FakePushService();
+    const phone = device();
+    push.register("u1", phone);
+
+    expect(push.settingsOf("u1", phone.deviceId)).toEqual(DEFAULT_PUSH_SETTINGS);
+    expect(push.settingsOf("u2", phone.deviceId)).toBeNull();
+    const chosen = { ...DEFAULT_PUSH_SETTINGS, dailyTime: "06:15", quietEnabled: false };
+    push.updateSettings("u1", phone.deviceId, { ...chosen, zusatz: "wird nicht gespeichert" });
+    expect(push.settingsOf("u1", phone.deviceId)).toEqual(chosen);
+
+    push.register("u1", { ...phone, timeZone: "Asia/Tokyo" });
+    expect(push.settingsOf("u1", phone.deviceId)).toEqual(chosen);
+    expect(push.devicesOf("u1")[0]?.timeZone).toBe("Asia/Tokyo");
+
+    for (const { settings } of INVALID_SETTINGS) {
+      expect(failureOf(() => push.updateSettings("u1", phone.deviceId, settings))).toBe(
+        "settingsInvalid",
+      );
+    }
+    expect(failureOf(() => push.updateSettings("u1", phone.deviceId, { dailyTime: 730 }))).toBe(
+      "settingsInvalid",
+    );
+    expect(failureOf(() => push.updateSettings("u1", phone.deviceId, undefined))).toBe(
+      "settingsInvalid",
+    );
+    expect(failureOf(() => push.updateSettings("u2", phone.deviceId, chosen))).toBe(
+      "deviceUnknown",
+    );
+    for (const settings of VALID_SETTINGS) {
+      push.updateSettings("u1", phone.deviceId, settings);
+    }
+    expect(push.settingsOf("u1", phone.deviceId)).toEqual(VALID_SETTINGS.at(-1));
+  });
+
   it("NT-a Wege des Fake-Servers: nur angemeldet, Fehler mit Code und Status der Edge Function", async () => {
     const server = new FakeServer();
     server.auth.addUser("alex@beispiel.de");
@@ -122,6 +159,17 @@ describe("NT-a Fake-Server: Geräte und Testbenachrichtigung", () => {
       body: { error: "notSignedIn" },
     });
     expect(call("POST", "/push/register", phone).status).toBe(200);
+    expect(call("POST", "/push/settings", { deviceId: phone.deviceId })).toEqual({
+      status: 200,
+      body: { settings: DEFAULT_PUSH_SETTINGS },
+    });
+    expect(
+      call("POST", "/push/update-settings", { deviceId: phone.deviceId, dailyTime: "x" }),
+    ).toEqual({ status: 422, body: { error: "settingsInvalid" } });
+    expect(
+      call("POST", "/push/update-settings", { deviceId: phone.deviceId, ...DEFAULT_PUSH_SETTINGS })
+        .status,
+    ).toBe(200);
     expect(call("POST", "/push/test", { deviceId: phone.deviceId })).toEqual({
       status: 200,
       body: { sent: true },

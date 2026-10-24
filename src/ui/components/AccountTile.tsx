@@ -1,8 +1,10 @@
 import { LogOut, UserX } from "lucide-preact";
 import { useRef, useState } from "preact/hooks";
+import type { Notifications } from "../../push/notifications";
 import { ACCOUNT_TEXTS, DELETE_ACCOUNT_TEXTS } from "../accountTexts";
 import { errorText } from "../errorText";
 import { SHARED_TEXTS } from "../householdTexts";
+import { NOTIFICATION_TEXTS } from "../notificationTexts";
 import { householdMessage } from "../pages/HouseholdPage";
 import { ErrorAlert } from "./Alert";
 import { ConfirmDialog } from "./ConfirmDialog";
@@ -20,6 +22,8 @@ interface AccountTileProps {
   readonly onSignOut: () => Promise<void>;
   /** With shared data: sends what waits and says how many changes still wait (asked first). */
   readonly onCheckPending?: () => Promise<number>;
+  /** Notifications on this device (NT-b): signing out switches them off, the question says so. */
+  readonly notifications?: Notifications | undefined;
   /** "Konto löschen" (E2-5a, with a household); missing without one. */
   readonly deleteAccount?: {
     /** The other person's name, or `undefined` when the household goes with the account. */
@@ -39,9 +43,12 @@ export function AccountTile({
   shared = false,
   onSignOut,
   onCheckPending,
+  notifications,
   deleteAccount,
 }: AccountTileProps) {
   const [asking, setAsking] = useState(false);
+  /** Notifications are on here when the question opened. */
+  const [notifying, setNotifying] = useState(false);
   /** Which question is open: signing out, or deleting the account. */
   const [question, setQuestion] = useState<"signOut" | "delete">("signOut");
   const [deleteError, setDeleteError] = useState<string>();
@@ -64,6 +71,7 @@ export function AccountTile({
     setQuestion(which);
     setError(undefined);
     setDeleteError(undefined);
+    setNotifying((await notifications?.status().catch(() => undefined)) === "active");
     if (onCheckPending !== undefined) {
       setChecking(true);
       setPending(await onCheckPending().catch(() => 0));
@@ -152,6 +160,7 @@ export function AccountTile({
       >
         {pending > 0 && <p>{SHARED_TEXTS.signOutPending(pending)}</p>}
         <p>{shared ? SHARED_TEXTS.signOutExplained : ACCOUNT_TEXTS.signOutExplained}</p>
+        {notifying && <p>{NOTIFICATION_TEXTS.signOutNote}</p>}
       </ConfirmDialog>
     </section>
   );
