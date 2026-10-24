@@ -103,6 +103,13 @@ export const TEST_PAYLOAD = { v: 1, k: "test" } as const;
 export const TEST_TTL_SECONDS = 300;
 
 /**
+ * The largest encrypted push body that is sent. Mozilla's push service accepts only 2744 bytes for
+ * devices it reaches through FCM (Firefox on Android) and answers 413 above that
+ * (docs/BENACHRICHTIGUNGEN.md, 6.3); the others accept 4096. So the body is not padded up.
+ */
+export const MAX_PUSH_BODY_BYTES = 2744;
+
+/**
  * Why a step of the notifications failed, as the Edge Function and the fake server answer
  * (`{"error": "<failure>"}`) and the app shows it (`NOTIFICATION_TEXTS.failures`).
  *
@@ -115,7 +122,10 @@ export const TEST_TTL_SECONDS = 300;
  * - `testToday`: ten tests a day per account.
  * - `keyChanged`: the device was switched on with another key; switch it off and on again.
  * - `endpointInvalid`: the address is not one of `PUSH_HOSTS` (this browser is not supported).
- * - `pushFailed`: the push service refused or did not answer.
+ * - `pushFailed`: the push service did not answer in time, was not reachable, was busy (429) or
+ *   failed itself (5xx); worth another try later.
+ * - `pushRejected`: the push service refused the message (400, 401, 403, 413 …): the server's setup
+ *   or message is wrong, another try does not help.
  * - `notFound`: no such route.
  * - `offline`: the server could not be reached (the app's own failure).
  * - `noWorker`: the app's service worker is not ready (the app's own failure).
@@ -132,6 +142,7 @@ export const PUSH_FAILURES = [
   "keyChanged",
   "endpointInvalid",
   "pushFailed",
+  "pushRejected",
   "notFound",
   "offline",
   "noWorker",
@@ -152,11 +163,26 @@ export const FAILURE_STATUS: Readonly<Record<PushFailure, number>> = {
   keyChanged: 409,
   endpointInvalid: 422,
   pushFailed: 502,
+  pushRejected: 502,
   notFound: 404,
   offline: 503,
   noWorker: 500,
   unknown: 500,
 };
+
+/**
+ * What an answer of the push service means (RFC 8030; Mozilla answers 201, older services 200 or
+ * 202, none with a body that matters): `undefined` for sent, else the failure.
+ */
+export function pushAnswerFailure(status: number): PushFailure | undefined {
+  if (status >= 200 && status < 300) {
+    return undefined;
+  }
+  if (status === 404 || status === 410) {
+    return "deviceGone";
+  }
+  return status === 429 || status >= 500 ? "pushFailed" : "pushRejected";
+}
 
 export function isPushFailure(value: unknown): value is PushFailure {
   return typeof value === "string" && (PUSH_FAILURES as readonly string[]).includes(value);

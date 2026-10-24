@@ -4,7 +4,6 @@
 // The packages come from `deno.json` (exact versions); `npm run check` type-checks this file
 // against the same packages in node_modules.
 
-import { buildPushPayload } from "@block65/webcrypto-web-push";
 import { createClient } from "@supabase/supabase-js";
 import {
   BackendRefusal,
@@ -13,6 +12,7 @@ import {
   pushConfig,
   type TestTarget,
 } from "./core.ts";
+import { encryptPush } from "./encrypt.ts";
 
 declare const Deno: {
   readonly env: { get(name: string): string | undefined };
@@ -72,7 +72,7 @@ Deno.serve((request) =>
     // Read for every request: a secret set in the dashboard counts at once.
     config: pushConfig((name) => Deno.env.get(name)),
     backend,
-    encrypt: buildPushPayload,
+    encrypt: encryptPush,
     fetch: (input, init) => fetch(input, init),
     log: (entry) => console.log(JSON.stringify(entry)),
   }),

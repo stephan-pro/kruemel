@@ -97,6 +97,9 @@ describe("NT-a Fake-Server: Geräte und Testbenachrichtigung", () => {
     push.setAnswer("u1", 500);
     expect(failureOf(() => push.test("u1", id))).toBe("pushFailed");
     now += 61_000;
+    push.setAnswer("u1", 413);
+    expect(failureOf(() => push.test("u1", id))).toBe("pushRejected");
+    now += 61_000;
     push.setAnswer("u1", 410);
     expect(failureOf(() => push.test("u1", id))).toBe("deviceGone");
     expect(push.devicesOf("u1")).toHaveLength(9);

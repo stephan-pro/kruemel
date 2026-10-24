@@ -57,7 +57,9 @@ export const PUSH_FAILURE_TEXTS: Readonly<Record<PushFailure, string>> = {
     "Die Benachrichtigungen wurden neu eingerichtet. Bitte schalte sie auf diesem Gerät aus und wieder ein.",
   endpointInvalid: "Dieser Browser wird für Benachrichtigungen nicht unterstützt.",
   pushFailed:
-    "Der Benachrichtigungsdienst des Browsers hat nicht geantwortet. Bitte versuch es später noch einmal.",
+    "Der Benachrichtigungsdienst des Browsers ist gerade nicht erreichbar. Bitte versuch es in ein paar Minuten noch einmal.",
+  pushRejected:
+    "Der Benachrichtigungsdienst des Browsers hat die Nachricht abgelehnt. Das liegt an der Einrichtung auf dem Server, nicht an deinem Gerät; ein neuer Versuch hilft erst, wenn sie behoben ist.",
   notFound: "Das hat nicht geklappt. Bitte lade die App neu.",
   offline: "Ohne Internet geht das nicht. Bitte versuch es mit Verbindung noch einmal.",
   noWorker: "Krümel ist auf diesem Gerät noch nicht fertig geladen. Bitte lade die Seite neu.",

@@ -188,6 +188,25 @@ test.describe("NT-a Benachrichtigungen", () => {
     await expect(statusOf(page)).toHaveText(NOTIFICATION_STATUS_TEXTS.active);
   });
 
+  test("NT-a Push-Dienst lehnt ab (413): Hinweis auf die Einrichtung, nicht „nicht erreichbar“", async ({
+    page,
+  }) => {
+    const member = await openSettings(page);
+    await button(page, NOTIFICATION_TEXTS.enable).click();
+    await expect(statusOf(page)).toHaveText(NOTIFICATION_STATUS_TEXTS.active);
+    await page.request.post(`${FAKE_SERVER}/test/push-answer`, {
+      headers: bearer(member),
+      data: { status: 413 },
+    });
+
+    await button(page, NOTIFICATION_TEXTS.sendTest).click();
+
+    const alert = tileOf(page).getByRole("alert");
+    await expect(alert).toContainText(PUSH_FAILURE_TEXTS.pushRejected);
+    await expect(alert).not.toContainText(PUSH_FAILURE_TEXTS.pushFailed);
+    await expect(statusOf(page)).toHaveText(NOTIFICATION_STATUS_TEXTS.active);
+  });
+
   test("NT-a Tastatur und Handy (360 px): alles erreichbar, nichts ragt heraus", async ({
     page,
   }) => {

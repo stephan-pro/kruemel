@@ -11,9 +11,12 @@
 // - The keys come only from the secrets (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`);
 //   without them the answer is `notConfigured`, without saying which one is missing.
 // - The push address is checked against the allow list before every request (SSRF).
-// - 404/410 from the push service: the address is dead, the device is removed (`deviceGone`).
+// - The push service's answer means what `pushAnswerFailure` says: 404/410 the address is dead, the
+//   device is removed (`deviceGone`); 429, 5xx, no answer in time or no connection `pushFailed`
+//   (try again later); any other refusal `pushRejected` (setup or message wrong).
 // - Answers carry only a failure code (`{"error": "<PushFailure>"}`); the log only route, status,
-//   the push service's status and the duration: never an address, key, token or payload.
+//   failure, the push service's host (one of `PUSH_HOSTS`) and status, why it gave no answer, the
+//   body's size and the duration: never an address, key, token or payload.
 
 import {
   ALLOWED_ORIGINS,
@@ -22,7 +25,9 @@ import {
   isVapidPrivateKey,
   isVapidPublicKey,
   keyIdOf,
+  MAX_PUSH_BODY_BYTES,
   type PushFailure,
+  pushAnswerFailure,
   raisedPushFailure,
   TEST_PAYLOAD,
   TEST_TTL_SECONDS,
@@ -94,8 +99,16 @@ export type Encrypt = (
 export interface LogEntry {
   readonly route: string;
   readonly status: number;
-  /** The push service's answer, if it was asked. */
+  /** The failure code of the answer, if it is one. */
+  readonly error?: PushFailure;
+  /** The push service's host (e.g. "updates.push.services.mozilla.com"), once it is chosen. */
+  readonly host?: string;
+  /** The size of the encrypted body in bytes, once it is made. */
+  readonly bytes?: number;
+  /** The push service's answer, if it gave one. */
   readonly push?: number;
+  /** Why the push service gave no answer: "timeout", "network" (incl. a redirect) or "tooLarge". */
+  readonly cause?: "timeout" | "network" | "tooLarge";
   readonly ms: number;
 }
 
@@ -162,18 +175,26 @@ export async function handlePush(request: Request, deps: PushDeps): Promise<Resp
   const started = now();
   const origin = request.headers.get("Origin");
   const route = routeOf(new URL(request.url).pathname) ?? "";
-  let pushStatus: number | undefined;
+  // What the log may say about the push service (LogEntry), filled in as far as it got.
+  const sending: {
+    host?: string;
+    bytes?: number;
+    push?: number;
+    cause?: "timeout" | "network" | "tooLarge";
+  } = {};
 
-  const finish = (status: number, body: object): Response => {
+  const finish = (status: number, body: object, failure?: PushFailure): Response => {
     deps.log({
       route: route === "test" ? route : "other",
       status,
-      ...(pushStatus === undefined ? {} : { push: pushStatus }),
+      ...(failure === undefined ? {} : { error: failure }),
+      ...sending,
       ms: now() - started,
     });
     return answer(origin, status, body);
   };
-  const fail = (failure: PushFailure) => finish(FAILURE_STATUS[failure], { error: failure });
+  const fail = (failure: PushFailure) =>
+    finish(FAILURE_STATUS[failure], { error: failure }, failure);
 
   if (request.method === "OPTIONS") {
     return origin !== null && ALLOWED_ORIGINS.includes(origin)
@@ -218,6 +239,8 @@ export async function handlePush(request: Request, deps: PushDeps): Promise<Resp
   if (!isPushEndpoint(target.endpoint)) {
     return fail("endpointInvalid");
   }
+  // One of PUSH_HOSTS (checked just above): names the service, not the device.
+  sending.host = new URL(target.endpoint).hostname;
 
   let push: EncryptedPush;
   try {
@@ -237,6 +260,12 @@ export async function handlePush(request: Request, deps: PushDeps): Promise<Resp
     // A key that looks right but is not one (the library's message may quote it): not logged.
     return fail("notConfigured");
   }
+  sending.bytes = push.body.byteLength;
+  if (push.body.byteLength > MAX_PUSH_BODY_BYTES) {
+    // The push service would answer 413; not sent at all.
+    sending.cause = "tooLarge";
+    return fail("pushRejected");
+  }
 
   let response: Response;
   try {
@@ -253,21 +282,25 @@ export async function handlePush(request: Request, deps: PushDeps): Promise<Resp
       redirect: "error",
       signal: AbortSignal.timeout(deps.timeoutMs ?? 10_000),
     });
-  } catch {
+  } catch (error) {
+    // `AbortSignal.timeout` fails with a "TimeoutError"; anything else is the connection (or a
+    // redirect, which a push service never sends).
+    sending.cause = error instanceof Error && error.name === "TimeoutError" ? "timeout" : "network";
     return fail("pushFailed");
   }
-  pushStatus = response.status;
-  await response.body?.cancel();
-  if (response.status === 404 || response.status === 410) {
+  sending.push = response.status;
+  try {
+    await response.body?.cancel();
+  } catch {
+    // The answer is known from its status; what it says beyond that is not used.
+  }
+  const failure = pushAnswerFailure(response.status);
+  if (failure === "deviceGone") {
     try {
       await deps.backend.forget(token, deviceId);
     } catch {
       // Removed with the next try then; the person sees "deviceGone" either way.
     }
-    return fail("deviceGone");
   }
-  if (!response.ok) {
-    return fail("pushFailed");
-  }
-  return finish(200, { sent: true });
+  return failure === undefined ? finish(200, { sent: true }) : fail(failure);
 }

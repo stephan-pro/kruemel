@@ -11,7 +11,8 @@ import {
   routeOf,
   type TestTarget,
 } from "./core";
-import { base64Url, fromBase64Url, keyIdOf } from "./rules";
+import { encryptPush } from "./encrypt";
+import { base64Url, fromBase64Url, keyIdOf, MAX_PUSH_BODY_BYTES } from "./rules";
 
 // NT-a: the Edge Function `push` against a mock push service (a `fetch` that records the requests
 // and answers as told) and a fake database that follows the rules of `request_test_push`: a device
@@ -55,17 +56,61 @@ interface Sent {
   readonly init: RequestInit;
 }
 
-/** The mock push service: records every request, answers with `status` (or fails). */
-function pushService(status: number | "offline" = 201) {
+/**
+ * How the mock push service answers: a status (without a body), no connection, no answer until the
+ * function gives up, or as a function of the request (`autopush`).
+ */
+type Answer = number | "offline" | "silent" | ((request: Sent) => Response);
+
+/** The mock push service: records every request, answers as `answer` says. */
+function pushService(answer: Answer = 201) {
   const sent: Sent[] = [];
   const fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-    sent.push({ url: String(input), init: init ?? {} });
-    if (status === "offline") {
+    const request = { url: String(input), init: init ?? {} };
+    sent.push(request);
+    if (answer === "offline") {
       throw new TypeError("fetch failed");
     }
-    return new Response(null, { status });
+    if (answer === "silent") {
+      return new Promise<Response>((_, reject) => {
+        init?.signal?.addEventListener("abort", () => reject(init.signal?.reason));
+      });
+    }
+    return typeof answer === "function" ? answer(request) : new Response(null, { status: answer });
   }) as typeof globalThis.fetch;
   return { sent, fetch };
+}
+
+const MOZILLA = "https://updates.push.services.mozilla.com/wpush/v2/gAAAAABredmi";
+
+/**
+ * Mozilla's push service (autopush) as its documentation describes it
+ * (https://mozilla-services.github.io/autopush-rs/http.html, docs/BENACHRICHTIGUNGEN.md, 6.3):
+ * `TTL` is required, `Topic` at most 32 characters of `[A-Za-z0-9_-]`, a VAPID header, `aes128gcm`;
+ * for Firefox on Android (through FCM) at most 2744 bytes, else 413 with an error body; success is
+ * 201 without a body.
+ */
+function autopush(request: Sent): Response {
+  const headers = request.init.headers as Record<string, string>;
+  const body = request.init.body as Uint8Array;
+  const error = (code: number, errno: number) =>
+    new Response(JSON.stringify({ code, errno, error: "refused" }), { status: code });
+  if (!/^\d+$/.test(headers.ttl ?? "")) {
+    return error(400, 111);
+  }
+  if (headers.topic !== undefined && !/^[A-Za-z0-9_-]{1,32}$/.test(headers.topic)) {
+    return error(400, 113);
+  }
+  if (!/^vapid t=[^,]+, k=\S+$/.test(headers.authorization ?? "")) {
+    return error(401, 109);
+  }
+  if (headers["content-encoding"] !== "aes128gcm") {
+    return error(400, 110);
+  }
+  if (body.byteLength > 2744) {
+    return error(413, 104);
+  }
+  return new Response(null, { status: 201, headers: { Location: `${MOZILLA}/m/1` } });
 }
 
 /** The database as `request_test_push` and `unregister_push_device` treat it. */
@@ -111,12 +156,7 @@ function testRequest(
 
 /** Everything the function needs, with a real key pair and two devices (Alex's, Robin's). */
 async function setup(
-  options: {
-    status?: number | "offline";
-    refusal?: string;
-    endpoint?: string;
-    keyId?: string;
-  } = {},
+  options: { status?: Answer; refusal?: string; endpoint?: string; keyId?: string } = {},
 ) {
   const vapid = await vapidKeys();
   const browser = await browserKeys();
@@ -139,7 +179,7 @@ async function setup(
   const deps: PushDeps = {
     config: vapid,
     backend: db.backend,
-    encrypt: buildPushPayload,
+    encrypt: encryptPush,
     fetch: service.fetch,
     log: (entry) => logs.push(entry),
   };
@@ -261,16 +301,96 @@ describe("NT-a Edge Function push: Testbenachrichtigung", () => {
     }
   });
 
-  it("NT-a Andere Fehler des Push-Dienstes oder kein Netz: pushFailed, das Gerät bleibt", async () => {
-    for (const status of [400, 403, 413, 429, 500, "offline"] as const) {
-      const { db, deps } = await setup({ status });
+  it("NT-a Vorübergehend (429, 5xx, kein Netz, keine Antwort in der Zeit): pushFailed, das Gerät bleibt", async () => {
+    for (const [status, cause] of [
+      [429, undefined],
+      [500, undefined],
+      [503, undefined],
+      ["offline", "network"],
+      ["silent", "timeout"],
+    ] as const) {
+      const { db, deps, logs } = await setup({ status });
 
-      expect(await failureOf(await handlePush(testRequest(ALEX), deps)), String(status)).toEqual({
+      const response = await handlePush(testRequest(ALEX), { ...deps, timeoutMs: 20 });
+
+      expect(await failureOf(response), String(status)).toEqual({
         status: 502,
         body: { error: "pushFailed" },
       });
       expect(db.forgotten).toEqual([]);
+      expect(logs[0], String(status)).toMatchObject({
+        error: "pushFailed",
+        host: "fcm.googleapis.com",
+        ...(cause === undefined ? { push: status } : { cause }),
+      });
     }
+  });
+
+  it("NT-a Abgelehnt (400, 401, 403, 413): pushRejected statt „nicht erreichbar“, das Gerät bleibt", async () => {
+    for (const status of [400, 401, 403, 413]) {
+      const { db, deps, logs } = await setup({ status });
+
+      expect(await failureOf(await handlePush(testRequest(ALEX), deps)), String(status)).toEqual({
+        status: 502,
+        body: { error: "pushRejected" },
+      });
+      expect(db.forgotten).toEqual([]);
+      expect(logs[0]).toMatchObject({ error: "pushRejected", push: status });
+    }
+  });
+
+  it("NT-a Mozilla (Firefox Android): Nachricht unter 2744 Byte, Antwort 201 ohne Inhalt gilt als gesendet", async () => {
+    const { vapid, browser, service, logs, deps } = await setup({
+      endpoint: MOZILLA,
+      status: autopush,
+    });
+
+    const response = await handlePush(testRequest(ALEX), deps);
+
+    expect(await failureOf(response)).toEqual({ status: 200, body: { sent: true } });
+    const [request] = service.sent;
+    const body = request?.init.body as Uint8Array;
+    expect(body.byteLength).toBeLessThanOrEqual(MAX_PUSH_BODY_BYTES);
+    expect(await decrypt(body, browser)).toBe('{"v":1,"k":"test"}');
+    expect(request?.init.redirect).toBe("error");
+    const headers = request?.init.headers as Record<string, string>;
+    const claims = (/^vapid t=[^.]+\.([^.]+)\./.exec(headers.authorization ?? "") ?? [])[1];
+    const payload = JSON.parse(new TextDecoder().decode(fromBase64Url(claims ?? "")));
+    expect(payload).toMatchObject({
+      aud: "https://updates.push.services.mozilla.com",
+      sub: vapid.subject,
+    });
+    expect(payload.exp * 1000 - Date.now()).toBeLessThanOrEqual(24 * 60 * 60_000);
+    expect(logs).toEqual([
+      {
+        route: "test",
+        status: 200,
+        host: "updates.push.services.mozilla.com",
+        bytes: body.byteLength,
+        push: 201,
+        ms: expect.any(Number),
+      },
+    ]);
+
+    // The cause of NT-a's failure on the Redmi: the library's own `buildPushPayload` pads every
+    // body to 4096 bytes, Mozilla answers 413. Such a body is no longer sent at all.
+    const padded = await setup({ endpoint: MOZILLA, status: autopush });
+    const library = await handlePush(testRequest(ALEX), {
+      ...padded.deps,
+      encrypt: buildPushPayload,
+    });
+    expect(await failureOf(library)).toEqual({ status: 502, body: { error: "pushRejected" } });
+    expect(padded.service.sent).toEqual([]);
+    expect(padded.logs[0]).toMatchObject({ bytes: 4096, cause: "tooLarge" });
+    const answer = autopush({
+      url: MOZILLA,
+      init: (await buildPushPayload(
+        { data: { v: 1, k: "test" }, options: { ttl: 300, topic: "test", urgency: "normal" } },
+        { endpoint: MOZILLA, expirationTime: null, keys: browser },
+        vapid,
+      )) as RequestInit,
+    });
+    expect(answer.status).toBe(413);
   });
 
   it("NT-a S5 Fremdes Konto: das Gerät einer anderen Person ist unbekannt, es geht nichts raus", async () => {
@@ -407,15 +527,23 @@ describe("NT-a Edge Function push: Testbenachrichtigung", () => {
     expect(answered.headers.get("Access-Control-Allow-Origin")).toBe(ORIGIN);
   });
 
-  it("NT-a Das Protokoll nennt nur Weg, Status und Dauer: keine Adresse, kein Schlüssel, kein Token", async () => {
+  it("NT-a Das Protokoll nennt nur Weg, Status, Fehler, Dienst, Größe und Dauer: keine Adresse, kein Schlüssel, kein Token", async () => {
     const { vapid, browser, logs, deps } = await setup({ status: 410 });
 
     await handlePush(testRequest(ALEX), deps);
     await handlePush(testRequest(ALEX, { deviceId: ROBIN_PHONE }), deps);
 
     expect(logs).toEqual([
-      { route: "test", status: 410, push: 410, ms: expect.any(Number) },
-      { route: "test", status: 404, ms: expect.any(Number) },
+      {
+        route: "test",
+        status: 410,
+        error: "deviceGone",
+        host: "fcm.googleapis.com",
+        bytes: expect.any(Number),
+        push: 410,
+        ms: expect.any(Number),
+      },
+      { route: "test", status: 404, error: "deviceUnknown", ms: expect.any(Number) },
     ]);
     const written = JSON.stringify(logs);
     for (const secret of [

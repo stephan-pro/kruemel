@@ -10,6 +10,7 @@ import {
   isPushEndpoint,
   PUSH_LIMITS,
   type PushFailure,
+  pushAnswerFailure,
   TEST_PAYLOAD,
 } from "../../supabase/functions/push/rules";
 import type { DeviceRegistration } from "./pushApi";
@@ -49,7 +50,8 @@ export class FakePushService {
   /**
    * How the "push service" answers the next tests of an account (`POST /test/push-answer`, per
    * account so tests running at the same time do not meet): 201 delivers, 404 and 410 mean the
-   * address is dead, 503 plays a server without its keys, anything else a refusal.
+   * address is dead, 503 plays a server without its keys, anything else as `pushAnswerFailure`
+   * says (429/5xx `pushFailed`, other 4xx `pushRejected`).
    */
   private readonly answers = new Map<string, number>();
 
@@ -132,12 +134,12 @@ export class FakePushService {
       throw new PushError(failure);
     }
     this.tests.push({ userId, deviceId, at: now });
-    if (answer === 404 || answer === 410) {
+    const answerFailure = pushAnswerFailure(answer);
+    if (answerFailure === "deviceGone") {
       this.unregister(userId, deviceId);
-      throw new PushError("deviceGone");
     }
-    if (answer >= 400) {
-      throw new PushError("pushFailed");
+    if (answerFailure !== undefined) {
+      throw new PushError(answerFailure);
     }
     this.pushes.set(userId, [...this.pushesOf(userId), { deviceId, payload: TEST_PAYLOAD }]);
   }
