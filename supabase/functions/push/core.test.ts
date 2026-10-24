@@ -2,17 +2,29 @@ import { buildPushPayload } from "@block65/webcrypto-web-push";
 import { describe, expect, it } from "vitest";
 import {
   BackendRefusal,
+  cronTokenOf,
+  type FlushLogEntry,
   handlePush,
+  type JobResult,
+  type JobsBackend,
   type LogEntry,
   type PushBackend,
   type PushConfig,
   type PushDeps,
+  type PushJob,
   pushConfig,
   routeOf,
   type TestTarget,
 } from "./core";
 import { encryptPush } from "./encrypt";
-import { base64Url, fromBase64Url, keyIdOf, MAX_PUSH_BODY_BYTES } from "./rules";
+import {
+  base64Url,
+  fromBase64Url,
+  keyIdOf,
+  MAX_PUSH_BODY_BYTES,
+  retryAfterSeconds,
+  sameSecret,
+} from "./rules";
 
 // NT-a: the Edge Function `push` against a mock push service (a `fetch` that records the requests
 // and answers as told) and a fake database that follows the rules of `request_test_push`: a device
@@ -175,7 +187,7 @@ async function setup(
     options.refusal,
   );
   const service = pushService(options.status);
-  const logs: LogEntry[] = [];
+  const logs: (LogEntry | FlushLogEntry)[] = [];
   const deps: PushDeps = {
     config: vapid,
     backend: db.backend,
@@ -496,8 +508,9 @@ describe("NT-a Edge Function push: Testbenachrichtigung", () => {
     const { deps } = await setup();
 
     for (const [request, status, error] of [
-      [testRequest(ALEX, {}, { path: "/functions/v1/push/flush" }), 404, "notFound"],
+      [testRequest(ALEX, {}, { path: "/functions/v1/push/senden" }), 404, "notFound"],
       [testRequest(ALEX, {}, { method: "GET" }), 404, "notFound"],
+      [testRequest(ALEX, {}, { method: "GET", path: "/functions/v1/push/flush" }), 404, "notFound"],
       [testRequest(ALEX, { deviceId: "kein-uuid" }), 400, "badRequest"],
       [testRequest(ALEX, "kein json"), 400, "badRequest"],
     ] as const) {
@@ -549,6 +562,302 @@ describe("NT-a Edge Function push: Testbenachrichtigung", () => {
     for (const secret of [
       ALEX,
       "alex-phone",
+      vapid.privateKey,
+      vapid.publicKey,
+      browser.p256dh,
+      browser.auth,
+    ]) {
+      expect(written).not.toContain(secret);
+    }
+  });
+});
+
+// NT-c: the route `flush`, called by the schedule of the database with its token. The fake
+// database hands out its due messages as `claim_push_jobs` would (in order, at most as many as
+// asked for) and records what `finish_push_jobs` is told. The token is made up for the test.
+
+const CRON = "Zeitplan-Token-nur-fuer-den-Test-0123456789ab";
+
+function cronRequest(token: string | undefined) {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token !== undefined) {
+    headers["x-kruemel-cron"] = token;
+  }
+  return new Request("https://projekt.supabase.co/functions/v1/push/flush", {
+    method: "POST",
+    headers,
+    body: "{}",
+  });
+}
+
+/** The due messages of the database; `afterFinish` runs after each batch (e.g. to move the clock). */
+function jobQueue(jobs: PushJob[], afterFinish: () => void = () => {}) {
+  const waiting = [...jobs];
+  const claims: number[] = [];
+  const finished: JobResult[][] = [];
+  const backend: JobsBackend = {
+    claim: async (limit) => {
+      claims.push(limit);
+      // The first batch also says that two overviews had nothing to tell and one was over the limit.
+      const first = claims.length === 1;
+      return { jobs: waiting.splice(0, limit), empty: first ? 2 : 0, dropped: first ? 1 : 0 };
+    },
+    finish: async (results) => {
+      finished.push([...results]);
+      afterFinish();
+    },
+  };
+  return { backend, claims, finished, waiting };
+}
+
+/** `setup` with due messages for devices whose address ends in `name` (`/device-<name>`). */
+async function flushSetup(names: readonly string[], status: Answer = 201) {
+  const base = await setup({ status });
+  const keyId = await keyIdOf(base.vapid.publicKey);
+  const jobs = names.map(
+    (name, index): PushJob => ({
+      id: index + 1,
+      kind: "daily",
+      endpoint: name.startsWith("https://")
+        ? name
+        : `https://fcm.googleapis.com/fcm/send/device-${name}`,
+      p256dh: base.browser.p256dh,
+      auth: base.browser.auth,
+      keyId: name === "alter-schluessel" ? "anderer-schluessel" : keyId,
+      due: 3,
+      overdue: 1,
+    }),
+  );
+  const queue = jobQueue(jobs);
+  const deps: PushDeps = { ...base.deps, cronToken: CRON, jobs: queue.backend, now: () => 0 };
+  return { ...base, deps, queue };
+}
+
+const outcomes = (finished: JobResult[][]) => finished.flat();
+
+describe("NT-c Edge Function push: Senden für den Zeitplan (flush)", () => {
+  it("NT-c Ohne Token, mit falschem Token oder ohne eingerichtetes Token: 401 ohne Details, die Datenbank wird nicht gefragt", async () => {
+    const { deps, queue, service, logs } = await flushSetup(["a"]);
+
+    for (const token of [undefined, "", "falsch", `${CRON}x`, CRON.slice(0, -1)]) {
+      const response = await handlePush(cronRequest(token), deps);
+      expect(await failureOf(response), String(token)).toEqual({
+        status: 401,
+        body: { error: "notSignedIn" },
+      });
+    }
+    const unset = await handlePush(cronRequest(CRON), { ...deps, cronToken: null });
+    expect(await failureOf(unset)).toEqual({ status: 401, body: { error: "notSignedIn" } });
+    expect(queue.claims).toEqual([]);
+    expect(service.sent).toEqual([]);
+    expect(logs.at(-1)).toEqual({
+      route: "flush",
+      status: 401,
+      error: "notSignedIn",
+      jobs: 0,
+      sent: 0,
+      retry: 0,
+      gone: 0,
+      dropped: 0,
+      empty: 0,
+      ms: 0,
+    });
+
+    // The token of the function: trimmed, at least 32 characters; compared in constant time.
+    const env = (value: string) => (name: string) =>
+      name === "PUSH_CRON_TOKEN" ? value : undefined;
+    expect(cronTokenOf(env(` ${CRON}\n`))).toBe(CRON);
+    expect(cronTokenOf(env("zu-kurz"))).toBeNull();
+    expect(cronTokenOf(() => undefined)).toBeNull();
+    expect(await sameSecret(CRON, CRON)).toBe(true);
+    expect(await sameSecret(CRON, `${CRON} `)).toBe(false);
+    expect(await sameSecret("", CRON)).toBe(false);
+  });
+
+  it("NT-c Tagesüberblick: nur Zahlen verschlüsselt, Thema „daily“, sechs Stunden aufbewahrt, Ergebnis an die Datenbank", async () => {
+    const { deps, queue, service, browser } = await flushSetup(["a"]);
+
+    const response = await handlePush(cronRequest(CRON), deps);
+
+    expect(await failureOf(response)).toEqual({
+      status: 200,
+      body: { sent: 1, retry: 0, gone: 0, dropped: 1, empty: 2 },
+    });
+    const [request] = service.sent;
+    expect(request?.url).toBe("https://fcm.googleapis.com/fcm/send/device-a");
+    expect(request?.init.headers).toMatchObject({
+      ttl: "21600",
+      topic: "daily",
+      urgency: "normal",
+      "content-encoding": "aes128gcm",
+    });
+    expect(await decrypt(request?.init.body as Uint8Array, browser)).toBe(
+      '{"v":1,"k":"daily","due":3,"overdue":1}',
+    );
+    expect(queue.finished).toEqual([[{ id: 1, outcome: "sent" }]]);
+  });
+
+  it("NT-c Antworten des Push-Dienstes: 404/410 Gerät weg, 429/5xx/kein Netz später erneut (mit Retry-After), sonst verworfen", async () => {
+    const answers: Record<string, number> = {
+      gone404: 404,
+      gone410: 410,
+      busy: 429,
+      broken: 500,
+      refused: 400,
+      large: 413,
+    };
+    const { deps, queue, service } = await flushSetup(
+      [
+        "ok",
+        "gone404",
+        "gone410",
+        "busy",
+        "broken",
+        "offline",
+        "refused",
+        "large",
+        "alter-schluessel",
+        "https://intern.example.com/push",
+      ],
+      (request) => {
+        const name = request.url.split("device-")[1] ?? "";
+        if (name === "offline") {
+          throw new TypeError("fetch failed");
+        }
+        const status = answers[name] ?? 201;
+        return new Response(null, {
+          status,
+          headers: status === 429 ? { "Retry-After": "120" } : {},
+        });
+      },
+    );
+
+    const response = await handlePush(cronRequest(CRON), deps);
+
+    expect(await failureOf(response)).toEqual({
+      status: 200,
+      body: { sent: 1, retry: 3, gone: 2, dropped: 5, empty: 2 },
+    });
+    expect(outcomes(queue.finished)).toEqual([
+      { id: 1, outcome: "sent" },
+      { id: 2, outcome: "gone" },
+      { id: 3, outcome: "gone" },
+      { id: 4, outcome: "retry", retryAfter: 120 },
+      { id: 5, outcome: "retry" },
+      { id: 6, outcome: "retry" },
+      { id: 7, outcome: "dropped" },
+      { id: 8, outcome: "dropped" },
+      { id: 9, outcome: "dropped" },
+      { id: 10, outcome: "dropped" },
+    ]);
+    // Neither the device with another key nor the address outside the allow list was asked.
+    expect(service.sent).toHaveLength(8);
+    expect(service.sent.some((sent) => sent.url.includes("example.com"))).toBe(false);
+
+    expect(retryAfterSeconds("120")).toBe(120);
+    expect(retryAfterSeconds(" 7 ")).toBe(7);
+    expect(retryAfterSeconds("99999")).toBe(3600);
+    expect(retryAfterSeconds("Wed, 21 Oct 2026 07:28:00 GMT")).toBeUndefined();
+    expect(retryAfterSeconds(null)).toBeUndefined();
+  });
+
+  it("NT-c Stapel und Grenzen: höchstens 25 auf einmal, höchstens 100 je Lauf, nach Ablauf der Zeit kein neuer Stapel", async () => {
+    const many = Array.from({ length: 130 }, (_, index) => String(index));
+    const { deps, queue, service } = await flushSetup(many);
+
+    const response = await handlePush(cronRequest(CRON), deps);
+
+    expect(response.status).toBe(200);
+    expect(queue.claims).toEqual([25, 25, 25, 25]);
+    expect(service.sent).toHaveLength(100);
+    expect(queue.waiting).toHaveLength(30);
+
+    // A run that is already late takes no new batch; one with less than a batch stops at once.
+    const late = await flushSetup(many);
+    let clock = 0;
+    const slow = jobQueue(late.queue.waiting, () => {
+      clock = 31_000;
+    });
+    await handlePush(cronRequest(CRON), { ...late.deps, jobs: slow.backend, now: () => clock });
+    expect(slow.claims).toEqual([25]);
+
+    const few = await flushSetup(["a", "b"]);
+    await handlePush(cronRequest(CRON), few.deps);
+    expect(few.queue.claims).toEqual([25]);
+  });
+
+  it("NT-c Ohne Schlüssel oder ohne Datenbankzugang: notConfigured; Schlüssel, die nicht passen: später erneut", async () => {
+    const { deps, queue, service, vapid } = await flushSetup(["a"]);
+
+    const unconfigured: PushDeps[] = [
+      { ...deps, config: null },
+      { ...deps, jobs: null },
+    ];
+    for (const broken of unconfigured) {
+      const response = await handlePush(cronRequest(CRON), broken);
+      expect(await failureOf(response)).toEqual({ status: 503, body: { error: "notConfigured" } });
+    }
+    expect(queue.claims).toEqual([]);
+
+    const wrong = { ...vapid, privateKey: "A".repeat(43) };
+    await handlePush(cronRequest(CRON), { ...deps, config: wrong });
+    expect(outcomes(queue.finished)).toEqual([{ id: 1, outcome: "retry" }]);
+    expect(service.sent).toEqual([]);
+  });
+
+  it("NT-c Datenbank nicht erreichbar: Fehler ohne Details, nichts gesendet", async () => {
+    const { deps, service, logs } = await flushSetup(["a"]);
+    const failing: JobsBackend = {
+      claim: async () => {
+        throw new BackendRefusal("claim");
+      },
+      finish: async () => {},
+    };
+
+    const response = await handlePush(cronRequest(CRON), { ...deps, jobs: failing });
+
+    expect(await failureOf(response)).toEqual({ status: 500, body: { error: "unknown" } });
+    expect(service.sent).toEqual([]);
+    expect(logs.at(-1)).toMatchObject({ route: "flush", status: 500, error: "unknown", jobs: 0 });
+  });
+
+  it("NT-c Das Protokoll eines Laufs nennt nur Zahlen, Fehlercodes und Dienste: keine Adresse, kein Schlüssel, kein Token", async () => {
+    const { deps, logs, vapid, browser } = await flushSetup(
+      ["a", "b", "c", "https://updates.push.services.mozilla.com/wpush/v2/geheim"],
+      (request) => new Response(null, { status: request.url.includes("mozilla") ? 410 : 503 }),
+    );
+
+    await handlePush(cronRequest(CRON), deps);
+
+    expect(logs).toEqual([
+      {
+        route: "flush",
+        status: 200,
+        jobs: 4,
+        sent: 0,
+        retry: 3,
+        gone: 1,
+        dropped: 1,
+        empty: 2,
+        // In the order the answers came.
+        problems: expect.arrayContaining([
+          { error: "pushFailed", host: "fcm.googleapis.com", push: 503, count: 3 },
+          {
+            error: "deviceGone",
+            host: "updates.push.services.mozilla.com",
+            push: 410,
+            count: 1,
+          },
+        ]),
+        ms: expect.any(Number),
+      },
+    ]);
+    expect((logs[0] as FlushLogEntry).problems).toHaveLength(2);
+    const written = JSON.stringify(logs);
+    for (const secret of [
+      CRON,
+      "device-",
+      "geheim",
       vapid.privateKey,
       vapid.publicKey,
       browser.p256dh,

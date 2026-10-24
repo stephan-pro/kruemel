@@ -94,13 +94,98 @@ export function fromBase64Url(text: string): Uint8Array {
 }
 
 /**
- * What a push carries (encrypted, small, without texts; the device writes the text). NT-a has only
- * the test notification.
+ * What a push carries (encrypted, small, without texts; the device writes the text): the test
+ * notification (NT-a) and the daily overview (`DailyPayload`, NT-c).
  */
 export const TEST_PAYLOAD = { v: 1, k: "test" } as const;
 
 /** How long the push service keeps a test notification for a device that is off: 5 minutes. */
 export const TEST_TTL_SECONDS = 300;
+
+/**
+ * The daily overview (NT-c): only how many tasks are the person's today or earlier (`due`) and how
+ * many of them are overdue. No titles, no names: the device shows it on the lock screen. A type, not
+ * an interface, so it counts as JSON for the encryption library.
+ */
+export type DailyPayload = {
+  readonly v: 1;
+  readonly k: "daily";
+  readonly due: number;
+  readonly overdue: number;
+};
+
+export function dailyPayload(due: number, overdue: number): DailyPayload {
+  return { v: 1, k: "daily", due, overdue };
+}
+
+/** How long the push service keeps a daily overview for a device that is off: 6 hours. */
+export const DAILY_TTL_SECONDS = 6 * 60 * 60;
+
+/**
+ * The header with which the schedule of the database (`private.push_tick`) calls the route `flush`;
+ * its value is the token `PUSH_CRON_TOKEN` (docs/BENACHRICHTIGUNGEN.md, 7.4).
+ */
+export const CRON_HEADER = "x-kruemel-cron";
+
+/** The shortest token the function accepts (the PO's token has 44 characters). */
+export const MIN_CRON_TOKEN_LENGTH = 32;
+
+/**
+ * Limits of one run of the route `flush`: messages fetched at a time (`claim_push_jobs` keeps them
+ * for 3 minutes), sent at the same time, at most per run, and no new batch after `deadlineMs`. With
+ * 10 s per push service at most, a run ends within about a minute.
+ */
+export const FLUSH_LIMITS = {
+  batch: 25,
+  parallel: 10,
+  perRun: 100,
+  deadlineMs: 30_000,
+} as const;
+
+/** The longest wait a push service may ask for with `Retry-After` (and the database accepts). */
+export const MAX_RETRY_AFTER_SECONDS = 3600;
+
+/**
+ * What became of a message, as the Edge Function tells `finish_push_jobs`: `sent`; `retry` later
+ * (push service busy or not reachable, or the keys of the function did not work: the PO may fix
+ * them meanwhile); `gone` (404/410: the address is dead, the device is removed); `dropped`
+ * (refused, the device has another key, address not allowed: another try does not help).
+ */
+export type JobOutcome = "sent" | "retry" | "gone" | "dropped";
+
+/** The outcome of a failure (`undefined` = sent). */
+export function jobOutcome(failure: PushFailure | undefined): JobOutcome {
+  if (failure === undefined) {
+    return "sent";
+  }
+  if (failure === "deviceGone") {
+    return "gone";
+  }
+  return failure === "pushFailed" || failure === "notConfigured" ? "retry" : "dropped";
+}
+
+/** The seconds of a `Retry-After` header (only the form in seconds), at most an hour. */
+export function retryAfterSeconds(header: string | null): number | undefined {
+  if (header === null || !/^\d{1,9}$/.test(header.trim())) {
+    return undefined;
+  }
+  return Math.min(Number(header.trim()), MAX_RETRY_AFTER_SECONDS);
+}
+
+/**
+ * Whether two secrets are equal, in a time that does not depend on where they differ: both are
+ * hashed (SHA-256, same length) and every byte is compared.
+ */
+export async function sameSecret(given: string, expected: string): Promise<boolean> {
+  const digest = async (value: string) =>
+    new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value)));
+  const [a, b] = await Promise.all([digest(given), digest(expected)]);
+  let difference = 0;
+  for (let index = 0; index < a.length; index++) {
+    difference |= (a[index] ?? 0) ^ (b[index] ?? 0);
+  }
+  return difference === 0;
+}
 
 /**
  * The largest encrypted push body that is sent. Mozilla's push service accepts only 2744 bytes for

@@ -1,5 +1,6 @@
 // What the service worker shows for a push (NT-a): the server sends only codes and numbers
-// (`{"v":1,"k":"test"}`), the device writes the text. Pure, so it is tested without a worker.
+// (`{"v":1,"k":"test"}`, NT-c `{"v":1,"k":"daily","due":3,"overdue":1}`), the device writes the
+// text. Pure, so it is tested without a worker.
 
 import { PUSH_MESSAGE_TEXTS } from "./messageTexts";
 
@@ -10,13 +11,34 @@ export interface ShownNotification {
   readonly tag: string;
 }
 
+/** A count the server may send: a whole number from 0 to 999. */
+function isCount(value: unknown): value is number {
+  return Number.isInteger(value) && (value as number) >= 0 && (value as number) <= 999;
+}
+
 /** The message for a push's payload; anything unreadable gets the general one. */
 export function notificationFor(payload: unknown): ShownNotification {
-  const kind = (payload as { v?: unknown; k?: unknown } | null | undefined) ?? {};
+  const kind =
+    (payload as
+      | { v?: unknown; k?: unknown; due?: unknown; overdue?: unknown }
+      | null
+      | undefined) ?? {};
+  const title = PUSH_MESSAGE_TEXTS.title;
   if (kind.v === 1 && kind.k === "test") {
-    return { title: PUSH_MESSAGE_TEXTS.title, body: PUSH_MESSAGE_TEXTS.test, tag: "test" };
+    return { title, body: PUSH_MESSAGE_TEXTS.test, tag: "test" };
   }
-  return { title: PUSH_MESSAGE_TEXTS.title, body: PUSH_MESSAGE_TEXTS.fallback, tag: "kruemel" };
+  const { due, overdue } = kind;
+  if (
+    kind.v === 1 &&
+    kind.k === "daily" &&
+    isCount(due) &&
+    isCount(overdue) &&
+    due > 0 &&
+    overdue <= due
+  ) {
+    return { title, body: PUSH_MESSAGE_TEXTS.daily(due, overdue), tag: "daily" };
+  }
+  return { title, body: PUSH_MESSAGE_TEXTS.fallback, tag: "kruemel" };
 }
 
 /** The payload of a push event: its JSON, or `undefined` if there is none or it is not JSON. */

@@ -30,8 +30,40 @@ describe("NT-a Meldungen des Service Workers", () => {
     });
   });
 
+  it("NT-c Tagesüberblick: nur Zahlen, Einzahl und Mehrzahl, überfällige eigens genannt", () => {
+    const daily = (due: number, overdue: number) =>
+      notificationFor({ v: 1, k: "daily", due, overdue });
+    expect(daily(3, 1)).toEqual({
+      title: "Krümel",
+      body: "Heute 3 Aufgaben für dich, davon 1 überfällig.",
+      tag: "daily",
+    });
+    expect(
+      [daily(1, 0), daily(2, 0), daily(1, 1), daily(2, 2), daily(5, 3)].map((shown) => shown.body),
+    ).toEqual([
+      "Heute 1 Aufgabe für dich.",
+      "Heute 2 Aufgaben für dich.",
+      "1 überfällige Aufgabe wartet auf dich.",
+      "2 überfällige Aufgaben warten auf dich.",
+      "Heute 5 Aufgaben für dich, davon 3 überfällig.",
+    ]);
+  });
+
   it("NT-a Unbekannte oder kaputte Nutzlast: trotzdem eine allgemeine Meldung", () => {
-    for (const payload of [undefined, null, "Text", { v: 2, k: "test" }, { v: 1, k: "neu" }]) {
+    for (const payload of [
+      undefined,
+      null,
+      "Text",
+      { v: 2, k: "test" },
+      { v: 1, k: "neu" },
+      // NT-c: a daily overview without anything to do, or with numbers that cannot be.
+      { v: 1, k: "daily", due: 0, overdue: 0 },
+      { v: 1, k: "daily", due: 1, overdue: 2 },
+      { v: 1, k: "daily", due: 1.5, overdue: 0 },
+      { v: 1, k: "daily", due: 1000, overdue: 0 },
+      { v: 1, k: "daily", due: "3", overdue: 0 },
+      { v: 1, k: "daily", due: 3 },
+    ]) {
       expect(notificationFor(payload)).toEqual({
         title: "Krümel",
         body: "Neues in Krümel.",

@@ -1,4 +1,3 @@
-import { spawnSync } from "node:child_process";
 import { describeAuthContract } from "../../src/auth/auth.contract";
 import { SupabaseAuth } from "../../src/auth/supabaseAuth";
 import { expireAccessToken, offlineFetch } from "../../src/auth/supabaseAuth.fixtures";
@@ -11,8 +10,10 @@ import {
   call,
   codeFromMail,
   invite,
+  literal,
   mailTo,
   sleep,
+  sql,
   url,
   withHousehold,
 } from "./setup";
@@ -23,41 +24,17 @@ import {
 // (`supabase/config.toml`); only "a new code after 1 s" instead of 60 s, so the run stays short.
 // New accounts only with an invite (E2-5b): the hook of the migration `…_friend_invites.sql`.
 
-declare const process: { env: Record<string, string | undefined> };
-
-const DB_CONTAINER = process.env.SUPABASE_DB_CONTAINER || "supabase_db_kruemel";
-
 /** Moves the time the codes of the address were sent back by `minutes` (in the database). */
 function backdateCodes(email: string, minutes: number): void {
   if (!/^[a-z0-9-]+@example\.com$/.test(email)) {
     throw new Error(`Unerwartete Testadresse: ${email}`);
   }
-  const database = new URL(process.env.SUPABASE_DB_URL ?? "");
   const shift = `interval '${minutes} minutes'`;
-  const sql = `update auth.users set confirmation_sent_at = confirmation_sent_at - ${shift}, recovery_sent_at = recovery_sent_at - ${shift} where email = '${email}'`;
-  const result = spawnSync(
-    "docker",
-    [
-      "exec",
-      "-e",
-      `PGPASSWORD=${decodeURIComponent(database.password)}`,
-      DB_CONTAINER,
-      "psql",
-      "-h",
-      "127.0.0.1",
-      "-U",
-      decodeURIComponent(database.username),
-      "-d",
-      database.pathname.slice(1),
-      "-v",
-      "ON_ERROR_STOP=1",
-      "-c",
-      sql,
-    ],
-    { encoding: "utf8" },
+  const updated = sql(
+    `update auth.users set confirmation_sent_at = confirmation_sent_at - ${shift}, recovery_sent_at = recovery_sent_at - ${shift} where email = ${literal(email)} returning id`,
   );
-  if (result.status !== 0 || !result.stdout.includes("UPDATE 1")) {
-    throw new Error(`Codes nicht zurückdatiert: ${result.stdout} ${result.stderr}`);
+  if (updated.length !== 1) {
+    throw new Error(`Codes nicht zurückdatiert: ${updated.length} Zeilen`);
   }
 }
 

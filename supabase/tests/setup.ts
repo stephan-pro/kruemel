@@ -1,6 +1,7 @@
 // Building blocks of the database tests: clients for the local instance and fresh people and
 // households for every test (every test makes its own, so tests do not depend on each other).
 
+import { spawnSync } from "node:child_process";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 declare const process: { env: Record<string, string | undefined> };
@@ -134,4 +135,77 @@ export async function couple() {
   const b = await signedIn();
   await call(b, "accept_invite", { p_token: (await invite(a)).token });
   return { a, b, household: a.household };
+}
+
+// SQL as the owner of the database, as `pg_cron` runs the schedule (NT-c) and the operator works
+// in the dashboard: `psql` in the container of the local instance. Only for values the tests make.
+
+const DB_CONTAINER = process.env.SUPABASE_DB_CONTAINER || "supabase_db_kruemel";
+
+/**
+ * Runs SQL (one or more statements) and returns the rows it printed, one line per row, columns
+ * separated by "|". Quiet: `begin`, `rollback` and the like print nothing.
+ */
+export function sql(statements: string): string[] {
+  const database = new URL(process.env.SUPABASE_DB_URL ?? "");
+  const result = spawnSync(
+    "docker",
+    [
+      "exec",
+      "-e",
+      `PGPASSWORD=${decodeURIComponent(database.password)}`,
+      DB_CONTAINER,
+      "psql",
+      "-h",
+      "127.0.0.1",
+      "-U",
+      decodeURIComponent(database.username),
+      "-d",
+      database.pathname.slice(1),
+      "-v",
+      "ON_ERROR_STOP=1",
+      "-q",
+      "-A",
+      "-t",
+      "-c",
+      statements,
+    ],
+    { encoding: "utf8" },
+  );
+  if (result.status !== 0) {
+    throw new Error(`SQL fehlgeschlagen: ${result.stderr}`);
+  }
+  return result.stdout.split("\n").filter((line) => line !== "");
+}
+
+/** The JSON of the last row `sql` printed. */
+export function sqlJson<T = unknown>(statements: string): T {
+  return JSON.parse(sql(statements).at(-1) ?? "null") as T;
+}
+
+/** A text as an SQL literal. */
+export function literal(value: string): string {
+  return `'${value.replaceAll("'", "''")}'`;
+}
+
+const KEY_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+
+/** Random base64url text of the given length (like the keys of a browser's push address). */
+export function randomKey(length: number): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(length));
+  return Array.from(bytes, (byte) => KEY_CHARS[byte % 64]).join("");
+}
+
+/** What a device sends to switch notifications on (`register_push_device`), with a fresh address. */
+export function pushDevice(overrides: Record<string, unknown> = {}) {
+  return {
+    p_device_id: crypto.randomUUID(),
+    p_endpoint: `https://fcm.googleapis.com/fcm/send/${crypto.randomUUID()}`,
+    p_p256dh: `B${randomKey(86)}`,
+    p_auth: randomKey(22),
+    p_key_id: "schluessel-1",
+    p_time_zone: "Europe/Berlin",
+    p_locale: "de",
+    ...overrides,
+  };
 }

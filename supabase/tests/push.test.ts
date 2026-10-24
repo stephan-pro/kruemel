@@ -11,34 +11,22 @@ import {
   REFUSED_ENDPOINTS,
   VALID_SETTINGS,
 } from "../functions/push/rules.cases";
-import { admin, anonymous, call, couple, type Person, signedIn, withHousehold } from "./setup";
+import {
+  admin,
+  anonymous,
+  call,
+  couple,
+  pushDevice as device,
+  type Person,
+  randomKey,
+  signedIn,
+  withHousehold,
+} from "./setup";
 
 // NT-a: the push addresses of the devices (`push_devices`) and the limits of the test
 // notification (`request_test_push`, called by the Edge Function `push` with the person's
 // sign-in). The Edge Function itself is tested with a mock push service in `check`
 // (supabase/functions/push/core.test.ts).
-
-const KEY_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
-
-/** Random base64url text of the given length (like the keys of a browser's push address). */
-function randomKey(length: number): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(length));
-  return Array.from(bytes, (byte) => KEY_CHARS[byte % 64]).join("");
-}
-
-/** What a device sends to switch on (`register_push_device`), with a fresh address. */
-function device(overrides: Record<string, unknown> = {}) {
-  return {
-    p_device_id: crypto.randomUUID(),
-    p_endpoint: `https://fcm.googleapis.com/fcm/send/${crypto.randomUUID()}`,
-    p_p256dh: `B${randomKey(86)}`,
-    p_auth: randomKey(22),
-    p_key_id: "schluessel-1",
-    p_time_zone: "Europe/Berlin",
-    p_locale: "de",
-    ...overrides,
-  };
-}
 
 async function failure(promise: Promise<unknown>): Promise<string> {
   try {

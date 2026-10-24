@@ -15,6 +15,8 @@ const PATTERNS = [
   // NT-a: a bare private VAPID key (32 bytes base64url) cannot be told from other text; only one
   // written next to its name can.
   ["privater VAPID-Schlüssel", /VAPID_PRIVATE_KEY\S*\s*[:=]\s*["']?[A-Za-z0-9_-]{43}\b/],
+  // NT-c: the same for the token of the schedule (base64 of 32 bytes, 44 characters).
+  ["Token des Zeitplans", /PUSH_CRON_TOKEN\S*\s*[:=]\s*["']?[A-Za-z0-9+/_-]{32,}/],
 ];
 // A JWT is only a problem if it is a service-role key (the anon key is public).
 const JWT = /eyJ[A-Za-z0-9_-]{10,}\.(eyJ[A-Za-z0-9_-]{10,})\.[A-Za-z0-9_-]{10,}/g;
