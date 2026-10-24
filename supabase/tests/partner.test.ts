@@ -147,10 +147,13 @@ const jobsOf = (devices: readonly Device[]) =>
     `select coalesce(jsonb_agg(jsonb_build_object('device', j.device, 'kind', j.kind, 'events', (select count(*) from private.push_job_events l where l.job = j.id), 'inMinutes', round(extract(epoch from j.not_before - now()) / 60)) order by j.id), '[]'::jsonb) from private.push_jobs j where j.device in (${list(devices)})`,
   );
 
-/** The events of a household: kind and who is told. */
-const eventsOf = (household: string) =>
+/**
+ * The events of a household: kind and who is told. Without joining unless asked (`couple` makes
+ * one when B accepts the invite).
+ */
+const eventsOf = (household: string, joined = false) =>
   sqlJson<{ kind: string; recipient: string; actor: string }[]>(
-    `select coalesce(jsonb_agg(jsonb_build_object('kind', e.kind, 'recipient', e.recipient_user, 'actor', e.actor_user) order by e.id), '[]'::jsonb) from private.push_events e where e.household_id = ${literal(household)}`,
+    `select coalesce(jsonb_agg(jsonb_build_object('kind', e.kind, 'recipient', e.recipient_user, 'actor', e.actor_user) order by e.id), '[]'::jsonb) from private.push_events e where e.household_id = ${literal(household)} and (${joined} or e.kind <> 'joined')`,
   );
 
 interface Claimed {
@@ -371,7 +374,11 @@ describe("NT-d Ereignisse aus Erledigen und Übernehmen", () => {
 
     await call(a, "update_push_settings", {
       p_device_id: later.deviceId,
-      ...settingsArguments({ ...DEFAULT_PUSH_SETTINGS, partnerEnabled: false }),
+      ...settingsArguments({
+        ...DEFAULT_PUSH_SETTINGS,
+        quietEnabled: false,
+        partnerEnabled: false,
+      }),
     });
     expect(told(claim(AFTER_WAIT), [off, later])).toEqual([]);
     expect(jobsOf([later])).toEqual([]);
@@ -424,7 +431,7 @@ describe("NT-d Beitritt zum Haushalt", () => {
 
     await call(b, "accept_invite", { p_token: (await invite(a)).token });
 
-    expect(eventsOf(a.household)).toEqual([{ kind: "joined", recipient: a.id, actor: b.id }]);
+    expect(eventsOf(a.household, true)).toEqual([{ kind: "joined", recipient: a.id, actor: b.id }]);
     expect(jobsOf([phone, notWanted, robinsPhone])).toEqual([
       { device: phone.row, kind: "joined", events: 1, inMinutes: 0 },
     ]);
@@ -466,7 +473,8 @@ describe("NT-d Aufräumen: Verlassen, Entfernen, Konto löschen, Gerät abmelden
 
     await call(one.b, "leave_household");
 
-    expect(eventsOf(one.household)).toEqual([]);
+    // Also the one about B joining.
+    expect(eventsOf(one.household, true)).toEqual([]);
     expect(jobsOf([phones.a1, phones.b1])).toEqual([]);
     expect(
       sql(`select count(*) from public.push_devices where id = ${literal(phones.b1.row)}`),
@@ -480,7 +488,7 @@ describe("NT-d Aufräumen: Verlassen, Entfernen, Konto löschen, Gerät abmelden
 
     await call(one.a, "remove_member", { p_role: "personB" });
 
-    expect(eventsOf(one.household)).toEqual([]);
+    expect(eventsOf(one.household, true)).toEqual([]);
     expect(jobsOf([phones.a1, phones.b1])).toEqual([]);
     expect(other()).toEqual(before);
   });
