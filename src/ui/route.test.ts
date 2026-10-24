@@ -32,7 +32,11 @@ describe("Navigation (Hash-Router)", () => {
       "#/erledigt",
       "#/statistik",
       "#/einstellungen",
+      "#/impressum",
+      "#/datenschutz",
     ]);
+    expect(navigationRoute("imprint")).toBe("settings");
+    expect(navigationRoute("privacy")).toBe("settings");
   });
 
   it("Die Navigation zeigt Heute, Woche, Statistik und Einstellungen; Aufgaben und Erledigt liegen dahinter", () => {

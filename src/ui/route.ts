@@ -7,8 +7,11 @@ export type MainRoute = "today" | "week" | "statistics" | "settings";
 /** Pages reached from "Woche" and the settings, not from the navigation. */
 export type SubRoute = "tasks" | "done";
 
+/** Pages that open without signing in (E2-5c): Impressum and Datenschutzerklärung. */
+export type LegalRoute = "imprint" | "privacy";
+
 /** Every page with a list entry in `ROUTES`. */
-export type ListedRoute = MainRoute | SubRoute;
+export type ListedRoute = MainRoute | SubRoute | LegalRoute;
 
 /** The listed pages plus the two task forms, which belong to "Aufgaben". */
 export type Route = ListedRoute | "taskNew" | "taskEdit";
@@ -30,7 +33,14 @@ export const ROUTES: readonly RouteInfo[] = [
   { route: "done", path: "erledigt", label: "Erledigt", title: "Erledigt" },
   { route: "statistics", path: "statistik", label: "Statistik", title: "Statistik" },
   { route: "settings", path: "einstellungen", label: "Einstellungen", title: "Einstellungen" },
+  { route: "imprint", path: "impressum", label: "Impressum", title: "Impressum" },
+  { route: "privacy", path: "datenschutz", label: "Datenschutz", title: "Datenschutzerklärung" },
 ];
+
+/** Whether the page shows without signing in and before anything else (E2-5c). */
+export function isLegalRoute(route: Route): route is LegalRoute {
+  return route === "imprint" || route === "privacy";
+}
 
 /** The entries of the navigation, in this order (the plus for a new task sits after "Woche"). */
 export const NAVIGATION: readonly MainRoute[] = ["today", "week", "statistics", "settings"];
@@ -61,8 +71,14 @@ export function routeLabel(route: MainRoute): string {
   return (ROUTES.find((info) => info.route === route) as RouteInfo).label;
 }
 
-/** The navigation entry a page belongs to; the list pages and task forms belong to "Woche". */
+/**
+ * The navigation entry a page belongs to; the list pages and task forms belong to "Woche", the
+ * legal pages to "Einstellungen".
+ */
 export function navigationRoute(route: Route): MainRoute {
+  if (isLegalRoute(route)) {
+    return "settings";
+  }
   return route === "tasks" || route === "done" || route === "taskNew" || route === "taskEdit"
     ? "week"
     : route;

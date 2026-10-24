@@ -14,6 +14,7 @@ import { FriendInviteTile } from "../components/FriendInviteTile";
 import { type Choice, RadioGroup } from "../components/fields";
 import { HouseholdTile } from "../components/HouseholdTile";
 import { InstallTile } from "../components/InstallTile";
+import { LegalLinks } from "../components/LegalLinks";
 import { NamesForm } from "../components/NamesForm";
 import { OtherDeviceTile } from "../components/OtherDeviceTile";
 import { PageTitle } from "../components/PageTitle";
@@ -21,6 +22,7 @@ import { SyncTile } from "../components/SyncTile";
 import { VersionTile } from "../components/VersionTile";
 import { errorText } from "../errorText";
 import type { InstallWay } from "../install";
+import { LEGAL_TEXTS } from "../legalTexts";
 import { routeInfo } from "../route";
 
 interface SettingsPageProps {
@@ -238,6 +240,13 @@ export function SettingsPage({
         <InstallTile way={installWay} onInstall={onInstall} shared={shared} />
         <OtherDeviceTile address={appAddress()} shared={shared} />
         <VersionTile />
+        <section class="tile tile--narrow" aria-labelledby="rechtliches">
+          <h2 class="tile__title" id="rechtliches">
+            {LEGAL_TEXTS.settingsTitle}
+          </h2>
+          <p class="muted">{LEGAL_TEXTS.settingsIntro}</p>
+          <LegalLinks />
+        </section>
       </div>
     </>
   );

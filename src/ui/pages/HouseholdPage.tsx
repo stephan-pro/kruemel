@@ -5,6 +5,7 @@ import type { PersonNames } from "../../storage/appData";
 import { ACCOUNT_TEXTS } from "../accountTexts";
 import { ErrorAlert } from "../components/Alert";
 import { TextField, useFieldErrorFocus } from "../components/fields";
+import { LegalLinks } from "../components/LegalLinks";
 import { PageTitle } from "../components/PageTitle";
 import { HOUSEHOLD_TEXTS, LEAVE_TEXTS } from "../householdTexts";
 import { friendInviteTokenFrom, inviteTokenFrom } from "../route";
@@ -138,6 +139,7 @@ export function HouseholdPage({ onCreate, onInvite, notice }: HouseholdPageProps
           </form>
         </section>
         {status}
+        <LegalLinks />
       </div>
     </>
   );

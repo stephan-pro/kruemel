@@ -55,6 +55,7 @@ import { offersInstallHint, useInstallWay } from "./install";
 import { DonePage } from "./pages/DonePage";
 import { HouseholdPage, HouseholdUnavailablePage } from "./pages/HouseholdPage";
 import { InvitePage } from "./pages/InvitePage";
+import { LegalPage } from "./pages/LegalPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { SetupPage } from "./pages/SetupPage";
 import { SignInPage } from "./pages/SignInPage";
@@ -70,6 +71,7 @@ import {
   friendInviteTokenFrom,
   inviteHash,
   inviteTokenFrom,
+  isLegalRoute,
   type PageLocation,
   parseLocation,
   routeHash,
@@ -812,7 +814,7 @@ export function App({
    * With sign-in: "waiting" while the session is read, "signIn" without one; with a household
    * interface then "invite" for an opened invite and "household" until the person has one.
    */
-  const gate =
+  const appGate =
     auth === undefined
       ? "open"
       : session === undefined
@@ -830,6 +832,9 @@ export function App({
                   : joined === null
                     ? "household"
                     : "open";
+  /** Impressum and Datenschutzerklärung (E2-5c) replace every page, also before signing in. */
+  const legal = isLegalRoute(route);
+  const gate = legal ? "legal" : appGate;
   // With a household the role decides who "Ich bin" is. The names are those of the shared data
   // (they follow a change by the other device or a backup), else those the household reported.
   // The local values stay untouched: a device with data from stage 1 still knows its old "Ich
@@ -840,7 +845,7 @@ export function App({
     (sharedStorage === undefined ? undefined : shownNames) ?? member?.names ?? shownNames;
   const person = member?.me ?? (state.status === "ready" ? state.device.currentPerson : undefined);
   const inApp =
-    gate === "open" && state.status === "ready" && names !== undefined && person !== undefined;
+    appGate === "open" && state.status === "ready" && names !== undefined && person !== undefined;
 
   return (
     <div class={`app${inApp ? " app--with-nav" : ""}`}>
@@ -917,6 +922,7 @@ export function App({
           />
         )}
         <main id="inhalt" tabIndex={-1}>
+          {isLegalRoute(route) && <LegalPage route={route} />}
           {(gate === "waiting" || (gate === "open" && state.status === "loading")) && (
             <p role="status">Wird geladen …</p>
           )}

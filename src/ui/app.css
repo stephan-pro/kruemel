@@ -596,6 +596,34 @@ main:focus {
   margin-bottom: 20px;
 }
 
+/* Impressum and Datenschutzerklärung (E2-5c) */
+.legal section {
+  margin-top: 24px;
+}
+
+.legal-back {
+  margin-top: 24px;
+}
+
+.legal p + p,
+.legal p + ul {
+  margin-top: 8px;
+}
+
+.legal-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  margin-top: 16px;
+}
+
+.legal-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  text-decoration: underline;
+}
+
 .section-title {
   font-size: 19px;
   font-weight: 800;
