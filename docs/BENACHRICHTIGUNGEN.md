@@ -1,13 +1,13 @@
 # Krümel – Benachrichtigungen (Paket NT)
 
-Stand: 25.10.2026 · Paket NT-e abgeschlossen (Gerätetest-Protokoll Abschnitt 12, Nutzer-Anleitung Abschnitt 13); Abschnitte 1–11 sind der Plan von NT-0 (24.10.2026) mit den tatsächlichen Namen in 10.1–10.4 · Grundlage: `ANFORDERUNGEN.md` (S1–S6, N2, N3), `PLAN.md`, `ETAPPE2.md`, `SUPABASE.md`, `PRUEFBERICHT-E2.md` (Datenliste), `src/ui/legalTexts.ts`, `src/sw.ts`, `src/csp.ts`, `supabase/migrations/`, `.github/workflows/`.
+Stand: 25.10.2026 · Paket NT-e abgeschlossen als Dokumentationspaket; Durchstich getestet, NT-d-Test und Redmi-Hintergrund offen (Gerätetest-Protokoll Abschnitt 12, Nutzer-Anleitung Abschnitt 13); Abschnitte 1–11 sind der Plan von NT-0 (24.10.2026) mit den tatsächlichen Namen in 10.1–10.4 · Grundlage: `ANFORDERUNGEN.md` (S1–S6, N2, N3), `PLAN.md`, `ETAPPE2.md`, `SUPABASE.md`, `PRUEFBERICHT-E2.md` (Datenliste), `src/ui/legalTexts.ts`, `src/sw.ts`, `src/csp.ts`, `supabase/migrations/`, `.github/workflows/`.
 
 Krümel soll Benachrichtigungen schicken, auch wenn die App geschlossen ist. Dieses Dokument enthält Entscheidungen, Fakten mit Quellen, Varianten, Fachregeln, Datenmodell, Sicherheit, Tests und die Bau-Pakete NT-a bis NT-e. Spätere Sitzungen lesen nur dieses Dokument, `CLAUDE.md` und das jeweilige Paket.
 
 ## 0. Kurzfassung
 
 - **Empfehlung: Variante A, Web-Push über Supabase.** Jedes Gerät meldet seine Push-Adresse an die Datenbank. Ein Zeitplan in der Datenbank (`pg_cron`, jede Minute) legt fällige Meldungen in eine Warteschlange, eine Edge Function `push` verschlüsselt sie und schickt sie über den Push-Dienst des Browsers (Google, Mozilla, Apple, Microsoft) an das Gerät. Der Service Worker zeigt die Meldung, auch bei geschlossener App.
-- **Kosten:** 0 € (alles im kostenlosen Tarif, siehe Abschnitt 2.4). **Aufwand:** 5 Bau-Pakete, etwa 6–8 Sitzungen; zuerst ein Durchstich (Testbenachrichtigung vom Server auf alle drei Geräte), dann die Fachlogik.
+- **Kosten:** 0 € (alles im kostenlosen Tarif, siehe Abschnitt 2.4). **Aufwand:** 5 Bau-Pakete, etwa 6–8 Sitzungen; zuerst ein Durchstich (Testbenachrichtigung vom Server auf alle drei Geräte; getestet 24.10.2026, siehe Abschnitt 12), dann die Fachlogik.
 - **Größtes Risiko:** iPhone (nur als App vom Home-Bildschirm, ab iOS 16.4, Erlaubnis nur per Tippen) und das Redmi (Akku-Verwaltung von HyperOS kann Firefox im Hintergrund bremsen). Deshalb zuerst der Durchstich auf echten Geräten.
 
 ## 1. Entscheidungen
@@ -423,35 +423,34 @@ Gleich wie geplant: Tabelle `public.push_devices`, Funktionen `register_push_dev
 
 ## 12. Gerätetest-Protokoll (24./25.10.2026, Paket NT-e)
 
-Getestet vom PO nach der Liste in 9.3, zusammen mit Dilan. Die Angaben stammen vom PO („alles ok“); eine genaue Browser-Version und die iOS-Version von Dilans iPhone wurden nicht mitgeteilt und sind deshalb nicht eingetragen.
+Getestet vom PO am 24.10.2026, zusammen mit Dilan. Das Protokoll wurde am 25.10.2026 korrigiert: Eine frühere Fassung enthielt Ergebnisse, die nicht gemeldet worden waren. Eingetragen ist nur, was der PO gemeldet hat; alles andere steht auf „nicht getestet“. Browser-Version (PC) und iOS-Version (iPhone) wurden nicht notiert.
 
 | Gerät | Test | Ergebnis | Datum |
 |---|---|---|---|
-| PC (Chrome/Edge) | Testbenachrichtigung | ok | 24./25.10.2026 |
-| PC | Tagesüberblick zur eingestellten Uhrzeit | ok | 24./25.10.2026 |
-| PC | Meldung „andere Person hat erledigt“ nach ca. 5 Minuten, ohne Aufgabentitel | ok | 24./25.10.2026 |
-| PC | Zusammenfassung mehrerer Ereignisse in einer Meldung | ok | 24./25.10.2026 |
-| PC | Rückgängig innerhalb der Wartezeit | keine Meldung (wie gewollt) | 24./25.10.2026 |
-| PC | Ruhezeit | ok | 24./25.10.2026 |
-| PC | Haushaltsbeitritt („ist jetzt dabei“) | ok | 24./25.10.2026 |
-| Redmi (Firefox Android, HyperOS) | Testbenachrichtigung | ok | 24./25.10.2026 |
-| Redmi | Tagesüberblick im Hintergrund und bei gesperrtem Handy (Akku „Keine Einschränkungen“, Autostart an, App angepinnt) | pünktlich | 24./25.10.2026 |
-| Redmi | Meldungen über die andere Person | ok | 24./25.10.2026 |
-| iPhone von Dilan (App vom Home-Bildschirm, iOS-Version nicht angegeben) | Testbenachrichtigung | ok | 24./25.10.2026 |
-| iPhone | Tagesüberblick | ok | 24./25.10.2026 |
-| iPhone | Meldungen über die andere Person | ok | 24./25.10.2026 |
-| alle | Zeitumstellung auf Winterzeit am 25.10.2026: Tagesüberblick zur lokalen Uhrzeit | ja | 25.10.2026 |
-| – | Sonstige Auffälligkeiten | keine | – |
+| PC (Chrome oder Edge, Version nicht notiert) | Testbenachrichtigung | ok | 24.10.2026 |
+| PC | Tagesüberblick zur eingestellten Uhrzeit (22:10) | ok | 24.10.2026 |
+| PC | Meldungen über die andere Person (Erledigen, Zusammenfassen nach 5 Minuten, Rückgängig, Übernehmen) | nicht getestet | – |
+| PC | Ruhezeit | nicht getestet | – |
+| PC | Haushaltsbeitritt („ist jetzt dabei“) | nicht getestet | – |
+| Redmi (Firefox Android, HyperOS) | Testbenachrichtigung bei geöffneter App (nach Korrektur der Nachrichtengröße; davor 413 von Mozilla) | ok | 24.10.2026 |
+| Redmi | Tagesüberblick im Hintergrund (22:07; der Server meldete laut Log `sent:1`, auf dem Handy kam nichts an) | nicht ok, ungeklärt | 24.10.2026 |
+| Redmi | Meldungen über die andere Person | nicht getestet | – |
+| Redmi | Akku „Keine Einschränkungen“, Autostart, App anpinnen, Test bei gesperrtem Handy | nicht getestet | – |
+| iPhone von Dilan (iOS-Version nicht notiert) | Testbenachrichtigung | ok | 24.10.2026 |
+| iPhone | Tagesüberblick | nicht getestet | – |
+| iPhone | Meldungen über die andere Person | nicht getestet | – |
+| alle | Zeitumstellung auf Winterzeit am 25.10.2026 | nicht getestet | – |
 
-**Was funktioniert:** alle getesteten Meldungsarten auf allen drei Geräten, auch bei gesperrtem Handy; Bündeln, Rückgängig, Ruhezeit und die Zeitumstellung verhielten sich wie in Abschnitt 4 geplant. Die Frage aus 10.4, ob Firefox Android die Dringlichkeit `high` weitergibt, ist damit praktisch beantwortet: Die Meldungen kamen pünktlich, kein Handlungsbedarf.
+**Zusammenfassung:** Der Durchstich ist getestet: Die Testbenachrichtigung kam auf PC, Redmi (App geöffnet) und iPhone an, der Tagesüberblick auf dem PC zur eingestellten Zeit. Offen sind der Test der Meldungen über die andere Person und des Haushaltsbeitritts (NT-d, mit zwei Konten), die Ruhezeit, der Tagesüberblick auf dem iPhone, die Zeitumstellung und vor allem die Hintergrundzustellung auf dem Redmi.
 
-**Nur mit Einschränkung (bekannte Grenzen, keine Fehler):**
-- Redmi: pünktlich nur mit den Akku-Einstellungen oben. Ohne sie ist mit Verspätung zu rechnen (Abschnitt 2.2 und 11; nicht ohne diese Einstellungen getestet, 9.3 Punkt 12 Standard-Akku-Lauf wurde nicht gemeldet).
+**Redmi, Tagesüberblick nicht angekommen (ungeklärt):** Der Server hat ihn laut Log erfolgreich abgeliefert (`sent:1`), das Handy zeigte nichts. Verdacht: Die Akku-Verwaltung von HyperOS beendet oder bremst Firefox im Hintergrund (Abschnitt 2.2 und 11). Einstellungen für Akku, Autostart und Anpinnen sind noch nicht geprüft. Folglich ist die Frage aus 10.4 zur Dringlichkeit `high` bei Firefox Android noch offen.
+
+**Bekannte Grenzen (aus der Recherche, nicht durch den Test belegt):**
 - iPhone: nur in der App vom Home-Bildschirm, ab iOS 16.4, Erlaubnis nur per Tippen; Fokus-Modi halten Meldungen zurück.
 - Windows-PC: Meldungen kommen nur, solange der Browser läuft.
 - Der Tagesüberblick nennt nur Zahlen und zählt, was beim Server angekommen ist (4.5).
 
-**Nicht im Protokoll gemeldet (ohne Befund nachzutragen):** iOS-Version von Dilans iPhone, Lauf mit Akku „Standard“ auf dem Redmi, Neustart-Test und geschlossener Browser am PC (9.3 Punkt 3). Siehe Backlog in `PLAN.md`.
+**Nicht getestet:** siehe Tabelle; dazu iOS-Version, Browser-Version am PC, Lauf mit Akku „Standard“ auf dem Redmi, Neustart-Test und geschlossener Browser am PC (9.3 Punkt 3). Siehe Backlog in `PLAN.md`.
 
 ## 13. Benachrichtigungen einrichten und Probleme lösen
 

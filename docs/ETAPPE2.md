@@ -130,7 +130,7 @@ Stand 23.10.2026. Inhalt und „Fertig, wenn“: `ETAPPE2-PLAN.md`, E2-3. Jeder 
 
 ## Benachrichtigungen (Pakete NT)
 
-Abgeschlossen am 25.10.2026 (NT-a bis NT-e, Gerätetest auf PC, Redmi und iPhone bestanden). Plan, Namen und Protokoll: `BENACHRICHTIGUNGEN.md`; Zeilen und Backlog: `PLAN.md`.
+Abgeschlossen am 25.10.2026 (NT-a bis NT-e, Durchstich auf PC, Redmi und iPhone getestet, NT-d-Test und Redmi-Hintergrund offen). Plan, Namen und Protokoll: `BENACHRICHTIGUNGEN.md`; Zeilen und Backlog: `PLAN.md`.
 
 ## Pakete vor dem Gerätetest
 
