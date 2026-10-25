@@ -1,6 +1,6 @@
 # Krümel – Benachrichtigungen (Paket NT)
 
-Stand: 24.10.2026 · Paket NT-0 (nur Planung, kein Code, keine Migration, keine Konfiguration geändert) · Grundlage: `ANFORDERUNGEN.md` (S1–S6, N2, N3), `PLAN.md`, `ETAPPE2.md`, `SUPABASE.md`, `PRUEFBERICHT-E2.md` (Datenliste), `src/ui/legalTexts.ts`, `src/sw.ts`, `src/csp.ts`, `supabase/migrations/`, `.github/workflows/`.
+Stand: 25.10.2026 · Paket NT-e abgeschlossen (Gerätetest-Protokoll Abschnitt 12, Nutzer-Anleitung Abschnitt 13); Abschnitte 1–11 sind der Plan von NT-0 (24.10.2026) mit den tatsächlichen Namen in 10.1–10.4 · Grundlage: `ANFORDERUNGEN.md` (S1–S6, N2, N3), `PLAN.md`, `ETAPPE2.md`, `SUPABASE.md`, `PRUEFBERICHT-E2.md` (Datenliste), `src/ui/legalTexts.ts`, `src/sw.ts`, `src/csp.ts`, `supabase/migrations/`, `.github/workflows/`.
 
 Krümel soll Benachrichtigungen schicken, auch wenn die App geschlossen ist. Dieses Dokument enthält Entscheidungen, Fakten mit Quellen, Varianten, Fachregeln, Datenmodell, Sicherheit, Tests und die Bau-Pakete NT-a bis NT-e. Spätere Sitzungen lesen nur dieses Dokument, `CLAUDE.md` und das jeweilige Paket.
 
@@ -421,7 +421,76 @@ Gleich wie geplant: Tabelle `public.push_devices`, Funktionen `register_push_dev
 - Hinweis-Karte „Benachrichtigungen einschalten?“ auf „Heute“ (wie `InstallHint`) – bewusst nicht, solange „nie automatisch“ gilt.
 - Englische Texte (EN-a bis EN-d), nach NT.
 
-## 12. Quellen (abgerufen 24.10.2026)
+## 12. Gerätetest-Protokoll (24./25.10.2026, Paket NT-e)
+
+Getestet vom PO nach der Liste in 9.3, zusammen mit Dilan. Die Angaben stammen vom PO („alles ok“); eine genaue Browser-Version und die iOS-Version von Dilans iPhone wurden nicht mitgeteilt und sind deshalb nicht eingetragen.
+
+| Gerät | Test | Ergebnis | Datum |
+|---|---|---|---|
+| PC (Chrome/Edge) | Testbenachrichtigung | ok | 24./25.10.2026 |
+| PC | Tagesüberblick zur eingestellten Uhrzeit | ok | 24./25.10.2026 |
+| PC | Meldung „andere Person hat erledigt“ nach ca. 5 Minuten, ohne Aufgabentitel | ok | 24./25.10.2026 |
+| PC | Zusammenfassung mehrerer Ereignisse in einer Meldung | ok | 24./25.10.2026 |
+| PC | Rückgängig innerhalb der Wartezeit | keine Meldung (wie gewollt) | 24./25.10.2026 |
+| PC | Ruhezeit | ok | 24./25.10.2026 |
+| PC | Haushaltsbeitritt („ist jetzt dabei“) | ok | 24./25.10.2026 |
+| Redmi (Firefox Android, HyperOS) | Testbenachrichtigung | ok | 24./25.10.2026 |
+| Redmi | Tagesüberblick im Hintergrund und bei gesperrtem Handy (Akku „Keine Einschränkungen“, Autostart an, App angepinnt) | pünktlich | 24./25.10.2026 |
+| Redmi | Meldungen über die andere Person | ok | 24./25.10.2026 |
+| iPhone von Dilan (App vom Home-Bildschirm, iOS-Version nicht angegeben) | Testbenachrichtigung | ok | 24./25.10.2026 |
+| iPhone | Tagesüberblick | ok | 24./25.10.2026 |
+| iPhone | Meldungen über die andere Person | ok | 24./25.10.2026 |
+| alle | Zeitumstellung auf Winterzeit am 25.10.2026: Tagesüberblick zur lokalen Uhrzeit | ja | 25.10.2026 |
+| – | Sonstige Auffälligkeiten | keine | – |
+
+**Was funktioniert:** alle getesteten Meldungsarten auf allen drei Geräten, auch bei gesperrtem Handy; Bündeln, Rückgängig, Ruhezeit und die Zeitumstellung verhielten sich wie in Abschnitt 4 geplant. Die Frage aus 10.4, ob Firefox Android die Dringlichkeit `high` weitergibt, ist damit praktisch beantwortet: Die Meldungen kamen pünktlich, kein Handlungsbedarf.
+
+**Nur mit Einschränkung (bekannte Grenzen, keine Fehler):**
+- Redmi: pünktlich nur mit den Akku-Einstellungen oben. Ohne sie ist mit Verspätung zu rechnen (Abschnitt 2.2 und 11; nicht ohne diese Einstellungen getestet, 9.3 Punkt 12 Standard-Akku-Lauf wurde nicht gemeldet).
+- iPhone: nur in der App vom Home-Bildschirm, ab iOS 16.4, Erlaubnis nur per Tippen; Fokus-Modi halten Meldungen zurück.
+- Windows-PC: Meldungen kommen nur, solange der Browser läuft.
+- Der Tagesüberblick nennt nur Zahlen und zählt, was beim Server angekommen ist (4.5).
+
+**Nicht im Protokoll gemeldet (ohne Befund nachzutragen):** iOS-Version von Dilans iPhone, Lauf mit Akku „Standard“ auf dem Redmi, Neustart-Test und geschlossener Browser am PC (9.3 Punkt 3). Siehe Backlog in `PLAN.md`.
+
+## 13. Benachrichtigungen einrichten und Probleme lösen
+
+Für alle, die Krümel nutzen. Benachrichtigungen sind freiwillig und pro Gerät: Jedes Handy und jeder PC wird einzeln eingeschaltet.
+
+**Einschalten (alle Geräte):** Krümel öffnen, Einstellungen, Kachel „Benachrichtigungen“, „Auf diesem Gerät einschalten“. Dein Gerät fragt dann, ob Krümel Benachrichtigungen schicken darf: „Erlauben“ wählen. Danach „Testbenachrichtigung senden“ drücken; nach wenigen Sekunden sollte eine Meldung erscheinen.
+
+**iPhone und iPad:**
+- Es geht nur mit der Krümel-App vom Home-Bildschirm und ab iOS 16.4 (Einstellungen → Allgemein → Info zeigt die Version). Im normalen Safari-Fenster gibt es die Funktion nicht.
+- Zum Home-Bildschirm hinzufügen: Teilen-Symbol → „Zum Home-Bildschirm“. Danach die App von dort öffnen und dort einschalten.
+- Kommt nichts an: Einstellungen → Mitteilungen → Krümel → „Mitteilungen erlauben“ an. Prüfe auch, ob ein Fokus-Modus („Nicht stören“) läuft; er hält Meldungen zurück.
+- Wenn du die App vom Home-Bildschirm löschst, ist die Einstellung weg: neu hinzufügen, anmelden, neu einschalten.
+
+**Android mit Firefox (zum Beispiel Redmi, Xiaomi, POCO):**
+- Zwei Erlaubnisse müssen stimmen: in Firefox für die Seite (Menü ⋮ → Einstellungen → Website-Berechtigungen → Benachrichtigungen → Krümel → Erlauben) und in Android (Einstellungen → Apps → Firefox → Benachrichtigungen an).
+- Damit Meldungen pünktlich kommen, wenn das Handy gesperrt ist: Einstellungen → Apps → Firefox → Akku → „Keine Einschränkungen“, und „Autostart“ für Firefox einschalten. Auf Xiaomi-Geräten beendet die Akku-Verwaltung sonst Firefox im Hintergrund.
+- Auch wenn du die App-Verknüpfung nutzt, kommt die Meldung „von Firefox“ an.
+
+**Android mit Chrome, PC mit Chrome oder Edge:**
+- Symbol links neben der Adresse → Berechtigungen (oder Website-Einstellungen) → Benachrichtigungen → „Zulassen“.
+- Windows: Einstellungen → System → Benachrichtigungen → Browser an, „Nicht stören“ aus.
+- Am PC kommen Meldungen nur, solange der Browser läuft. Edge läuft meist im Hintergrund weiter, Chrome und Firefox eher nicht.
+
+**Was bedeutet „Blockiert“?** Dein Browser oder dein Gerät hat Krümel die Erlaubnis verweigert, zum Beispiel weil „Blockieren“ gewählt wurde. Krümel kann das nicht selbst ändern. Folge der passenden Anleitung oben (die Kachel zeigt sie für deinen Browser auch selbst an), setze die Erlaubnis zurück auf „Zulassen“ oder „Fragen“ und lade Krümel neu. Danach steht in der Kachel wieder „Aus“ und du kannst einschalten.
+
+**Erlaubnis zurücksetzen:** Browser-Einstellungen → Website-Berechtigungen (oder Datenschutz) → Krümel → Benachrichtigungen auf „Fragen“ oder „Zulassen“. Am iPhone: Einstellungen → Mitteilungen → Krümel. Falls das nicht hilft: in Krümel „Auf diesem Gerät ausschalten“, Seite neu laden und wieder einschalten.
+
+**Es kommt nichts an? Prüfe der Reihe nach:**
+1. Steht die Kachel auf „Auf diesem Gerät aktiv“? Sonst einschalten.
+2. Testbenachrichtigung drücken. Kommt sie an, liegt es an den Einstellungen (Tagesüberblick, Wochentage, Ruhezeit) oder daran, dass nichts fällig ist: Ohne fällige Aufgaben gibt es keinen Tagesüberblick.
+3. Ruhezeit und „Nicht stören“ des Geräts prüfen.
+4. Meldungen über die andere Person kommen erst nach etwa 5 Minuten und gebündelt; wer es rückgängig macht, löst keine aus.
+5. Zeigt die Kachel „Gerät abgemeldet“ oder „Bitte neu einschalten“, auf „Neu einschalten“ tippen.
+6. Das Handy kommt lange nicht aus dem Ruhezustand: Akku-Einstellungen wie oben prüfen.
+7. Wenn ein Gerät 90 Tage nicht benutzt wurde, schaltet der Server es aus; einfach neu einschalten.
+
+**Ausschalten:** Kachel „Benachrichtigungen“ → „Auf diesem Gerät ausschalten“. Beim Abmelden werden sie auf dem Gerät automatisch ausgeschaltet.
+
+## 14. Quellen (abgerufen 24.10.2026)
 
 - MDN, Push API: https://developer.mozilla.org/en-US/docs/Web/API/Push_API
 - RFC 8291, Message Encryption for Web Push: https://www.rfc-editor.org/rfc/rfc8291 · RFC 8030 (Web Push Protocol): https://www.rfc-editor.org/rfc/rfc8030 · RFC 8292 (VAPID): https://www.rfc-editor.org/rfc/rfc8292

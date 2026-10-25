@@ -128,6 +128,10 @@ Stand 23.10.2026. Inhalt und „Fertig, wenn“: `ETAPPE2-PLAN.md`, E2-3. Jeder 
 
 **Risiken:** f braucht den endgültigen Mailversand (Anmeldung der zweiten Person). e ist teuer und kann alte Tests instabil machen. Realtime schläft am Handy im Hintergrund (abgefangen durch Abruf beim Sichtbarwerden). Die Checkliste bleibt ein Feld (gleichzeitige Häkchen können verloren gehen, bekannt).
 
+## Benachrichtigungen (Pakete NT)
+
+Abgeschlossen am 25.10.2026 (NT-a bis NT-e, Gerätetest auf PC, Redmi und iPhone bestanden). Plan, Namen und Protokoll: `BENACHRICHTIGUNGEN.md`; Zeilen und Backlog: `PLAN.md`.
+
 ## Pakete vor dem Gerätetest
 
 Stand 23.10.2026, nur Planung. Größe im Vergleich zu E2-2c (mittel) und E2-2d (viele Fälle). Jedes Paket endet mit grünem `check`, Job `db`, Pages und einem Commit; neue Migrationen spielt der PO ein (3g und 5a können eine Runde teilen).
