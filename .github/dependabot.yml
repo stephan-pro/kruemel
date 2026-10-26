@@ -1,16 +1,46 @@
+# Weekly update proposals (WT-a). Dependabot only opens pull requests; nothing is merged by itself
+# (no auto-merge). Patch and minor updates arrive in one pull request per area, every major update
+# in its own, so a risky jump is looked at alone. At most 5 version-update pull requests are open
+# per area. Security updates (after "Dependabot security updates" is switched on) come on their own.
+# Handling: docs/WARTUNG.md.
 version: 2
 updates:
   - package-ecosystem: npm
     directory: /
     schedule:
       interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "Abhängigkeiten (npm)"
     groups:
-      npm:
-        patterns: ["*"]
+      npm-minor-patch:
+        update-types: [minor, patch]
+  # The GitHub Actions in .github/workflows are pinned by commit hash with the version as a plain
+  # comment (`# v7`); Dependabot updates the hash and rewrites that comment. Keep the comment as
+  # nothing but the version, extra text after it is not understood.
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "Abhängigkeiten (Actions)"
     groups:
-      github-actions:
-        patterns: ["*"]
+      actions-minor-patch:
+        update-types: [minor, patch]
+  # The Edge Function `push` (Deno): its imports in deno.json carry exact versions. The same
+  # packages stand in package.json too (nothing compares them automatically), so a proposal here
+  # and the npm one for the same package belong together (docs/WARTUNG.md, Abschnitt 1).
+  - package-ecosystem: deno
+    directory: /supabase/functions/push
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "Abhängigkeiten (Edge Function)"
+    groups:
+      deno-minor-patch:
+        update-types: [minor, patch]

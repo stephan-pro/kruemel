@@ -351,6 +351,8 @@ Plan, Entscheidungen des PO (24.10.2026), Varianten, Datenmodell, Schlüssel und
 
 **EN-c ✅ 26.10.2026** – Rest der Mehrsprachigkeit: Benachrichtigungen (Kachel und Meldungen; Sprache je Gerät in `push_devices.locale`, Migration `20261102120000_push_language.sql`), Impressum und Datenschutzerklärung auf Englisch (Übersetzung, Deutsch maßgeblich), Ladebild, zweisprachige Mail-Vorlage, Beispieldaten, Fundstellen in Sicherungen und im Zustand gehaltene Fehler; Sperrregeln für `sed -i` und `biome --write` in `.claude/settings.json`; Tests `english-c.spec.ts`, `legalTexts.test.ts`, Fälle in `messages.test.ts`, `core.test.ts`, `push.test.ts`, `schedule.test.ts`, `partner.test.ts`; Mechanik in `ETAPPE2.md`.
 
+**WT-a ✅ 26.10.2026** – Wartung und Sicherheit auf Dauer: `dependabot.yml` (npm, Actions, Edge Function), Sicherheitsprüfung `scripts/audit.mjs` im nächtlichen Lauf mit Ausnahmeliste, `WARTUNG.md`, `PRUEF-AGENT.md`; Schalter bei GitHub/Supabase offen beim PO.
+
 ## Vorstellungsvideo für Freunde
 
 Ein kurzes Video, das alle Funktionen von Krümel zeigt (Woche bzw. „Heute“, Abhaken und Rückgängig, Übernehmen, Aufgaben anlegen mit Symbol und Checkliste, Erledigt, Statistik, Sicherung, Installieren).

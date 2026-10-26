@@ -1,7 +1,8 @@
 name: check-full
 
 # The full test matrix (`npm run check:full`: Chromium and WebKit, desktop and phone) nightly and by
-# hand, e.g. before a release. Every push runs the faster workflow "check". A separate workflow, so
+# hand, e.g. before a release, plus the security check of the dependencies (scripts/audit.mjs).
+# Every push runs the faster workflow "check". A separate workflow, so
 # that "pages" (which waits for "check") does not publish again after each nightly run.
 on:
   schedule:
@@ -26,6 +27,9 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      # Known vulnerabilities (WT-a): production dependencies high/critical fail the run, unless
+      # listed with reason and expiry in scripts/audit-exceptions.json; development tools only warn.
+      - run: node scripts/audit.mjs
       - run: npx playwright install --with-deps chromium webkit
       - run: npm run check:full
       - if: failure()
