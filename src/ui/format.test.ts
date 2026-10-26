@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { calendarDay } from "../domain/date";
 import type { Completion } from "../domain/task";
+import { t } from "../i18n";
 import {
   assigneeLabel,
   barLabel,
@@ -33,7 +34,6 @@ import {
   greeting,
   importNotice,
   monthShort,
-  PERIOD_LABELS,
   percentOf,
   takeOverNotice,
   todaySummary,
@@ -299,7 +299,7 @@ describe("Anzeige der Statistik", () => {
   const year = { start: calendarDay("2026-01-01"), end: calendarDay("2026-12-31") };
 
   it("Statistik Die Zeiträume haben Namen für die Auswahl und eine Angabe, was gemeint ist", () => {
-    expect(Object.values(PERIOD_LABELS)).toEqual(["Woche", "Monat", "Jahr"]);
+    expect(Object.values(t().statistics.periods)).toEqual(["Woche", "Monat", "Jahr"]);
     expect(describePeriod("week", week)).toBe("KW 43");
     expect(describePeriod("month", month)).toBe("Oktober 2026");
     expect(describePeriod("year", year)).toBe("2026");

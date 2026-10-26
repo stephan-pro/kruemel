@@ -345,6 +345,8 @@ Plan, Entscheidungen des PO (24.10.2026), Varianten, Datenmodell, Schlüssel und
 
 **UX-a ✅ 26.10.2026** – Einstellungen als Übersicht mit fünf Gruppen und Unterseiten (`#/einstellungen/konto|benachrichtigungen|darstellung|daten|rechtliches`); Tests `settings.spec.ts`, `settingsStatus.test.ts`; Muster in `design/DESIGN.md` Abschnitt 7.
 
+**EN-a ✅ 26.10.2026** – Mehrsprachigkeit Deutsch/Englisch: `src/i18n/` (typsichere Sprachdateien, `Intl`), Umschalter „Deutsch | English“ in Darstellung und auf den Anmelde-/Einladungsseiten, Kernoberfläche übersetzt; Tests `i18n.test.ts`, `format.en.test.ts`, `language.spec.ts`; Mechanik, Entscheidungen und Rest für EN-b/EN-c in `ETAPPE2.md`.
+
 ## Vorstellungsvideo für Freunde
 
 Ein kurzes Video, das alle Funktionen von Krümel zeigt (Woche bzw. „Heute“, Abhaken und Rückgängig, Übernehmen, Aufgaben anlegen mit Symbol und Checkliste, Erledigt, Statistik, Sicherung, Installieren).
@@ -376,7 +378,7 @@ Ein kurzes Video, das alle Funktionen von Krümel zeigt (Woche bzw. „Heute“,
 - Vor dem Gerätetest mit der zweiten Person (E2-5): Prüf-Agent mit frischem Blick auf Sicherheit/Zugriffsregeln, Barrierefreiheit und Verständlichkeit der Texte; ergänzt `npm run check`.
 - Mailversand: vom vorübergehenden privaten Gmail auf das Krümel-Konto (oder eigene Domain plus Resend/Brevo) umstellen, danach das private App-Passwort widerrufen. Muss vor E2-5 erledigt sein; kein Codepaket.
 - Nach E2-5: Rückmeldungen zum Redesign sammeln, Impressum, Statistik-Ausbau, Spielelemente.
-- **Englische Fassung EN-a bis EN-d (zurückgestellt, nach Benachrichtigungen; Entscheidung PO 24.10.2026):** Sprache pro Gerät (Automatisch/Deutsch/English), `src/i18n/` ohne neue Abhängigkeit; a Grundlage, b Seiten aus Etappe 1 und `format.ts`, c Codes statt Sätze in Fachlogik und Speicher, d Konto/Haushalt/Abgleich/Mail/Manifest, dazu die Texte der Benachrichtigungen (`src/push/messages.ts`, Spalte `push_devices.locale`); groß. Fertig, wenn `language.spec.ts` mit axe und Unit „beide Sprachen vollständig“ grün sind und die bisherigen E2E deutsch bleiben. Plan: `ETAPPE2.md`, „Englische Fassung“.
+- **Englische Fassung EN-a bis EN-d (EN-a begonnen und fertig 26.10.2026, EN-b bis EN-d offen; Entscheidung PO 24.10.2026):** Sprache pro Gerät (Automatisch/Deutsch/English), `src/i18n/` ohne neue Abhängigkeit; a Grundlage, b Seiten aus Etappe 1 und `format.ts`, c Codes statt Sätze in Fachlogik und Speicher, d Konto/Haushalt/Abgleich/Mail/Manifest, dazu die Texte der Benachrichtigungen (`src/push/messages.ts`, Spalte `push_devices.locale`); groß. Fertig, wenn `language.spec.ts` mit axe und Unit „beide Sprachen vollständig“ grün sind und die bisherigen E2E deutsch bleiben. Plan: `ETAPPE2.md`, „Englische Fassung“.
 - Aus K1 (Entscheidung des PO, 23.10.2026): „Haushalt verlassen / Person entfernen“ in der App (Datenbankfunktion mit Zugriffsregeln, Rückfrage, Tests). Bis dahin geht das nur mit `scripts/sql/testhaushalt-zuruecksetzen.sql` im SQL Editor.
 - **Aus NT-e (Gerätetest 24.10.2026, Protokoll korrigiert am 25.10.2026; nichts umgesetzt):**
   - Redmi: Hintergrundzustellung ungeklärt. Der Tagesüberblick am 24.10. um 22:07 kam nicht an, obwohl der Server ihn laut Log abgeliefert hat (`sent:1`); Verdacht Akku-Verwaltung von HyperOS. Drei Prüfschritte: Akku „Keine Einschränkungen“, Autostart für Firefox, App anpinnen; danach Test bei gesperrtem Handy. Gerät: Redmi. Priorität: hoch.

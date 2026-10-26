@@ -7,6 +7,7 @@ import {
 } from "../../auth/household";
 import { ACCOUNT_TEXTS } from "../accountTexts";
 import { ErrorAlert } from "../components/Alert";
+import { LanguageSwitch } from "../components/LanguageSwitch";
 import { LegalLinks } from "../components/LegalLinks";
 import { PageTitle } from "../components/PageTitle";
 import { HOUSEHOLD_TEXTS, INVITE_FAILURE_TITLES } from "../householdTexts";
@@ -77,6 +78,7 @@ export function InvitePage({
             </button>
           </div>
         </div>
+        <LanguageSwitch variant="compact" />
         <LegalLinks />
       </>
     );
@@ -103,6 +105,7 @@ export function InvitePage({
           </button>
         </div>
       </div>
+      <LanguageSwitch variant="compact" />
       <LegalLinks />
     </>
   );

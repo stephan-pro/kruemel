@@ -16,6 +16,7 @@ import {
   type TaskKind,
 } from "../../domain/taskForm";
 import { DEFAULT_TASK_SYMBOL } from "../../domain/taskSymbols";
+import { t } from "../../i18n";
 import type { PersonNames } from "../../storage/appData";
 import { errorText } from "../errorText";
 import { routeHash } from "../route";
@@ -46,16 +47,22 @@ interface TaskFormProps {
   readonly onDelete?: () => void;
 }
 
-const KINDS: readonly Choice<TaskKind>[] = [
-  { value: "recurring", label: "Wiederkehrend (z. B. Bad putzen)" },
-  { value: "oneOff", label: "Einmalig (z. B. Paket abholen)" },
-];
+function kinds(): readonly Choice<TaskKind>[] {
+  const words = t().taskForm;
+  return [
+    { value: "recurring", label: words.recurring },
+    { value: "oneOff", label: words.oneOff },
+  ];
+}
 
-const UNITS: readonly Choice<string>[] = [
-  { value: "day", label: "Tage" },
-  { value: "week", label: "Wochen" },
-  { value: "month", label: "Monate" },
-];
+function units(): readonly Choice<string>[] {
+  const words = t().taskForm.units;
+  return [
+    { value: "day", label: words.day },
+    { value: "week", label: words.week },
+    { value: "month", label: words.month },
+  ];
+}
 
 /** The element that takes the focus for the field. Radio groups take their first radio. */
 const FOCUS_TARGET: Record<TaskFormField, string> = {
@@ -169,11 +176,12 @@ export function TaskForm({ task, names, today, currentPerson, onSubmit, onDelete
     }
   }
 
-  const dateLabel = recurring ? (creating ? "Erster Termin" : "Nächster Termin") : "Fällig am";
+  const words = t().taskForm;
+  const dateLabel = recurring ? (creating ? words.firstDate : words.nextDate) : words.dueOn;
   const people: readonly Choice<string>[] = [
     { value: "personA", label: names.personA },
     { value: "personB", label: names.personB },
-    { value: "both", label: "Beide" },
+    { value: "both", label: t().common.both },
   ];
 
   return (
@@ -181,21 +189,22 @@ export function TaskForm({ task, names, today, currentPerson, onSubmit, onDelete
       {creating ? (
         <RadioGroup
           name="task-kind"
-          legend="Art der Aufgabe"
-          choices={KINDS}
+          legend={words.kindLegend}
+          choices={kinds()}
           value={kind}
           onChange={chooseKind}
         />
       ) : (
         <p>
-          Art der Aufgabe: <strong>{recurring ? "Wiederkehrend" : "Einmalig"}</strong> (lässt sich
-          nicht ändern)
+          {words.kindFixed(recurring)[0]}
+          <strong>{words.kindFixed(recurring)[1]}</strong>
+          {words.kindFixed(recurring)[2]}
         </p>
       )}
 
       <TextField
         id="task-title"
-        label="Titel"
+        label={words.title}
         value={input.title}
         error={errors.title}
         onInput={(title) => change("title", title)}
@@ -209,11 +218,11 @@ export function TaskForm({ task, names, today, currentPerson, onSubmit, onDelete
       />
 
       {recurring && (
-        <FieldGroup legend="Rhythmus">
+        <FieldGroup legend={words.rhythm}>
           <TextField
             id="task-interval"
-            label="Abstand (Anzahl)"
-            hint="Beispiel: 2 und „Wochen“ ergeben „alle 2 Wochen“."
+            label={words.interval}
+            hint={words.intervalHint}
             value={input.interval}
             inputMode="numeric"
             narrow
@@ -222,9 +231,9 @@ export function TaskForm({ task, names, today, currentPerson, onSubmit, onDelete
           />
           <SelectField
             id="task-unit"
-            label="Einheit"
+            label={words.unit}
             value={input.unit}
-            choices={UNITS}
+            choices={units()}
             error={errors.unit}
             onChange={(unit) => change("unit", unit)}
           />
@@ -234,11 +243,7 @@ export function TaskForm({ task, names, today, currentPerson, onSubmit, onDelete
       <TextField
         id="task-dueDate"
         label={dateLabel}
-        hint={
-          recurring
-            ? "Danach zählt der Rhythmus ab dem Tag, an dem die Aufgabe abgehakt wird."
-            : undefined
-        }
+        hint={recurring ? words.dateHint : undefined}
         type="date"
         min={MIN_DUE_DATE}
         max={MAX_DUE_DATE}
@@ -249,7 +254,7 @@ export function TaskForm({ task, names, today, currentPerson, onSubmit, onDelete
 
       <RadioGroup
         name="task-assignee"
-        legend="Zuständig"
+        legend={words.assignee}
         choices={people}
         value={input.assignee === "" ? undefined : input.assignee}
         error={errors.assignee}
@@ -258,7 +263,7 @@ export function TaskForm({ task, names, today, currentPerson, onSubmit, onDelete
 
       <TextAreaField
         id="task-note"
-        label="Notiz (optional)"
+        label={words.note}
         value={input.note}
         error={errors.note}
         onInput={(note) => change("note", note)}
@@ -281,19 +286,19 @@ export function TaskForm({ task, names, today, currentPerson, onSubmit, onDelete
         error={errors.checklist}
       />
 
-      {saveError && <ErrorAlert title="Nicht gespeichert">{saveError}</ErrorAlert>}
+      {saveError && <ErrorAlert title={t().common.notSaved}>{saveError}</ErrorAlert>}
 
       <div class="button-row">
         <button class="btn btn--primary" type="submit">
-          {creating ? "Aufgabe anlegen" : "Speichern"}
+          {creating ? words.create : t().common.save}
         </button>
         <a class="btn btn--secondary" href={routeHash("tasks")}>
-          Abbrechen
+          {t().common.cancel}
         </a>
         {onDelete && (
           <button class="btn btn--text-warn" type="button" onClick={onDelete}>
             <Trash2 size={20} />
-            Aufgabe löschen …
+            {words.deleteTask}
           </button>
         )}
       </div>

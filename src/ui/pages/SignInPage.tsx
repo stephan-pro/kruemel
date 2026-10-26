@@ -2,6 +2,7 @@ import { useEffect, useState } from "preact/hooks";
 import { AUTH_MESSAGES, type Auth, AuthError, emailAddress, type Session } from "../../auth/auth";
 import { ACCOUNT_TEXTS, CODE_DIGITS, RESEND_AFTER_SECONDS } from "../accountTexts";
 import { TextField, useFieldErrorFocus } from "../components/fields";
+import { LanguageSwitch } from "../components/LanguageSwitch";
 import { LegalLinks } from "../components/LegalLinks";
 import { PageTitle } from "../components/PageTitle";
 import { type CodeStep, rememberedStep, rememberStep } from "../signInStep";
@@ -163,6 +164,7 @@ export function SignInPage({ auth, onSignedIn, notice: farewell, invite }: SignI
             {status}
           </form>
         </div>
+        <LanguageSwitch variant="compact" />
         <LegalLinks />
       </>
     );
@@ -209,6 +211,7 @@ export function SignInPage({ auth, onSignedIn, notice: farewell, invite }: SignI
           </button>
         </div>
       </div>
+      <LanguageSwitch variant="compact" />
       <LegalLinks />
     </>
   );

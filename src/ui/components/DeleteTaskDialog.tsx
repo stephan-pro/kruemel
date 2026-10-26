@@ -1,5 +1,6 @@
 import { useRef } from "preact/hooks";
 import type { Task } from "../../domain/task";
+import { t } from "../../i18n";
 import { ConfirmDialog } from "./ConfirmDialog";
 
 interface DeleteTaskDialogProps {
@@ -9,15 +10,6 @@ interface DeleteTaskDialogProps {
   readonly completionCount: number;
   readonly onConfirm: () => void;
   readonly onCancel: () => void;
-}
-
-function consequence(count: number): string {
-  if (count === 0) {
-    return "Sie hat noch keine Einträge in „Erledigt“.";
-  }
-  return count === 1
-    ? "Auch ihr 1 Eintrag in „Erledigt“ verschwindet."
-    : `Auch ihre ${count} Einträge in „Erledigt“ verschwinden.`;
 }
 
 /** Deleting takes the history of the task with it, so it is only done after this question. */
@@ -32,18 +24,16 @@ export function DeleteTaskDialog({
   if (task !== undefined) {
     lastTask.current = task;
   }
+  const words = t().deleteTask;
   return (
     <ConfirmDialog
       open={task !== undefined}
-      title={`Aufgabe „${lastTask.current?.title ?? ""}“ löschen?`}
-      confirmLabel="Ja, Aufgabe löschen"
+      title={words.title(lastTask.current?.title ?? "")}
+      confirmLabel={words.confirm}
       onConfirm={onConfirm}
       onCancel={onCancel}
     >
-      <p>
-        Die Aufgabe wird gelöscht. {consequence(completionCount)} Das lässt sich nicht rückgängig
-        machen.
-      </p>
+      <p>{words.text(words.consequence(completionCount))}</p>
     </ConfirmDialog>
   );
 }

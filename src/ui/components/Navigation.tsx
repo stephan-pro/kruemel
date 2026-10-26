@@ -1,4 +1,5 @@
 import { Calendar, ChartNoAxesColumn, House, type LucideIcon, Plus, Settings } from "lucide-preact";
+import { t } from "../../i18n";
 import {
   type MainRoute,
   NAVIGATION,
@@ -45,7 +46,7 @@ export function Navigation({ current }: NavigationProps) {
   };
   const [first, second, ...rest] = NAVIGATION;
   return (
-    <nav aria-label="Hauptnavigation" class="main-nav">
+    <nav aria-label={t().nav.main} class="main-nav">
       <ul class="main-nav__list">
         {item(first as MainRoute)}
         {item(second as MainRoute)}
@@ -56,7 +57,7 @@ export function Navigation({ current }: NavigationProps) {
             aria-current={current === "taskNew" ? "page" : undefined}
           >
             <Plus class="main-nav__icon" size={24} strokeWidth={2.6} aria-hidden="true" />
-            <span class="main-nav__label">Neue Aufgabe</span>
+            <span class="main-nav__label">{t().nav.newTask}</span>
           </a>
         </li>
         {rest.map(item)}

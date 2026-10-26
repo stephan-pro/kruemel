@@ -3,6 +3,7 @@ import { useRef, useState } from "preact/hooks";
 import { effectiveAssignee } from "../../domain/assignment";
 import { type CalendarDay, daysBetween } from "../../domain/date";
 import type { Completion, Person, Task } from "../../domain/task";
+import { t } from "../../i18n";
 import type { PersonNames } from "../../storage/appData";
 import { errorText } from "../errorText";
 import {
@@ -85,6 +86,7 @@ export function TaskDetailDialog({
   const recurring = shown?.kind === "recurring";
   const overdueDays = shown === undefined || !open ? 0 : daysBetween(shown.dueDate, today);
   const canTakeOver = open && shown !== undefined && effectiveAssignee(shown) !== person;
+  const words = t().tasks;
 
   return (
     <Modal
@@ -98,7 +100,7 @@ export function TaskDetailDialog({
         <>
           <dl class="details details--dialog">
             <Detail
-              label="Zuständig"
+              label={words.assignee}
               value={describeResponsibility(
                 shown.assignee,
                 shown.kind === "recurring" ? shown.takenOverBy : undefined,
@@ -106,12 +108,12 @@ export function TaskDetailDialog({
               )}
             />
             {shown.kind === "recurring" ? (
-              <Detail label="Rhythmus" value={describeRecurrence(shown.recurrence)} />
+              <Detail label={words.rhythm} value={describeRecurrence(shown.recurrence)} />
             ) : (
-              <Detail label="Art" value="Einmalige Aufgabe" />
+              <Detail label={words.kind} value={words.oneOffTask} />
             )}
             <Detail
-              label={recurring ? "Nächster Termin" : "Fällig am"}
+              label={recurring ? words.nextDate : words.dueOn}
               value={
                 overdueDays > 0
                   ? `${formatDay(shown.dueDate)} (${describeOverdue(overdueDays)})`
@@ -119,15 +121,15 @@ export function TaskDetailDialog({
               }
             />
             {shownCompletion && (
-              <Detail label="Erledigt" value={describeCompletedBy(shownCompletion, names)} />
+              <Detail label={t().detail.done} value={describeCompletedBy(shownCompletion, names)} />
             )}
-            {shown.note && <Detail label="Notiz" value={shown.note} />}
+            {shown.note && <Detail label={words.note} value={shown.note} />}
           </dl>
 
           {open && shown.checklist.length > 0 && (
             <section class="dialog__section" aria-labelledby="detail-checkliste">
               <h3 class="dialog__subtitle" id="detail-checkliste">
-                Checkliste
+                {t().checklist.title}
                 <span class="dialog__subtitle-aside">{describeChecklist(shown.checklist)}</span>
               </h3>
               <ChecklistToggles
@@ -140,12 +142,12 @@ export function TaskDetailDialog({
             </section>
           )}
 
-          {error && <ErrorAlert title="Nicht gespeichert">{error}</ErrorAlert>}
+          {error && <ErrorAlert title={t().common.notSaved}>{error}</ErrorAlert>}
 
           <div class="button-row">
             <a class="btn btn--secondary" href={editTaskHash(shown.id)}>
               <Pencil size={18} />
-              Bearbeiten
+              {t().common.edit}
             </a>
             {canTakeOver && (
               <button
@@ -153,11 +155,11 @@ export function TaskDetailDialog({
                 type="button"
                 onClick={() => void attempt(() => onTakeOver(shown))}
               >
-                Übernehmen
+                {t().common.takeOver}
               </button>
             )}
             <button class="btn btn--primary" type="button" onClick={close}>
-              Schließen
+              {t().common.close}
             </button>
           </div>
         </>

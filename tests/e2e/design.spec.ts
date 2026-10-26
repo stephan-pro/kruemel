@@ -1,6 +1,6 @@
 import { expect, type Page, test } from "@playwright/test";
 import { demoData } from "../../src/demo/demoData";
-import { APPEARANCE_TEXTS } from "../../src/ui/appearanceTexts";
+import { de } from "../../src/i18n/de";
 import { expectNoAccessibilityViolations } from "./axe";
 import {
   deviceKey,
@@ -244,7 +244,7 @@ test.describe("N1 Eigenes Design", () => {
 
 const logo = (page: Page) => page.locator(".app-header .kruemel-logo");
 const logoSwitch = (page: Page) =>
-  page.getByRole("switch", { name: APPEARANCE_TEXTS.logoMotionLabel });
+  page.getByRole("switch", { name: de.appearance.logoMotionLabel });
 
 /** How many animations run on the Krümel of the header (the CSS ones count, also while waiting). */
 async function logoAnimations(page: Page): Promise<number> {
@@ -312,7 +312,7 @@ test.describe("E2-4c Krümel in der Kopfzeile", () => {
     await openSettings(page, "Darstellung");
 
     await expect(logoSwitch(page)).toBeChecked();
-    await expect(logoSwitch(page)).toHaveAccessibleDescription(APPEARANCE_TEXTS.logoMotionHint);
+    await expect(logoSwitch(page)).toHaveAccessibleDescription(de.appearance.logoMotionHint);
     await logoSwitch(page).focus();
     await expect(logoSwitch(page)).toBeFocused();
     await page.keyboard.press("Space");

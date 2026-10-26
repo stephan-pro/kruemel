@@ -1,6 +1,7 @@
 import { useRef, useState } from "preact/hooks";
 import { DEFAULT_TAKE_OVER_MODE, type TakeOverMode } from "../../domain/assignment";
 import type { Person, Task } from "../../domain/task";
+import { t } from "../../i18n";
 import type { PersonNames } from "../../storage/appData";
 import { ErrorAlert } from "./Alert";
 import { ConfirmDialog } from "./ConfirmDialog";
@@ -55,34 +56,34 @@ export function TakeOverDialog({ task, names, person, onConfirm, onCancel }: Tak
     onCancel();
   }
 
+  const words = t().takeOver;
   return (
     <ConfirmDialog
       open={task !== undefined}
       tone="primary"
       initialFocusId={`take-over-mode-${mode}`}
-      title={`Aufgabe „${shown?.title ?? ""}“ übernehmen?`}
-      confirmLabel="Übernehmen"
+      title={words.title(shown?.title ?? "")}
+      confirmLabel={words.confirm}
       onConfirm={confirm}
       onCancel={cancel}
     >
       <RadioGroup
         name="take-over-mode"
-        legend="Wie lange?"
+        legend={words.legend}
         choices={[
-          { value: "once", label: `Nur dieses Mal (${afterOnce})` },
-          { value: "permanently", label: `Dauerhaft (ab jetzt ist ${names[person]} zuständig)` },
+          { value: "once", label: words.once(afterOnce) },
+          { value: "permanently", label: words.permanently(names[person]) },
         ]}
         value={mode}
         onChange={setMode}
       />
-      {error && <ErrorAlert title="Nicht gespeichert">{error}</ErrorAlert>}
+      {error && <ErrorAlert title={t().common.notSaved}>{error}</ErrorAlert>}
     </ConfirmDialog>
   );
 }
 
 /** Who is responsible again in the next cycle: "danach ist wieder Alex zuständig". */
 function describeAfterOnce(task: Task, names: PersonNames): string {
-  return task.assignee === "both"
-    ? "danach sind wieder beide zuständig"
-    : `danach ist wieder ${names[task.assignee]} zuständig`;
+  const words = t().takeOver;
+  return task.assignee === "both" ? words.afterBoth : words.afterOne(names[task.assignee]);
 }

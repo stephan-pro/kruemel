@@ -1,5 +1,6 @@
 import type { ComponentChildren } from "preact";
 import { useId } from "preact/hooks";
+import { t } from "../../i18n";
 import { Modal } from "./Modal";
 
 interface ConfirmDialogProps {
@@ -55,7 +56,7 @@ export function ConfirmDialog({
           autofocus={initialFocusId === undefined}
           onClick={onCancel}
         >
-          Abbrechen
+          {t().common.cancel}
         </button>
         <button class={`btn btn--${tone}`} type="button" onClick={onConfirm}>
           {confirmLabel}

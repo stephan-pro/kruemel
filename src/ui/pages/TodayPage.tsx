@@ -5,6 +5,7 @@ import { addWeeks, type CalendarDay } from "../../domain/date";
 import type { Completion, Person, Task } from "../../domain/task";
 import { dayList } from "../../domain/today";
 import { type DoneWeekEntry, type OpenWeekEntry, weekView } from "../../domain/week";
+import { t } from "../../i18n";
 import type { PersonNames } from "../../storage/appData";
 import { PageTitle } from "../components/PageTitle";
 import { TaskSymbol } from "../components/TaskSymbol";
@@ -38,10 +39,13 @@ interface TodayPageProps {
   readonly onChecklistItem: (taskId: string, itemId: string, checked: boolean) => Promise<Task>;
 }
 
-const FILTERS: readonly { readonly value: TaskFilter; readonly label: string }[] = [
-  { value: "mine", label: "Meine" },
-  { value: "all", label: "Alle" },
-];
+function filters(): readonly { readonly value: TaskFilter; readonly label: string }[] {
+  const words = t().today;
+  return [
+    { value: "mine", label: words.filterMine },
+    { value: "all", label: words.filterAll },
+  ];
+}
 
 /** The circumference of the ring (radius 25). */
 const RING = 2 * Math.PI * 25;
@@ -128,11 +132,11 @@ export function TodayPage({
           </span>
           <span class="today__date">{formatLongDay(today)}</span>
         </div>
-        <nav aria-label="Woche wechseln" class="week-pill">
+        <nav aria-label={t().common.changeWeek} class="week-pill">
           <button
             class="week-pill__step"
             type="button"
-            aria-label="Vorherige Woche"
+            aria-label={t().common.previousWeek}
             onClick={() => changeWeek(weekOffset - 1)}
           >
             <ChevronLeft size={18} />
@@ -144,14 +148,14 @@ export function TodayPage({
           <button
             class="week-pill__step"
             type="button"
-            aria-label="Nächste Woche"
+            aria-label={t().common.nextWeek}
             onClick={() => changeWeek(weekOffset + 1)}
           >
             <ChevronRight size={18} />
           </button>
           {weekOffset !== 0 && (
             <button class="week-pill__today" type="button" onClick={() => changeWeek(0)}>
-              Diese Woche
+              {t().common.thisWeek}
             </button>
           )}
         </nav>
@@ -168,10 +172,10 @@ export function TodayPage({
 
       {tasks.length === 0 ? (
         <div class="tile tile--narrow">
-          <p>Es gibt noch keine Aufgaben.</p>
+          <p>{t().common.noTasksYet}</p>
           <div class="button-row">
             <a class="btn btn--primary" href={newTaskHash()}>
-              Erste Aufgabe anlegen
+              {t().common.createFirstTask}
             </a>
           </div>
         </div>
@@ -179,7 +183,7 @@ export function TodayPage({
         <>
           <section class="today__week" aria-labelledby="deine-woche">
             <h2 class="section-label" id="deine-woche">
-              Deine Woche
+              {t().today.yourWeek}
             </h2>
             <ol class="day-fields">
               {mine.days.map((view) => {
@@ -211,7 +215,7 @@ export function TodayPage({
           <div class="today__tiles">
             <section class="stat-tile" aria-labelledby="kachel-du">
               <h2 class="stat-tile__label" id="kachel-du">
-                Deine Woche
+                {t().today.yourWeek}
               </h2>
               <p class="stat-tile__value">
                 <span aria-hidden="true">
@@ -219,20 +223,23 @@ export function TodayPage({
                   <span class="stat-tile__of"> / {mine.progress.due}</span>
                 </span>
                 <span class="visually-hidden">
-                  {mine.progress.done} von {mine.progress.due}
+                  {t().common.xOfY(mine.progress.done, mine.progress.due)}
                 </span>
               </p>
-              <p class="stat-tile__text">Aufgaben geschafft</p>
+              <p class="stat-tile__text">{t().today.tasksDone}</p>
             </section>
             <section class="stat-tile stat-tile--together" aria-labelledby="kachel-wir">
               <TogetherRing done={together.progress.done} due={together.progress.due} />
               <div class="stat-tile__body">
                 <h2 class="stat-tile__label" id="kachel-wir">
-                  Gemeinsam
+                  {t().today.together}
                 </h2>
                 <p class="stat-tile__text">
-                  {together.progress.done} von {together.progress.due}{" "}
-                  {weekOffset === 0 ? "diese Woche" : "in dieser Woche"}
+                  {t().today.togetherText(
+                    together.progress.done,
+                    together.progress.due,
+                    weekOffset === 0,
+                  )}
                 </p>
               </div>
             </section>
@@ -241,12 +248,14 @@ export function TodayPage({
           <section class="today__list" aria-labelledby="liste-titel">
             <div class="today__list-head">
               <h2 class="section-label" id="liste-titel" tabIndex={-1} ref={listHeading}>
-                {isToday ? "Heute" : formatShortDay(day)}{" "}
-                {filter === "mine" ? "für dich" : "für euch"}
+                {t().today.listTitle(
+                  isToday ? t().today.today : formatShortDay(day),
+                  filter === "mine",
+                )}
               </h2>
               <fieldset class="filter-pill">
-                <legend class="visually-hidden">Aufgaben filtern</legend>
-                {FILTERS.map(({ value, label }) => (
+                <legend class="visually-hidden">{t().common.filterTasks}</legend>
+                {filters().map(({ value, label }) => (
                   <button
                     key={value}
                     class="filter-pill__option"
@@ -260,7 +269,7 @@ export function TodayPage({
               </fieldset>
             </div>
             {list.open.length === 0 && list.done.length === 0 ? (
-              <p class="muted">Für diesen Tag steht nichts an.</p>
+              <p class="muted">{t().today.nothingThatDay}</p>
             ) : (
               <ul class="today-cards">
                 {list.open.map((entry) => (
@@ -302,7 +311,7 @@ function TogetherRing({ done, due }: { readonly done: number; readonly due: numb
       height="62"
       viewBox="0 0 62 62"
       role="img"
-      aria-label={`Gemeinsam ${done} von ${due} erledigt`}
+      aria-label={t().today.ringLabel(done, due)}
     >
       <circle class="ring__track" cx="31" cy="31" r="25" fill="none" stroke-width="7" />
       <circle
@@ -360,7 +369,7 @@ function OpenCard({ entry, names, showWho, actions, onComplete }: OpenCardProps)
           {(daysOverdue === 0 || showWho) && (
             <span class="today-card__meta">
               {responsibility} ·{" "}
-              {task.kind === "recurring" ? describeRecurrence(task.recurrence) : "einmalig"}
+              {task.kind === "recurring" ? describeRecurrence(task.recurrence) : t().common.oneOff}
             </span>
           )}
         </span>
@@ -368,7 +377,7 @@ function OpenCard({ entry, names, showWho, actions, onComplete }: OpenCardProps)
       <button
         class="tick-round"
         type="button"
-        aria-label={`Abhaken: ${task.title}`}
+        aria-label={t().common.tickOffTask(task.title)}
         onClick={() => onComplete(task)}
       >
         <Check class="tick-round__icon" size={22} strokeWidth={3} />
@@ -402,7 +411,7 @@ function DoneCard({ entry, names, currentPerson, actions }: DoneCardProps) {
           <span class="today-card__meta">{describeDoneAt(completion, names, currentPerson)}</span>
         </span>
       </button>
-      <span class="tick-round tick-round--done" role="img" aria-label="Erledigt">
+      <span class="tick-round tick-round--done" role="img" aria-label={t().today.done}>
         <Check size={20} strokeWidth={3} />
       </span>
     </li>

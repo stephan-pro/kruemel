@@ -160,6 +160,7 @@ export default defineConfig(({ mode }) => {
           "src/sync/**/*.ts",
           "src/auth/**/*.ts",
           "src/push/**/*.ts",
+          "src/i18n/**/*.ts",
           "src/backend.ts",
           "supabase/functions/**/*.ts",
         ],
@@ -173,6 +174,12 @@ export default defineConfig(({ mode }) => {
           "src/sync/browserFake.ts",
           "src/sync/browserShared.ts",
           "src/push/browserPush.ts",
+          // The language files are texts; their shape is checked by the type checker and by
+          // `i18n.test.ts`, their small rules by the tests of `format.ts` in both languages.
+          // `useLanguage.ts` is a hook of the page (E2E).
+          "src/i18n/de.ts",
+          "src/i18n/en.ts",
+          "src/i18n/useLanguage.ts",
           "supabase/functions/**/*.test.ts",
           "supabase/functions/**/*.cases.ts",
           "supabase/functions/*/index.ts",

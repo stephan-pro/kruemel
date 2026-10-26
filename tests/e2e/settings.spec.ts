@@ -1,6 +1,6 @@
 import { expect, type Page, test } from "@playwright/test";
+import { de } from "../../src/i18n/de";
 import { NOTIFICATION_STATUS_TEXTS, NOTIFICATION_TEXTS } from "../../src/ui/notificationTexts";
-import { SETTINGS_GROUP_TITLES, SETTINGS_TEXTS } from "../../src/ui/settingsTexts";
 import { expectNoAccessibilityViolations } from "./axe";
 import {
   goToPage,
@@ -15,7 +15,19 @@ import { mockPush } from "./pushMock";
 // UX-a: "Einstellungen" is an overview with five rows (one per group) and a page for each group.
 // The tiles inside the groups are tested where they always were (household, backup, install …).
 
-const STATUS = SETTINGS_TEXTS.status;
+const SETTINGS_TEXTS = de.settings;
+const SETTINGS_GROUP_TITLES = {
+  account: "Konto und Haushalt",
+  notifications: "Benachrichtigungen",
+  appearance: "Darstellung",
+  data: "Daten",
+  legal: "Rechtliches",
+} as const satisfies Record<string, SettingsGroup>;
+const STATUS = {
+  ...SETTINGS_TEXTS.status,
+  /** The row "Darstellung" names the language first (EN-a); the tests run in German. */
+  motion: (moving: boolean) => SETTINGS_TEXTS.status.appearance("Deutsch", moving),
+};
 const GROUPS: readonly { title: SettingsGroup; hash: string }[] = [
   { title: SETTINGS_GROUP_TITLES.account, hash: "#/einstellungen/konto" },
   { title: SETTINGS_GROUP_TITLES.notifications, hash: "#/einstellungen/benachrichtigungen" },

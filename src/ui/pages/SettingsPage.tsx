@@ -5,10 +5,10 @@ import type { HouseholdInfo, Invite } from "../../auth/household";
 import type { CalendarDay } from "../../domain/date";
 import type { PersonNameInput } from "../../domain/personNames";
 import type { Person } from "../../domain/task";
+import { t } from "../../i18n";
 import type { Notifications } from "../../push/notifications";
 import type { AppData, PersonNames } from "../../storage/appData";
 import type { ColorScheme, SyncStatus } from "../../storage/storage";
-import { APPEARANCE_TEXTS } from "../appearanceTexts";
 import { appAddress } from "../appInfo";
 import { AccountTile } from "../components/AccountTile";
 import { ErrorAlert } from "../components/Alert";
@@ -17,6 +17,7 @@ import { FriendInviteTile } from "../components/FriendInviteTile";
 import { type Choice, RadioGroup } from "../components/fields";
 import { HouseholdTile } from "../components/HouseholdTile";
 import { InstallTile } from "../components/InstallTile";
+import { LanguageSwitch } from "../components/LanguageSwitch";
 import { LegalLinks } from "../components/LegalLinks";
 import { NamesForm } from "../components/NamesForm";
 import { NotificationTile } from "../components/NotificationTile";
@@ -29,7 +30,6 @@ import { errorText } from "../errorText";
 import type { InstallWay } from "../install";
 import { LEGAL_TEXTS } from "../legalTexts";
 import { routeHash, routeInfo, type SettingsRoute } from "../route";
-import { SETTINGS_TEXTS } from "../settingsTexts";
 
 interface SettingsPageProps {
   /** The group page to show (UX-a); missing: the overview. */
@@ -104,11 +104,14 @@ function otherMember(info: HouseholdInfo, names: PersonNames): string | undefine
   return other === undefined ? undefined : names[other];
 }
 
-const SCHEMES: readonly Choice<ColorScheme>[] = [
-  { value: "light", label: "Hell" },
-  { value: "dark", label: "Dunkel" },
-  { value: "auto", label: "Automatisch (wie das Gerät)" },
-];
+function schemes(): readonly Choice<ColorScheme>[] {
+  const { appearance } = t();
+  return [
+    { value: "light", label: appearance.light },
+    { value: "dark", label: appearance.dark },
+    { value: "auto", label: appearance.auto },
+  ];
+}
 
 export function SettingsPage({
   group,
@@ -259,39 +262,42 @@ export function SettingsPage({
       />
     ),
     settingsAppearance: (
-      /* N8: takes effect at once, without "Speichern": it only changes how this device looks. */
-      <section class="tile tile--narrow form" aria-labelledby="darstellung">
-        <h2 class="tile__title" id="darstellung">
-          Darstellung
-        </h2>
-        <p class="muted">Gilt nur für dieses Gerät und wirkt sofort.</p>
-        <RadioGroup
-          name="farbschema"
-          legend="Farbschema"
-          choices={SCHEMES}
-          value={colorScheme}
-          onChange={chooseScheme}
-        />
-        {schemeError && <ErrorAlert title="Nicht gespeichert">{schemeError}</ErrorAlert>}
-        <div class="choice">
-          <input
-            class="choice__input choice__input--switch"
-            type="checkbox"
-            role="switch"
-            id="kruemel-bewegt-sich"
-            checked={logoMotion}
-            aria-checked={logoMotion}
-            aria-describedby="kruemel-bewegt-sich-hinweis"
-            onChange={(event) => void chooseLogoMotion(event.currentTarget.checked)}
+      <>
+        <LanguageSwitch variant="tile" />
+        {/* N8: takes effect at once, without "Speichern": it only changes how this device looks. */}
+        <section class="tile tile--narrow form" aria-labelledby="darstellung">
+          <h2 class="tile__title" id="darstellung">
+            {t().appearance.title}
+          </h2>
+          <p class="muted">{t().appearance.scope}</p>
+          <RadioGroup
+            name="farbschema"
+            legend={t().appearance.schemeLegend}
+            choices={schemes()}
+            value={colorScheme}
+            onChange={chooseScheme}
           />
-          <label class="choice__label" for="kruemel-bewegt-sich">
-            {APPEARANCE_TEXTS.logoMotionLabel}
-          </label>
-        </div>
-        <p class="muted" id="kruemel-bewegt-sich-hinweis">
-          {APPEARANCE_TEXTS.logoMotionHint}
-        </p>
-      </section>
+          {schemeError && <ErrorAlert title={t().common.notSaved}>{schemeError}</ErrorAlert>}
+          <div class="choice">
+            <input
+              class="choice__input choice__input--switch"
+              type="checkbox"
+              role="switch"
+              id="kruemel-bewegt-sich"
+              checked={logoMotion}
+              aria-checked={logoMotion}
+              aria-describedby="kruemel-bewegt-sich-hinweis"
+              onChange={(event) => void chooseLogoMotion(event.currentTarget.checked)}
+            />
+            <label class="choice__label" for="kruemel-bewegt-sich">
+              {t().appearance.logoMotionLabel}
+            </label>
+          </div>
+          <p class="muted" id="kruemel-bewegt-sich-hinweis">
+            {t().appearance.logoMotionHint}
+          </p>
+        </section>
+      </>
     ),
     settingsData: (
       <>
@@ -318,10 +324,10 @@ export function SettingsPage({
       <a
         class="btn btn--quiet settings-back"
         href={routeHash("settings")}
-        aria-label={SETTINGS_TEXTS.backLabel}
+        aria-label={t().settings.backLabel}
       >
         <ArrowLeft size={20} aria-hidden="true" />
-        {SETTINGS_TEXTS.title}
+        {t().settings.title}
       </a>
       <PageTitle title={routeInfo(group).title} />
       <div class="page-stack">{tiles[group]}</div>

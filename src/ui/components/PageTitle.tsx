@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "preact/hooks";
+import { getLanguage } from "../../i18n/language";
 
 export const APP_NAME = "Krümel";
 
@@ -32,9 +33,15 @@ export function PageTitle({ title, heading, takeFocus = true }: PageTitleProps) 
   // itself for the first one and keep the focus away.
   const first = useRef(!headingShown);
   headingShown = true;
+  // The title also changes with the language (EN-a); that is no new page, so the focus stays where
+  // the person put it (on the language button, say).
+  const language = getLanguage();
+  const lastLanguage = useRef(language);
   useEffect(() => {
     document.title = `${title} – ${APP_NAME}`;
-    if (!first.current && takeFocus) {
+    const languageChanged = lastLanguage.current !== language;
+    lastLanguage.current = language;
+    if (!first.current && takeFocus && !languageChanged) {
       element.current?.focus();
     }
     first.current = false;

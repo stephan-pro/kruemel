@@ -1001,6 +1001,30 @@ main:focus {
   color: var(--on-inverse);
 }
 
+/* The language switch (EN-a): in a tile, or as a row on the pages without an account. */
+.language-switch {
+  min-width: 0;
+  margin: 16px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.language-switch .segmented {
+  display: inline-flex;
+}
+
+.language-switch__label {
+  margin-bottom: 4px;
+  padding: 0;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.language-switch__buttons {
+  align-self: flex-start;
+}
+
 /* ---------- Forms ---------- */
 
 .form {

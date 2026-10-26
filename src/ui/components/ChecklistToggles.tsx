@@ -1,5 +1,6 @@
 import { Check } from "lucide-preact";
 import type { Task } from "../../domain/task";
+import { t } from "../../i18n";
 
 interface ChecklistTogglesProps {
   readonly task: Task;
@@ -17,7 +18,7 @@ interface ChecklistTogglesProps {
 export function ChecklistToggles({ task, variant, onToggle }: ChecklistTogglesProps) {
   return (
     <fieldset class={`check-group check-group--${variant}`}>
-      <legend class="visually-hidden">Checkliste: {task.title}</legend>
+      <legend class="visually-hidden">{t().common.checklistOfTask(task.title)}</legend>
       {task.checklist.map((item) => (
         <label class="check" key={item.id}>
           <input

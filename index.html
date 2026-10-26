@@ -41,6 +41,24 @@
       } catch {
         // No storage, no choice: follow the device.
       }
+
+      // EN-a: the language of the page before the first drawing, by the rule of
+      // src/i18n/language.ts: the choice kept on this device, else the browser's (en gives
+      // English, everything else German). In this one script: the content security policy
+      // (src/csp.ts) allows exactly one inline script.
+      (() => {
+        let language = "";
+        try {
+          language = localStorage.getItem("kruemel:language") || "";
+        } catch {
+          // No storage, no choice.
+        }
+        if (language !== "de" && language !== "en") {
+          const first = String(navigator.languages?.[0] || navigator.language || "");
+          language = first.toLowerCase().split("-")[0] === "en" ? "en" : "de";
+        }
+        document.documentElement.lang = language;
+      })();
     </script>
   </head>
   <body>

@@ -78,7 +78,7 @@ describe("Navigation (Hash-Router)", () => {
   it("Jede Seite hat einen Titel für Überschrift und Browser-Tab", () => {
     expect(routeInfo("week").title).toBe("Wochenübersicht");
     expect(routeInfo("statistics").title).toBe("Statistik");
-    expect(ROUTES.every(({ title, label }) => title !== "" && label !== "")).toBe(true);
+    expect(ROUTES.every(({ route }) => routeInfo(route).title !== "")).toBe(true);
   });
 });
 

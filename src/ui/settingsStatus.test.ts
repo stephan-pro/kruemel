@@ -47,9 +47,9 @@ describe("UX-a Statusangaben der Einstellungen", () => {
   });
 
   it("Darstellung und Rechtliches", () => {
-    expect(settingsStatus(base).appearance).toBe("Krümel bewegt sich: an");
+    expect(settingsStatus(base).appearance).toBe("Deutsch · Krümel bewegt sich: an");
     expect(settingsStatus({ ...base, logoMotion: false }).appearance).toBe(
-      "Krümel bewegt sich: aus",
+      "Deutsch · Krümel bewegt sich: aus",
     );
     expect(settingsStatus(base).legal).toBe("Impressum, Datenschutz");
   });

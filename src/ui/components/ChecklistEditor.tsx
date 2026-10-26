@@ -2,6 +2,7 @@ import { Plus, Trash2 } from "lucide-preact";
 import { useState } from "preact/hooks";
 import { addChecklistItem, type ChecklistItem, removeChecklistItem } from "../../domain/checklist";
 import { checklistItemError } from "../../domain/taskForm";
+import { t } from "../../i18n";
 import { ErrorMessage, errorId } from "./fields";
 
 interface ChecklistEditorProps {
@@ -47,24 +48,21 @@ export function ChecklistEditor({
     const text = draft.trim();
     onChange(addChecklistItem({ checklist: items }, { id: crypto.randomUUID(), text }).checklist);
     onDraft("");
-    setAnnouncement(`Eintrag „${text}“ hinzugefügt.`);
+    setAnnouncement(t().checklist.added(text));
     document.getElementById(id)?.focus();
   }
 
   function remove(item: ChecklistItem) {
     onChange(removeChecklistItem({ checklist: items }, item.id).checklist);
-    setAnnouncement(`Eintrag „${item.text}“ gelöscht.`);
+    setAnnouncement(t().checklist.removed(item.text));
     // The button that was pressed is gone: the focus goes to the field for the next item.
     document.getElementById(id)?.focus();
   }
 
   return (
     <fieldset class="choices" aria-describedby={error ? groupErrorId : undefined}>
-      <legend class="field__label">Checkliste (optional)</legend>
-      <span class="field__hint">
-        Zum Beispiel die Schritte einer Aufgabe oder eine Einkaufsliste. Die Einträge lassen sich in
-        der Wochenübersicht abhaken.
-      </span>
+      <legend class="field__label">{t().checklist.legend}</legend>
+      <span class="field__hint">{t().checklist.hint}</span>
       {error && <ErrorMessage id={groupErrorId} message={error} />}
       {items.length > 0 && (
         <ul class="checklist-editor">
@@ -74,7 +72,7 @@ export function ChecklistEditor({
               <button
                 class="icon-btn"
                 type="button"
-                aria-label={`Eintrag löschen: ${item.text}`}
+                aria-label={t().checklist.removeItem(item.text)}
                 onClick={() => remove(item)}
               >
                 <Trash2 size={20} />
@@ -85,7 +83,7 @@ export function ChecklistEditor({
       )}
       <div class="field">
         <label class="field__label" for={id}>
-          Neuer Eintrag
+          {t().checklist.newItem}
         </label>
         {draftError && <ErrorMessage id={errorId(id)} message={draftError} />}
         <div class="checklist-editor__add">
@@ -108,7 +106,7 @@ export function ChecklistEditor({
           />
           <button class="btn btn--secondary" type="button" onClick={add}>
             <Plus size={20} />
-            Hinzufügen
+            {t().checklist.add}
           </button>
         </div>
       </div>

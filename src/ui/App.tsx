@@ -13,6 +13,8 @@ import {
   takeOverInData,
   undoInData,
 } from "../domain/taskManagement";
+import { t } from "../i18n";
+import { useLanguage } from "../i18n/useLanguage";
 import type { Notifications } from "../push/notifications";
 import { onNewVersion } from "../registerServiceWorker";
 import type { AppData, PersonNames } from "../storage/appData";
@@ -253,6 +255,8 @@ export function App({
   shared,
   push,
 }: AppProps) {
+  // The whole app draws again when the language changes; the texts are read while drawing.
+  useLanguage();
   const [session, setSession] = useSession(auth);
   const notifications = useMemo(
     () => (push !== undefined && session != null ? push.create(session.userId) : undefined),
@@ -517,7 +521,9 @@ export function App({
         ? [...data.tasks, task]
         : data.tasks.map((candidate) => (candidate.id === task.id ? task : candidate));
     await saveData({ ...data, tasks });
-    setNotice(`Aufgabe „${task.title}“ ${existing === undefined ? "angelegt" : "gespeichert"}.`);
+    setNotice(
+      existing === undefined ? t().notices.created(task.title) : t().notices.changed(task.title),
+    );
     location.hash = routeHash("tasks");
   }
 
@@ -529,7 +535,7 @@ export function App({
     }
     const title = state.data.tasks.find((task) => task.id === taskId)?.title ?? "";
     await saveData(deleteTask(state.data, taskId));
-    setNotice(`Aufgabe „${title}“ gelöscht.`);
+    setNotice(t().notices.deleted(title));
     location.hash = routeHash("tasks");
   }
 
@@ -901,7 +907,7 @@ export function App({
         type="button"
         onClick={() => document.getElementById("inhalt")?.focus()}
       >
-        Zum Inhalt springen
+        {t().app.skipLink}
       </button>
       {/* Phones: a bar on top with the navigation fixed at the bottom; wide screens: a column. */}
       <header class="app-header">
@@ -970,7 +976,7 @@ export function App({
         <main id="inhalt" tabIndex={-1}>
           {isLegalRoute(route) && <LegalPage route={route} />}
           {(gate === "waiting" || (gate === "open" && state.status === "loading")) && (
-            <p role="status">Wird geladen …</p>
+            <p role="status">{t().app.loading}</p>
           )}
           {gate === "signIn" && auth && (
             <SignInPage

@@ -3,6 +3,7 @@ import "@fontsource-variable/archivo/wght.css";
 import "./ui/tokens.css";
 import "./ui/app.css";
 import { type ComponentChild, render } from "preact";
+import { initLanguage } from "./i18n/language";
 import { registerServiceWorker } from "./registerServiceWorker";
 import { createLocalStorage, type KeyValueStore } from "./storage/localStorage";
 import { App } from "./ui/App";
@@ -33,6 +34,9 @@ if (!root) {
 
 const store = browserStore();
 const container: HTMLElement = root;
+
+// The language of this device: the choice kept here, otherwise the browser's (EN-a).
+initLanguage(store, navigator.languages?.length ? navigator.languages : [navigator.language]);
 
 /** Draws the app in place of the loading picture of index.html. */
 function show(app: ComponentChild): void {

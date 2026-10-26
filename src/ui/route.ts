@@ -1,7 +1,7 @@
 // The pages and their addresses (hash router: "#/woche" …). Pure functions; the page itself
 // listens to `hashchange`.
 
-import { SETTINGS_GROUP_TITLES } from "./settingsTexts";
+import { t } from "../i18n";
 
 /** The pages in the navigation (the plus for a new task is a link to a form, not a page). */
 export type MainRoute = "today" | "week" | "statistics" | "settings";
@@ -28,33 +28,27 @@ export type Route = ListedRoute | "taskNew" | "taskEdit";
 
 interface RouteInfo<R extends ListedRoute = ListedRoute> {
   readonly route: R;
-  /** Part after "#/". */
+  /**
+   * Part after "#/". The addresses are German in every language, so a link keeps working when the
+   * language changes. The names of the pages are in the language files (`routes`).
+   */
   readonly path: string;
-  /** Short text in the navigation. */
-  readonly label: string;
-  /** Page heading and, with the app name, the title of the browser tab. */
-  readonly title: string;
-}
-
-/** A group page of the settings: its address is below "#/einstellungen/", its name the title. */
-function groupInfo(route: SettingsRoute, path: string, title: string): RouteInfo {
-  return { route, path: `einstellungen/${path}`, label: title, title };
 }
 
 export const ROUTES: readonly RouteInfo[] = [
-  { route: "today", path: "heute", label: "Heute", title: "Heute" },
-  { route: "week", path: "woche", label: "Woche", title: "Wochenübersicht" },
-  { route: "tasks", path: "aufgaben", label: "Aufgaben", title: "Aufgaben" },
-  { route: "done", path: "erledigt", label: "Erledigt", title: "Erledigt" },
-  { route: "statistics", path: "statistik", label: "Statistik", title: "Statistik" },
-  { route: "settings", path: "einstellungen", label: "Einstellungen", title: "Einstellungen" },
-  groupInfo("settingsAccount", "konto", SETTINGS_GROUP_TITLES.account),
-  groupInfo("settingsNotifications", "benachrichtigungen", SETTINGS_GROUP_TITLES.notifications),
-  groupInfo("settingsAppearance", "darstellung", SETTINGS_GROUP_TITLES.appearance),
-  groupInfo("settingsData", "daten", SETTINGS_GROUP_TITLES.data),
-  groupInfo("settingsLegal", "rechtliches", SETTINGS_GROUP_TITLES.legal),
-  { route: "imprint", path: "impressum", label: "Impressum", title: "Impressum" },
-  { route: "privacy", path: "datenschutz", label: "Datenschutz", title: "Datenschutzerklärung" },
+  { route: "today", path: "heute" },
+  { route: "week", path: "woche" },
+  { route: "tasks", path: "aufgaben" },
+  { route: "done", path: "erledigt" },
+  { route: "statistics", path: "statistik" },
+  { route: "settings", path: "einstellungen" },
+  { route: "settingsAccount", path: "einstellungen/konto" },
+  { route: "settingsNotifications", path: "einstellungen/benachrichtigungen" },
+  { route: "settingsAppearance", path: "einstellungen/darstellung" },
+  { route: "settingsData", path: "einstellungen/daten" },
+  { route: "settingsLegal", path: "einstellungen/rechtliches" },
+  { route: "imprint", path: "impressum" },
+  { route: "privacy", path: "datenschutz" },
 ];
 
 /** Whether the page shows without signing in and before anything else (E2-5c). */
@@ -81,8 +75,6 @@ export const NAVIGATION: readonly MainRoute[] = ["today", "week", "statistics", 
 const NEW_TASK_PATH = "aufgaben/neu";
 const EDIT_TASK_PREFIX = "aufgaben/bearbeiten/";
 
-const TASK_FORM_TITLES = { taskNew: "Neue Aufgabe", taskEdit: "Aufgabe bearbeiten" } as const;
-
 /** "Heute" is the start page, also for an empty or unknown address. */
 export const DEFAULT_ROUTE: MainRoute = "today";
 
@@ -92,16 +84,14 @@ export interface PageLocation {
   readonly taskId?: string;
 }
 
+/** The page heading and, with the app name, the title of the browser tab, in the chosen language. */
 export function routeInfo(route: Route): { readonly title: string } {
-  if (route === "taskNew" || route === "taskEdit") {
-    return { title: TASK_FORM_TITLES[route] };
-  }
-  return ROUTES.find((info) => info.route === route) ?? (ROUTES[0] as RouteInfo);
+  return { title: t().routes[route].title };
 }
 
-/** The text of an entry in the navigation. */
+/** The text of an entry in the navigation, in the chosen language. */
 export function routeLabel(route: MainRoute): string {
-  return (ROUTES.find((info) => info.route === route) as RouteInfo).label;
+  return t().routes[route].label;
 }
 
 /**

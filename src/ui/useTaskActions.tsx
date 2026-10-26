@@ -3,6 +3,7 @@ import { effectiveAssignee, type TakeOverMode } from "../domain/assignment";
 import type { CalendarDay } from "../domain/date";
 import type { Completion, Person, Task } from "../domain/task";
 import type { WeekEntry } from "../domain/week";
+import { t } from "../i18n";
 import type { PersonNames } from "../storage/appData";
 import { ErrorAlert } from "./components/Alert";
 import { TakeOverDialog } from "./components/TakeOverDialog";
@@ -224,7 +225,7 @@ export function useTaskActions(input: TaskActionsInput) {
   const messages = (
     <>
       {notice && (
-        <section class="snackbar" aria-label="Hinweis" tabIndex={-1} ref={noticeBox}>
+        <section class="snackbar" aria-label={t().common.notice} tabIndex={-1} ref={noticeBox}>
           <p>{notice.text}</p>
           {notice.undo !== undefined && (
             <button
@@ -232,12 +233,12 @@ export function useTaskActions(input: TaskActionsInput) {
               type="button"
               onClick={() => notice.undo && undo(notice.undo)}
             >
-              Rückgängig
+              {t().common.undo}
             </button>
           )}
         </section>
       )}
-      {error && <ErrorAlert title="Nicht gespeichert">{error}</ErrorAlert>}
+      {error && <ErrorAlert title={t().common.notSaved}>{error}</ErrorAlert>}
     </>
   );
 

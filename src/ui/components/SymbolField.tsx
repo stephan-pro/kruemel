@@ -1,4 +1,5 @@
 import { TASK_SYMBOLS, type TaskSymbolId } from "../../domain/taskSymbols";
+import { t } from "../../i18n";
 import { ErrorMessage, errorId } from "./fields";
 import { SymbolIcon } from "./TaskSymbol";
 
@@ -21,7 +22,7 @@ export function SymbolField({ name, value, onChange, error }: SymbolFieldProps) 
   const chosen = TASK_SYMBOLS.find((symbol) => symbol.id === value);
   return (
     <fieldset class="choices" aria-describedby={error ? groupErrorId : undefined}>
-      <legend class="field__label">Symbol</legend>
+      <legend class="field__label">{t().taskForm.symbol}</legend>
       {error && <ErrorMessage id={groupErrorId} message={error} />}
       <div class="symbol-field">
         <div class="symbol-grid">
@@ -41,7 +42,7 @@ export function SymbolField({ name, value, onChange, error }: SymbolFieldProps) 
                 for={`${name}-${symbol.id}`}
               >
                 <SymbolIcon symbol={symbol.id} size={24} />
-                <span class="visually-hidden">{symbol.label}</span>
+                <span class="visually-hidden">{t().symbols[symbol.id]}</span>
               </label>
             </div>
           ))}
@@ -50,7 +51,7 @@ export function SymbolField({ name, value, onChange, error }: SymbolFieldProps) 
       {chosen && (
         // Repeats what the checked radio already says, for those who see the tiles.
         <p class="field__hint" aria-hidden="true">
-          Gewählt: {chosen.label}
+          {t().taskForm.chosenSymbol(t().symbols[chosen.id])}
         </p>
       )}
     </fieldset>

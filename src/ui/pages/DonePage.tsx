@@ -2,6 +2,7 @@ import { Undo2 } from "lucide-preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { doneEntries } from "../../domain/done";
 import type { Completion, Task } from "../../domain/task";
+import { t } from "../../i18n";
 import type { PersonNames } from "../../storage/appData";
 import { ErrorAlert } from "../components/Alert";
 import { PageTitle } from "../components/PageTitle";
@@ -59,27 +60,25 @@ export function DonePage({ tasks, completions, names, onUndo }: DonePageProps) {
     <>
       <PageTitle title={routeInfo("done").title} />
       {notice && (
-        <section class="snackbar" aria-label="Hinweis" tabIndex={-1} ref={noticeBox}>
+        <section class="snackbar" aria-label={t().common.notice} tabIndex={-1} ref={noticeBox}>
           <p>{notice}</p>
         </section>
       )}
       <div class="page-stack">
-        {error && <ErrorAlert title="Nicht gespeichert">{error}</ErrorAlert>}
+        {error && <ErrorAlert title={t().common.notSaved}>{error}</ErrorAlert>}
 
         <section class="tile" aria-labelledby="erledigt-liste">
           <div class="tile__head">
             <h2 class="tile__title" id="erledigt-liste">
-              Erledigte Aufgaben
+              {t().doneList.title}
             </h2>
             <span class="tile__aside">{countEntries(entries.length)}</span>
           </div>
           {entries.length === 0 ? (
-            <p class="muted">Noch nichts erledigt. Abgehakte Aufgaben stehen hier.</p>
+            <p class="muted">{t().doneList.empty}</p>
           ) : (
             <>
-              <p class="muted">
-                Rückgängig machen lässt sich nur das letzte Abhaken einer Aufgabe.
-              </p>
+              <p class="muted">{t().doneList.undoHint}</p>
               <ul class="entries">
                 {entries.map(({ completion, task, canUndo }) => (
                   <li class="entry" key={completion.id}>
@@ -93,11 +92,11 @@ export function DonePage({ tasks, completions, names, onUndo }: DonePageProps) {
                         <button
                           class="btn btn--secondary btn--small done-row__undo"
                           type="button"
-                          aria-label={`Rückgängig: ${task.title}`}
+                          aria-label={t().common.undoTask(task.title)}
                           onClick={() => undo(completion.id, task.title)}
                         >
                           <Undo2 size={18} />
-                          Rückgängig
+                          {t().common.undo}
                         </button>
                       )}
                     </div>

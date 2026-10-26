@@ -1,68 +1,51 @@
-// Texts for showing domain values in German. Pure functions, independent of the browser's locale
-// data so that they read the same everywhere (and in tests).
+// Texts for showing domain values in the chosen language (EN-a). The sentences and patterns are in
+// `src/i18n/`; the names of weekdays and months and the time of day come from `Intl`. Without a
+// choice (and in tests) the language is German. Pure functions apart from reading the language.
 
 import type { TakeOverMode } from "../domain/assignment";
 import type { ChecklistItem } from "../domain/checklist";
 import { addDays, type CalendarDay, isoWeek, weekdayOf } from "../domain/date";
 import type { DayRange, StatisticsPeriod } from "../domain/statistics";
-import type {
-  Assignee,
-  Completion,
-  Person,
-  Recurrence,
-  RecurrenceUnit,
-  Task,
-} from "../domain/task";
+import type { Assignee, Completion, Person, Recurrence, Task } from "../domain/task";
 import type { WeekDayView } from "../domain/week";
+import { t } from "../i18n";
+import type { SummaryParts } from "../i18n/de";
+import { monthLong, timeOfDay, weekdayLong } from "../i18n/intl";
+import { getLanguage } from "../i18n/language";
 import type { PersonNames } from "../storage/appData";
 
-const WEEKDAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"] as const;
+export type { SummaryParts } from "../i18n/de";
 
-const WEEKDAY_NAMES = [
-  "Montag",
-  "Dienstag",
-  "Mittwoch",
-  "Donnerstag",
-  "Freitag",
-  "Samstag",
-  "Sonntag",
-] as const;
+const monthOf = (day: CalendarDay) => Number(day.slice(5, 7));
 
-const MONTHS = [
-  "Januar",
-  "Februar",
-  "März",
-  "April",
-  "Mai",
-  "Juni",
-  "Juli",
-  "August",
-  "September",
-  "Oktober",
-  "November",
-  "Dezember",
-] as const;
+/** The name of a month in the chosen language: "Oktober" / "October". */
+function monthName(month: number): string {
+  return monthLong(getLanguage(), month);
+}
 
 /** "Mo, 19.10.2026" */
 export function formatDay(day: CalendarDay): string {
-  const [year, month, date] = day.split("-");
-  return `${WEEKDAYS[weekdayOf(day)]}, ${date}.${month}.${year}`;
+  return t().format.day(
+    weekdayShort(day),
+    Number(day.slice(8, 10)),
+    monthOf(day),
+    Number(day.slice(0, 4)),
+  );
 }
 
 /** "Mo, 19.10." – for places where the week already says which year it is. */
 export function formatShortDay(day: CalendarDay): string {
-  const [, month, date] = day.split("-");
-  return `${WEEKDAYS[weekdayOf(day)]}, ${date}.${month}.`;
+  return t().format.shortDay(weekdayShort(day), Number(day.slice(8, 10)), monthOf(day));
 }
 
 /** "Mo" */
 export function weekdayShort(day: CalendarDay): string {
-  return WEEKDAYS[weekdayOf(day)];
+  return t().format.weekdaysShort[weekdayOf(day)] as string;
 }
 
 /** "Montag" */
 export function weekdayName(day: CalendarDay): string {
-  return WEEKDAY_NAMES[weekdayOf(day)];
+  return weekdayLong(getLanguage(), day);
 }
 
 /** The day of the month without a leading zero: "5" */
@@ -70,32 +53,10 @@ export function dayOfMonth(day: CalendarDay): string {
   return String(Number(day.slice(8, 10)));
 }
 
-const MONTHS_SHORT = [
-  "Jan",
-  "Feb",
-  "Mär",
-  "Apr",
-  "Mai",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Okt",
-  "Nov",
-  "Dez",
-] as const;
-
 /** "Okt" – the month of a bar of a year's chart. */
 export function monthShort(day: CalendarDay): string {
-  return MONTHS_SHORT[Number(day.slice(5, 7)) - 1] as string;
+  return t().format.monthsShort[monthOf(day) - 1] as string;
 }
-
-/** The label of a period button of the statistics. */
-export const PERIOD_LABELS: Record<StatisticsPeriod, string> = {
-  week: "Woche",
-  month: "Monat",
-  year: "Jahr",
-};
 
 /** What the total is "of": "Gemeinsam erledigt · KW 43", "… · Oktober 2026", "… · 2026". */
 export function describePeriod(period: StatisticsPeriod, range: DayRange): string {
@@ -103,14 +64,8 @@ export function describePeriod(period: StatisticsPeriod, range: DayRange): strin
     return formatWeekNumber(range.start);
   }
   const year = range.start.slice(0, 4);
-  return period === "year" ? year : `${MONTHS[Number(range.start.slice(5, 7)) - 1]} ${year}`;
+  return period === "year" ? year : `${monthName(monthOf(range.start))} ${year}`;
 }
-
-const BEFORE: Record<StatisticsPeriod, string> = {
-  week: "in der Vorwoche",
-  month: "im Vormonat",
-  year: "im Vorjahr",
-};
 
 /**
  * The comparison with the period before, without a verdict: "6 mehr als in der Vorwoche",
@@ -121,11 +76,15 @@ export function describeComparison(
   total: number,
   previousTotal: number,
 ): string {
+  const { statistics } = t();
+  const before = statistics.before[period];
   const difference = total - previousTotal;
   if (difference === 0) {
-    return `so viele wie ${BEFORE[period]}`;
+    return statistics.same(before);
   }
-  return `${Math.abs(difference)} ${difference > 0 ? "mehr" : "weniger"} als ${BEFORE[period]}`;
+  return difference > 0
+    ? statistics.more(difference, before)
+    : statistics.fewer(-difference, before);
 }
 
 /** "4 Wochen in Folge" for the row of weeks with everything done; `undefined` if there is none. */
@@ -133,15 +92,13 @@ export function describeStreak(weeks: number): string | undefined {
   if (weeks === 0) {
     return undefined;
   }
-  return weeks === 1 ? "1 Woche alles erledigt" : `${weeks} Wochen in Folge`;
+  return weeks === 1 ? t().statistics.streakOne : t().statistics.streak(weeks);
 }
 
 /** "5-mal habt ihr füreinander übernommen." */
 export function describeTakenOver(count: number): string {
-  if (count === 0) {
-    return "Bisher hat niemand für die andere Person übernommen.";
-  }
-  return `${count}-mal habt ihr füreinander übernommen.`;
+  const { statistics } = t();
+  return count === 0 ? statistics.takenOverNone : statistics.takenOver(count);
 }
 
 /** The label of a bar: "Mo" in a week, "5." in a month, "Okt" in a year. */
@@ -149,7 +106,9 @@ export function barLabel(start: CalendarDay, period: StatisticsPeriod): string {
   if (period === "year") {
     return monthShort(start);
   }
-  return period === "week" ? weekdayShort(start) : `${dayOfMonth(start)}.`;
+  return period === "week"
+    ? weekdayShort(start)
+    : t().format.dayOfMonthLabel(Number(start.slice(8, 10)));
 }
 
 /** The chart as a sentence, for screen readers: "Erledigt pro Tag: Montag 7, Dienstag 5, …". */
@@ -157,14 +116,14 @@ export function describeBars(
   bars: readonly { readonly start: CalendarDay; readonly count: number }[],
   period: StatisticsPeriod,
 ): string {
-  const unit = period === "year" ? "Monat" : "Tag";
   const name = (start: CalendarDay) =>
     period === "week"
       ? weekdayName(start)
       : period === "month"
-        ? `${dayOfMonth(start)}.`
-        : (MONTHS[Number(start.slice(5, 7)) - 1] as string);
-  return `Erledigt pro ${unit}: ${bars.map((bar) => `${name(bar.start)} ${bar.count}`).join(", ")}`;
+        ? t().format.dayOfMonthLabel(Number(start.slice(8, 10)))
+        : monthName(monthOf(start));
+  const parts = bars.map((bar) => `${name(bar.start)} ${bar.count}`).join(", ");
+  return t().statistics.chart(period === "year" ? "month" : "day", parts);
 }
 
 /** The split of the team: "Alex 21 Aufgaben, Robin 17 Aufgaben". */
@@ -173,19 +132,18 @@ export function describeTeamwork(
   names: PersonNames,
 ): string {
   const part = (person: "personA" | "personB") =>
-    `${names[person]} ${counts[person] === 1 ? "1 Aufgabe" : `${counts[person]} Aufgaben`}`;
+    t().statistics.teamworkPart(names[person], counts[person]);
   return `${part("personA")}, ${part("personB")}`;
 }
 
 /** "Dienstag, 20. Oktober" – the date line of "Heute". */
 export function formatLongDay(day: CalendarDay): string {
-  const month = MONTHS[Number(day.slice(5, 7)) - 1] as string;
-  return `${weekdayName(day)}, ${dayOfMonth(day)}. ${month}`;
+  return t().format.longDay(weekdayName(day), Number(day.slice(8, 10)), monthName(monthOf(day)));
 }
 
 /** "KW 43" */
 export function formatWeekNumber(monday: CalendarDay): string {
-  return `KW ${isoWeek(monday)}`;
+  return t().format.weekNumber(isoWeek(monday));
 }
 
 /**
@@ -193,37 +151,23 @@ export function formatWeekNumber(monday: CalendarDay): string {
  * "Guten Abend" from 18 to 23, otherwise "Hallo".
  */
 export function greeting(hour: number, name: string): string {
-  const salutation =
-    hour >= 18 ? "Guten Abend" : hour >= 11 ? "Hallo" : hour >= 5 ? "Guten Morgen" : "Hallo";
-  return `${salutation}, ${name}!`;
+  const { greeting: words } = t().today;
+  if (hour >= 18) {
+    return words.evening(name);
+  }
+  return hour >= 11 || hour < 5 ? words.hello(name) : words.morning(name);
 }
-
-/** The sentence under the greeting, in three parts so that the count can be set in bold. */
-export type SummaryParts = readonly [before: string, emphasis: string, after: string];
 
 /**
  * What stands on today for the person: `open` tasks of which `overdue` are overdue, `done` ticked
  * off today. "Heute stehen 3 Aufgaben für dich an. Eine davon ist überfällig."
  */
 export function todaySummary(open: number, overdue: number, done: number): SummaryParts {
+  const { summary } = t().today;
   if (open === 0) {
-    return done === 0
-      ? ["Heute steht ", "nichts", " für dich an."]
-      : ["Heute ist ", "alles erledigt", ". Gut gemacht!"];
+    return done === 0 ? summary.nothing : summary.allDone;
   }
-  const lead: [string, string] =
-    open === 1 ? ["Heute steht ", "1 Aufgabe"] : ["Heute stehen ", `${open} Aufgaben`];
-  let rest = " für dich an.";
-  if (overdue > 0) {
-    if (open === 1) {
-      rest += " Sie ist überfällig.";
-    } else if (overdue === open) {
-      rest += " Alle sind überfällig.";
-    } else {
-      rest += overdue === 1 ? " Eine davon ist überfällig." : ` ${overdue} davon sind überfällig.`;
-    }
-  }
-  return [lead[0], lead[1], rest];
+  return summary.open(open, overdue);
 }
 
 /** "08:12" – the local time of day of an ISO moment, or `undefined` if there is none. */
@@ -232,8 +176,7 @@ export function formatTime(moment: string | undefined): string | undefined {
   if (date === undefined || Number.isNaN(date.getTime())) {
     return undefined;
   }
-  const two = (value: number) => String(value).padStart(2, "0");
-  return `${two(date.getHours())}:${two(date.getMinutes())}`;
+  return timeOfDay(getLanguage(), date);
 }
 
 /** "erledigt um 08:12", for the person themselves; "erledigt von Robin um 08:12" otherwise. */
@@ -242,10 +185,8 @@ export function describeDoneAt(
   names: PersonNames,
   currentPerson: Person,
 ): string {
-  const by =
-    completion.completedBy === currentPerson ? "" : ` von ${names[completion.completedBy]}`;
-  const time = formatTime(completion.completedAt);
-  return `erledigt${by}${time === undefined ? "" : ` um ${time}`}`;
+  const by = completion.completedBy === currentPerson ? undefined : names[completion.completedBy];
+  return t().format.doneAt(by, formatTime(completion.completedAt));
 }
 
 /** A percentage of 0 to 100 for the rings; 0 if nothing is due. */
@@ -264,6 +205,7 @@ export interface DayField {
 }
 
 export function dayField(day: WeekDayView): DayField {
+  const words = t().today;
   const name = weekdayName(day.day);
   const { dueCount, doneCount } = day;
   const open = dueCount - doneCount;
@@ -271,38 +213,25 @@ export function dayField(day: WeekDayView): DayField {
     return {
       state: day.isToday ? "today" : "free",
       mark: "–",
-      label: `${name}${day.isToday ? ", heute" : ""}, frei`,
+      label: words.dayFree(name, day.isToday),
     };
   }
   if (day.isToday) {
     return {
       state: "today",
       mark: `${doneCount}/${dueCount}`,
-      label: `${name}, heute, ${doneCount} von ${dueCount} erledigt`,
+      label: words.dayToday(name, doneCount, dueCount),
     };
   }
   if (open === 0) {
-    return { state: "done", mark: "", label: `${name}, alles erledigt` };
+    return { state: "done", mark: "", label: words.dayAllDone(name) };
   }
-  return {
-    state: "open",
-    mark: String(open),
-    label: `${name}, ${countTasks(open)}${doneCount > 0 ? ` offen, ${doneCount} erledigt` : ""}`,
-  };
+  return { state: "open", mark: String(open), label: words.dayOpen(name, open, doneCount) };
 }
 
 /** "Diese Woche", "Nächste Woche", "Vor 3 Wochen" … for a week `offset` weeks from the current. */
 export function weekTitle(offset: number): string {
-  if (offset === 0) {
-    return "Diese Woche";
-  }
-  if (offset === 1) {
-    return "Nächste Woche";
-  }
-  if (offset === -1) {
-    return "Letzte Woche";
-  }
-  return offset > 0 ? `In ${offset} Wochen` : `Vor ${-offset} Wochen`;
+  return t().format.weekTitle(offset);
 }
 
 /**
@@ -311,86 +240,76 @@ export function weekTitle(offset: number): string {
  */
 export function formatWeekLabel(monday: CalendarDay, today: CalendarDay): string {
   const sunday = addDays(monday, 6);
-  const [startYear, startMonth] = [monday.slice(0, 4), Number(monday.slice(5, 7))];
-  const [endYear, endMonth] = [sunday.slice(0, 4), Number(sunday.slice(5, 7))];
-  const monthName = (month: number) => MONTHS[month - 1] as string;
+  const [startYear, endYear] = [monday.slice(0, 4), sunday.slice(0, 4)];
+  const sameMonth = monthOf(monday) === monthOf(sunday);
   const showYear = startYear !== endYear || startYear !== today.slice(0, 4);
-  const end = `${dayOfMonth(sunday)}. ${monthName(endMonth)}${showYear ? ` ${endYear}` : ""}`;
-  let start: string;
-  if (startYear !== endYear) {
-    start = `${dayOfMonth(monday)}. ${monthName(startMonth)} ${startYear} – `;
-  } else if (startMonth !== endMonth) {
-    start = `${dayOfMonth(monday)}. ${monthName(startMonth)} – `;
-  } else {
-    start = `${dayOfMonth(monday)}.–`;
-  }
-  return `KW ${isoWeek(monday)} · ${start}${end}`;
+  const range = t().format.weekRange(
+    {
+      date: Number(monday.slice(8, 10)),
+      ...(sameMonth && startYear === endYear ? {} : { month: monthName(monthOf(monday)) }),
+      ...(startYear === endYear ? {} : { year: startYear }),
+    },
+    {
+      date: Number(sunday.slice(8, 10)),
+      month: monthName(monthOf(sunday)),
+      ...(showYear ? { year: endYear } : {}),
+    },
+  );
+  return `${formatWeekNumber(monday)} · ${range}`;
 }
 
 /** "keine Aufgaben", "1 Aufgabe", "3 Aufgaben" */
 export function countTasks(count: number): string {
-  if (count === 0) {
-    return "keine Aufgaben";
-  }
-  return count === 1 ? "1 Aufgabe" : `${count} Aufgaben`;
+  return t().format.countTasks(count);
 }
 
 /** "keine Erledigungen", "1 Erledigung", "3 Erledigungen" */
 export function countCompletions(count: number): string {
-  if (count === 0) {
-    return "keine Erledigungen";
-  }
-  return count === 1 ? "1 Erledigung" : `${count} Erledigungen`;
+  return t().format.countCompletions(count);
 }
 
 /** "1 Eintrag", "3 Einträge" – the length of the "Erledigt" list. */
 export function countEntries(count: number): string {
-  return count === 1 ? "1 Eintrag" : `${count} Einträge`;
+  return t().format.countEntries(count);
 }
 
 /** What a set of data holds: "4 Aufgaben und 12 Erledigungen". */
 export function describeContents(taskCount: number, completionCount: number): string {
-  return `${countTasks(taskCount)} und ${countCompletions(completionCount)}`;
+  return t().format.contents(countTasks(taskCount), countCompletions(completionCount));
 }
 
 /** "3 von 5 abgehakt" for a checklist. */
 export function describeChecklist(items: readonly ChecklistItem[]): string {
-  return `${items.filter((item) => item.checked).length} von ${items.length} abgehakt`;
+  return t().format.checklistProgress(items.filter((item) => item.checked).length, items.length);
 }
-
-const SINGULAR: Record<RecurrenceUnit, string> = {
-  day: "täglich",
-  week: "wöchentlich",
-  month: "monatlich",
-};
-
-const PLURAL: Record<RecurrenceUnit, string> = { day: "Tage", week: "Wochen", month: "Monate" };
 
 /** "täglich", "wöchentlich", "monatlich", or "alle 2 Wochen". */
 export function describeRecurrence({ unit, interval }: Recurrence): string {
-  return interval === 1 ? SINGULAR[unit] : `alle ${interval} ${PLURAL[unit]}`;
+  const { format } = t();
+  return interval === 1 ? format.recurrenceSingle[unit] : format.recurrenceEvery(interval, unit);
 }
 
 /** "1 Tag überfällig", "3 Tage überfällig". */
 export function describeOverdue(days: number): string {
-  return `${days} ${days === 1 ? "Tag" : "Tage"} überfällig`;
+  return t().format.overdue(days);
 }
 
 /** "Erledigt von Alex am Mi, 14.10.2026" */
 export function describeCompletedBy(completion: Completion, names: PersonNames): string {
-  return `Erledigt von ${names[completion.completedBy]} am ${formatDay(completion.completedOn)}`;
+  return t().format.completedBy(names[completion.completedBy], formatDay(completion.completedOn));
 }
 
 /** What the page says after a task was ticked off: where the task went next. */
 export function completionNotice(title: string, completion: Completion): string {
+  const { notices } = t();
   return completion.nextDueDate === undefined
-    ? `„${title}“ ist abgehakt und steht jetzt unter „Erledigt“.`
-    : `„${title}“ ist abgehakt. Nächster Termin: ${formatDay(completion.nextDueDate)}.`;
+    ? notices.completed(title)
+    : notices.completedNext(title, formatDay(completion.nextDueDate));
 }
 
 /** What the page says after a completion was taken back. */
 export function undoNotice(title: string, dueDate: CalendarDay): string {
-  return `Rückgängig gemacht: „${title}“ ist wieder offen, fällig am ${formatDay(dueDate)}.`;
+  return t().notices.undone(title, formatDay(dueDate));
 }
 
 /** What the settings say after the backup file was downloaded (F7). */
@@ -414,18 +333,19 @@ export function takeOverNotice(
   names: PersonNames,
   mode: TakeOverMode,
 ): string {
+  const { notices } = t();
   const name = names[person];
   if (kind === "oneOff") {
-    return `„${title}“ ist jetzt bei ${name}.`;
+    return notices.takenOverOneOff(title, name);
   }
   return mode === "once"
-    ? `„${title}“ ist jetzt bei ${name}, nur dieses Mal.`
-    : `„${title}“ gehört jetzt dauerhaft ${name}.`;
+    ? notices.takenOverOnce(title, name)
+    : notices.takenOverForGood(title, name);
 }
 
 /** The name of a person, or "beide". */
 export function assigneeLabel(assignee: Assignee, names: PersonNames): string {
-  return assignee === "both" ? "Beide" : names[assignee];
+  return assignee === "both" ? t().common.both : names[assignee];
 }
 
 /** Who has the task this time, noting a one-time takeover ("Robin (übernommen; sonst Alex)"). */
@@ -436,5 +356,5 @@ export function describeResponsibility(
 ): string {
   return takenOverBy === undefined
     ? assigneeLabel(assignee, names)
-    : `${names[takenOverBy]} (nur dieses Mal übernommen; sonst ${assigneeLabel(assignee, names)})`;
+    : t().format.takenOver(names[takenOverBy], assigneeLabel(assignee, names));
 }

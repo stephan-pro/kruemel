@@ -8,6 +8,7 @@ import {
   statistics,
 } from "../../domain/statistics";
 import type { Completion, Task } from "../../domain/task";
+import { t } from "../../i18n";
 import type { PersonNames } from "../../storage/appData";
 import { PageTitle } from "../components/PageTitle";
 import { TaskSymbol } from "../components/TaskSymbol";
@@ -19,7 +20,6 @@ import {
   describeStreak,
   describeTakenOver,
   describeTeamwork,
-  PERIOD_LABELS,
 } from "../format";
 import { routeInfo } from "../route";
 
@@ -42,9 +42,9 @@ export function StatisticsPage({ tasks, completions, names, today }: StatisticsP
 
   return (
     <div class="stats">
-      <PageTitle title={routeInfo("statistics").title} heading="Eure Bilanz" />
+      <PageTitle title={routeInfo("statistics").title} heading={t().statistics.heading} />
       <fieldset class="segmented stats__periods">
-        <legend class="visually-hidden">Zeitraum</legend>
+        <legend class="visually-hidden">{t().statistics.period}</legend>
         {STATISTICS_PERIODS.map((value) => (
           <button
             key={value}
@@ -53,7 +53,7 @@ export function StatisticsPage({ tasks, completions, names, today }: StatisticsP
             aria-pressed={period === value}
             onClick={() => setPeriod(value)}
           >
-            {PERIOD_LABELS[value]}
+            {t().statistics.periods[value]}
           </button>
         ))}
       </fieldset>
@@ -62,7 +62,7 @@ export function StatisticsPage({ tasks, completions, names, today }: StatisticsP
         <div class="stats-total__head">
           <div class="stats-total__numbers">
             <h2 class="stats-total__label" id="s-gesamt">
-              Gemeinsam erledigt · {describePeriod(period, stats.range)}
+              {t().statistics.totalLabel(describePeriod(period, stats.range))}
             </h2>
             <p class="stats-total__value">{stats.total}</p>
             <p class="stats-total__text">
@@ -81,7 +81,7 @@ export function StatisticsPage({ tasks, completions, names, today }: StatisticsP
 
       <section class="stats-card" aria-labelledby="s-team">
         <h2 class="stats-card__title" id="s-team">
-          Euer Teamwork
+          {t().statistics.teamwork}
         </h2>
         <div class="split" role="img" aria-label={describeTeamwork(stats.byPerson, names)}>
           {personA + personB === 0 ? (
@@ -108,10 +108,10 @@ export function StatisticsPage({ tasks, completions, names, today }: StatisticsP
 
       <section class="stats-card" aria-labelledby="s-top">
         <h2 class="stats-card__title" id="s-top">
-          Am häufigsten erledigt
+          {t().statistics.top}
         </h2>
         {stats.top.length === 0 ? (
-          <p class="muted">In diesem Zeitraum wurde noch nichts erledigt.</p>
+          <p class="muted">{t().statistics.topEmpty}</p>
         ) : (
           <ol class="top-list">
             {stats.top.map(({ task, count }) => (
@@ -121,7 +121,7 @@ export function StatisticsPage({ tasks, completions, names, today }: StatisticsP
                 <span class="top-list__count" aria-hidden="true">
                   {count}×
                 </span>
-                <span class="visually-hidden">{count}-mal erledigt</span>
+                <span class="visually-hidden">{t().statistics.topCount(count)}</span>
               </li>
             ))}
           </ol>

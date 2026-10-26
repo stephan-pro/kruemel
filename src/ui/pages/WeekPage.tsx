@@ -10,6 +10,7 @@ import {
   type WeekProgress,
   weekView,
 } from "../../domain/week";
+import { t } from "../../i18n";
 import type { PersonNames } from "../../storage/appData";
 import { ChecklistToggles } from "../components/ChecklistToggles";
 import { PageTitle } from "../components/PageTitle";
@@ -53,10 +54,13 @@ interface WeekPageProps {
   readonly onChecklistItem: (taskId: string, itemId: string, checked: boolean) => Promise<Task>;
 }
 
-const FILTERS: readonly { readonly value: TaskFilter; readonly label: string }[] = [
-  { value: "all", label: "Alle" },
-  { value: "mine", label: "Nur meine" },
-];
+function filters(): readonly { readonly value: TaskFilter; readonly label: string }[] {
+  const words = t().week;
+  return [
+    { value: "all", label: t().common.all },
+    { value: "mine", label: words.filterMine },
+  ];
+}
 
 /**
  * The day the day tile shows unless one was chosen: today in the current week, otherwise the first
@@ -137,22 +141,22 @@ export function WeekPage({
           </p>
         </div>
         {tasks.length > 0 && (
-          <nav aria-label="Woche wechseln" class="week-nav">
+          <nav aria-label={t().common.changeWeek} class="week-nav">
             <button
               class="icon-btn"
               type="button"
-              aria-label="Vorherige Woche"
+              aria-label={t().common.previousWeek}
               onClick={() => changeWeek(weekOffset - 1)}
             >
               <ChevronLeft size={22} />
             </button>
             <button class="btn btn--quiet" type="button" onClick={() => changeWeek(0)}>
-              Diese Woche
+              {t().common.thisWeek}
             </button>
             <button
               class="icon-btn"
               type="button"
-              aria-label="Nächste Woche"
+              aria-label={t().common.nextWeek}
               onClick={() => changeWeek(weekOffset + 1)}
             >
               <ChevronRight size={22} />
@@ -162,8 +166,8 @@ export function WeekPage({
         <div class="week-head__actions">
           {tasks.length > 0 && (
             <fieldset class="segmented">
-              <legend class="visually-hidden">Aufgaben filtern</legend>
-              {FILTERS.map(({ value, label }) => (
+              <legend class="visually-hidden">{t().common.filterTasks}</legend>
+              {filters().map(({ value, label }) => (
                 <button
                   key={value}
                   class="segmented__option"
@@ -183,10 +187,10 @@ export function WeekPage({
 
       {tasks.length === 0 ? (
         <div class="tile tile--narrow">
-          <p>Es gibt noch keine Aufgaben.</p>
+          <p>{t().common.noTasksYet}</p>
           <div class="button-row">
             <a class="btn btn--primary" href={newTaskHash()}>
-              Erste Aufgabe anlegen
+              {t().common.createFirstTask}
             </a>
           </div>
         </div>
@@ -223,12 +227,12 @@ export function WeekPage({
       )}
 
       {/* The lists behind the week; "Neue Aufgabe" is the plus in the navigation. */}
-      <nav aria-label="Listen" class="week-lists">
+      <nav aria-label={t().week.lists} class="week-lists">
         <a class="btn btn--quiet" href={routeHash("tasks")}>
-          Aufgaben
+          {t().routes.tasks.label}
         </a>
         <a class="btn btn--quiet" href={routeHash("done")}>
-          Erledigt
+          {t().routes.done.label}
         </a>
       </nav>
 
@@ -249,19 +253,22 @@ interface DayTileProps {
 function DayTile({ day, names, headingRef, actions, onComplete }: DayTileProps) {
   const open = day.entries.filter((entry) => entry.kind === "open").length;
   const done = day.entries.length - open;
-  const summary = [done > 0 ? `${done} erledigt` : "", open > 0 ? `${open} offen` : ""]
+  const summary = [
+    done > 0 ? t().week.doneCount(done) : "",
+    open > 0 ? t().week.openCount(open) : "",
+  ]
     .filter(Boolean)
     .join(" · ");
   return (
     <section class="tile day-tile" aria-labelledby="tag-titel">
       <div class="tile__head">
         <h2 class="tile__title" id="tag-titel" tabIndex={-1} ref={headingRef}>
-          {day.isToday ? `Heute · ${formatShortDay(day.day)}` : formatShortDay(day.day)}
+          {day.isToday ? t().week.todayDay(formatShortDay(day.day)) : formatShortDay(day.day)}
         </h2>
         {summary && <span class="tile__aside">{summary}</span>}
       </div>
       {day.entries.length === 0 ? (
-        <p class="muted">Keine Aufgaben.</p>
+        <p class="muted">{t().week.noTasksDay}</p>
       ) : (
         <ul class="entries">
           {day.entries.map((entry) => (
@@ -288,7 +295,7 @@ function responsibilityOf(task: Task, names: PersonNames): string {
 }
 
 function rhythmOf(task: Task): string {
-  return task.kind === "recurring" ? describeRecurrence(task.recurrence) : "einmalig";
+  return task.kind === "recurring" ? describeRecurrence(task.recurrence) : t().common.oneOff;
 }
 
 interface EntryProps {
@@ -351,7 +358,7 @@ function Entry({ entry, names, actions, onComplete }: EntryProps) {
           <button
             class="tick"
             type="button"
-            aria-label={`Abhaken: ${task.title}`}
+            aria-label={t().common.tickOffTask(task.title)}
             onClick={() => onComplete(task)}
           >
             <Check class="tick__icon" size={22} />
@@ -368,22 +375,22 @@ function Entry({ entry, names, actions, onComplete }: EntryProps) {
             <button
               class="btn btn--secondary btn--small"
               type="button"
-              aria-label={`Übernehmen: ${task.title}`}
+              aria-label={t().common.takeOverTask(task.title)}
               onClick={(event) => actions.onTakeOver(task, event.currentTarget)}
             >
-              Übernehmen
+              {t().common.takeOver}
             </button>
           )}
           {checklist.length > 0 && (
             <button
               class="btn btn--secondary btn--small entry__toggle"
               type="button"
-              aria-label={`Checkliste: ${task.title}`}
+              aria-label={t().common.checklistOfTask(task.title)}
               aria-expanded={itemsShown}
               aria-controls={itemsId}
               onClick={() => setItemsShown(!itemsShown)}
             >
-              Checkliste
+              {t().week.checklist}
               <ChevronDown class="entry__toggle-icon" size={18} />
             </button>
           )}
@@ -429,7 +436,7 @@ function OverdueTile({
     >
       <div class="tile__head">
         <h2 class="tile__label" id="ueberfaellig">
-          Überfällig
+          {t().week.overdue}
         </h2>
       </div>
       <ul class="overdue-list" id="ueberfaellig-liste">
@@ -449,27 +456,30 @@ function OverdueTile({
                   <TaskSymbol symbol={task.symbol} variant="plain" />
                 </span>
                 <span class="overdue__meta">
-                  {describeOverdue(daysOverdue)} (seit {formatShortDay(task.dueDate)}) ·{" "}
-                  {responsibilityOf(task, names)}
+                  {t().week.overdueMeta(
+                    describeOverdue(daysOverdue),
+                    formatShortDay(task.dueDate),
+                    responsibilityOf(task, names),
+                  )}
                 </span>
               </button>
               <div class="overdue__actions">
                 <button
                   class="btn btn--warn-action"
                   type="button"
-                  aria-label={`Abhaken: ${task.title}`}
+                  aria-label={t().common.tickOffTask(task.title)}
                   onClick={() => onComplete(task)}
                 >
-                  Abhaken
+                  {t().common.tickOff}
                 </button>
                 {canTakeOver(task, actions.person) && (
                   <button
                     class="btn btn--warn-action"
                     type="button"
-                    aria-label={`Übernehmen: ${task.title}`}
+                    aria-label={t().common.takeOverTask(task.title)}
                     onClick={(event) => actions.onTakeOver(task, event.currentTarget)}
                   >
-                    Übernehmen
+                    {t().common.takeOver}
                   </button>
                 )}
               </div>
@@ -485,7 +495,7 @@ function OverdueTile({
           aria-controls="ueberfaellig-liste"
           onClick={onToggle}
         >
-          {expanded ? "Weniger anzeigen" : `+ ${more} weitere anzeigen`}
+          {expanded ? t().week.showLess : t().week.showMore(more)}
         </button>
       )}
     </section>
@@ -504,18 +514,16 @@ function ProgressTile({
   return (
     <section class="tile accent-tile" aria-labelledby="stand">
       <h2 class="tile__label" id="stand">
-        Stand
+        {t().week.progress}
       </h2>
       <p class="stand">
         <span aria-hidden="true">
           {done}
           <span class="stand__of"> / {due}</span>
         </span>
-        <span class="visually-hidden">
-          {done} von {due}
-        </span>
+        <span class="visually-hidden">{t().common.xOfY(done, due)}</span>
       </p>
-      <p class="stand__text">{current ? "diese Woche erledigt" : "in dieser Woche erledigt"}</p>
+      <p class="stand__text">{current ? t().week.progressCurrent : t().week.progressOther}</p>
       <span class="bar bar--on-accent" aria-hidden="true">
         <span class="bar__fill" style={{ width: `${due === 0 ? 0 : (done / due) * 100}%` }} />
       </span>
@@ -539,7 +547,7 @@ function WeekStrip({ days, chosen, names, onChoose, onOpen }: WeekStripProps) {
   return (
     <section class="tile week-strip" aria-labelledby="woche-tage">
       <h2 class="tile__title" id="woche-tage">
-        Woche im Überblick
+        {t().week.overview}
       </h2>
       <div class="week-strip__scroll">
         <ul class="week-strip__days">
@@ -579,7 +587,7 @@ function WeekStrip({ days, chosen, names, onChoose, onOpen }: WeekStripProps) {
                       </span>
                       <span class="chip__meta">
                         {entry.kind === "done"
-                          ? `erledigt von ${names[entry.completion.completedBy]}`
+                          ? t().format.doneBy(names[entry.completion.completedBy])
                           : responsibilityOf(entry.task, names)}
                       </span>
                     </button>

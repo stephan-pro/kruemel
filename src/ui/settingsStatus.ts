@@ -1,11 +1,10 @@
 // The short status line of each group in the settings overview (UX-a), found out from the real
 // state of the app. Pure, so it is tested without a page.
 
+import { t } from "../i18n";
+import { getLanguage, LANGUAGE_NAMES } from "../i18n/language";
 import type { NotificationStatus } from "../push/notifications";
 import type { SyncStatus } from "../storage/storage";
-import { SETTINGS_TEXTS } from "./settingsTexts";
-
-const STATUS = SETTINGS_TEXTS.status;
 
 /** What the overview knows about the app. */
 export interface SettingsState {
@@ -22,6 +21,7 @@ export interface SettingsState {
 }
 
 export function accountStatus(state: SettingsState): string {
+  const STATUS = t().settings.status;
   if (state.household !== undefined) {
     return STATUS.household(state.household.name, state.household.people);
   }
@@ -29,6 +29,7 @@ export function accountStatus(state: SettingsState): string {
 }
 
 export function notificationsStatus(status: SettingsState["notifications"]): string {
+  const STATUS = t().settings.status;
   switch (status) {
     case "checking":
       return STATUS.notificationsChecking;
@@ -50,6 +51,7 @@ export function notificationsStatus(status: SettingsState["notifications"]): str
 }
 
 export function dataStatus(sync: SettingsState["sync"]): string {
+  const STATUS = t().settings.status;
   if (sync === undefined) {
     return STATUS.deviceOnly;
   }
@@ -72,10 +74,11 @@ export function dataStatus(sync: SettingsState["sync"]): string {
 
 /** The status lines of all five groups. */
 export function settingsStatus(state: SettingsState) {
+  const STATUS = t().settings.status;
   return {
     account: accountStatus(state),
     notifications: notificationsStatus(state.notifications),
-    appearance: STATUS.motion(state.logoMotion),
+    appearance: STATUS.appearance(LANGUAGE_NAMES[getLanguage()], state.logoMotion),
     data: dataStatus(state.sync),
     legal: STATUS.legal,
   } as const;

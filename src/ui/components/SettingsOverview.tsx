@@ -8,10 +8,10 @@ import {
   UsersRound,
 } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
+import { t } from "../../i18n";
 import type { Notifications } from "../../push/notifications";
 import { routeHash, routeInfo, type SettingsRoute } from "../route";
 import { type SettingsState, settingsStatus } from "../settingsStatus";
-import { SETTINGS_TEXTS } from "../settingsTexts";
 import { PageTitle } from "./PageTitle";
 
 interface Row {
@@ -79,8 +79,8 @@ export function SettingsOverview({ notifications, cameFrom, ...state }: Settings
   }, [cameFrom]);
   return (
     <>
-      <PageTitle title={SETTINGS_TEXTS.title} takeFocus={cameFrom === undefined} />
-      <ul class="settings-list" aria-label={SETTINGS_TEXTS.listLabel}>
+      <PageTitle title={t().settings.title} takeFocus={cameFrom === undefined} />
+      <ul class="settings-list" aria-label={t().settings.listLabel}>
         {ROWS.map(({ route, key, Icon }) => (
           <li key={route}>
             {/* The name is the text itself (title and status, two blocks): no state by looks alone. */}

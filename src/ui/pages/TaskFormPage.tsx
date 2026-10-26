@@ -3,6 +3,7 @@ import { dayFromDate } from "../../domain/date";
 import type { Completion, Person, Task } from "../../domain/task";
 import type { TaskFormValues, TaskKind } from "../../domain/taskForm";
 import { completionCount } from "../../domain/taskManagement";
+import { t } from "../../i18n";
 import type { PersonNames } from "../../storage/appData";
 import { ErrorAlert } from "../components/Alert";
 import { DeleteTaskDialog } from "../components/DeleteTaskDialog";
@@ -50,11 +51,10 @@ export function TaskFormPage({
   if (missing && shown === undefined) {
     return (
       <>
-        <PageTitle title="Aufgabe nicht gefunden" />
+        <PageTitle title={t().tasks.missingTitle} />
         <div class="tile tile--narrow">
           <p>
-            Diese Aufgabe gibt es nicht (mehr). Vielleicht wurde sie gelöscht.{" "}
-            <a href={routeHash("tasks")}>Zurück zu den Aufgaben</a>
+            {t().tasks.missingText} <a href={routeHash("tasks")}>{t().tasks.backToTasks}</a>
           </p>
         </div>
       </>
@@ -78,7 +78,7 @@ export function TaskFormPage({
     <>
       <PageTitle title={routeInfo(shown === undefined ? "taskNew" : "taskEdit").title} />
       <div class="page-stack page-stack--narrow">
-        {deleteError && <ErrorAlert title="Nicht gelöscht">{deleteError}</ErrorAlert>}
+        {deleteError && <ErrorAlert title={t().common.notDeleted}>{deleteError}</ErrorAlert>}
         <div class="tile">
           <TaskForm
             key={shown?.id ?? "neu"}

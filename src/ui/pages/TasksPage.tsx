@@ -2,6 +2,7 @@ import { Pencil, Trash2 } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import type { Completion, Task } from "../../domain/task";
 import { completionCount, groupOpenTasks } from "../../domain/taskManagement";
+import { t } from "../../i18n";
 import type { PersonNames } from "../../storage/appData";
 import { ErrorAlert } from "../components/Alert";
 import { DeleteTaskDialog } from "../components/DeleteTaskDialog";
@@ -71,23 +72,23 @@ export function TasksPage({
       </div>
       <div class="page-stack">
         <div role="status">{announced && <p class="success-note">{announced}</p>}</div>
-        {deleteError && <ErrorAlert title="Nicht gelöscht">{deleteError}</ErrorAlert>}
+        {deleteError && <ErrorAlert title={t().common.notDeleted}>{deleteError}</ErrorAlert>}
 
         {groups.recurring.length === 0 && groups.oneOff.length === 0 && (
           <div class="tile">
-            <p>Es gibt noch keine Aufgaben. Leg die erste an.</p>
+            <p>{t().tasks.noTasks}</p>
           </div>
         )}
         <TaskGroup
           id="wiederkehrend"
-          title="Wiederkehrende Aufgaben"
+          title={t().tasks.recurringGroup}
           tasks={groups.recurring}
           names={names}
           onDelete={setDeleting}
         />
         <TaskGroup
           id="einmalig"
-          title="Einmalige Aufgaben"
+          title={t().tasks.oneOffGroup}
           tasks={groups.oneOff}
           names={names}
           onDelete={setDeleting}
@@ -140,6 +141,7 @@ interface TaskCardProps {
 
 function TaskCard({ task, names, onDelete }: TaskCardProps) {
   const titleId = `aufgabe-${task.id}`;
+  const words = t().tasks;
   return (
     <article class="tile task-card" aria-labelledby={titleId}>
       <div class="task-card__head">
@@ -150,21 +152,21 @@ function TaskCard({ task, names, onDelete }: TaskCardProps) {
       </div>
       <dl class="details">
         {task.kind === "recurring" && (
-          <Detail label="Rhythmus" value={describeRecurrence(task.recurrence)} />
+          <Detail label={words.rhythm} value={describeRecurrence(task.recurrence)} />
         )}
         <Detail
-          label={task.kind === "recurring" ? "Nächster Termin" : "Fällig am"}
+          label={task.kind === "recurring" ? words.nextDate : words.dueOn}
           value={formatDay(task.dueDate)}
         />
         <Detail
-          label="Zuständig"
+          label={words.assignee}
           value={describeResponsibility(
             task.assignee,
             task.kind === "recurring" ? task.takenOverBy : undefined,
             names,
           )}
         />
-        {task.note && <Detail label="Notiz" value={task.note} />}
+        {task.note && <Detail label={words.note} value={task.note} />}
       </dl>
       <div class="button-row task-card__actions">
         {/* The name starts with the visible text and adds the task, so a button read on its own
@@ -172,19 +174,19 @@ function TaskCard({ task, names, onDelete }: TaskCardProps) {
         <a
           class="btn btn--secondary btn--small"
           href={editTaskHash(task.id)}
-          aria-label={`Bearbeiten: ${task.title}`}
+          aria-label={t().common.editTask(task.title)}
         >
           <Pencil size={18} />
-          Bearbeiten
+          {t().common.edit}
         </a>
         <button
           class="btn btn--secondary btn--small"
           type="button"
-          aria-label={`Löschen: ${task.title}`}
+          aria-label={t().common.deleteTask(task.title)}
           onClick={onDelete}
         >
           <Trash2 size={18} />
-          Löschen
+          {t().common.delete}
         </button>
       </div>
     </article>
