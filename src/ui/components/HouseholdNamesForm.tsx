@@ -48,7 +48,12 @@ export function HouseholdNamesForm({
   /** Something was typed and not saved yet: a change from elsewhere does not overwrite it. */
   const [dirty, setDirty] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
-  const [saveError, setSaveError] = useState<{ title: string; message: string }>();
+  /** Which name could not be saved and why; the sentences are made when it is drawn. */
+  const [saveError, setSaveError] = useState<{
+    readonly title: () => string;
+    readonly cause: unknown;
+    readonly household: boolean;
+  }>();
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const { report, status } = useFieldErrorFocus();
@@ -106,8 +111,9 @@ export function HouseholdNamesForm({
           // The own name (if changed) is saved; only the household's name waits for the network.
           setOwn(ownName);
           setSaveError({
-            title: HOUSEHOLD_TEXTS.householdNameFailed,
-            message: householdMessage(error),
+            title: () => HOUSEHOLD_TEXTS.householdNameFailed,
+            cause: error,
+            household: true,
           });
           return;
         }
@@ -116,8 +122,9 @@ export function HouseholdNamesForm({
       setSaved(true);
     } catch (error) {
       setSaveError({
-        title: HOUSEHOLD_TEXTS.ownNameFailed,
-        message: errorText(error),
+        title: () => HOUSEHOLD_TEXTS.ownNameFailed,
+        cause: error,
+        household: false,
       });
     } finally {
       setSaving(false);
@@ -146,7 +153,11 @@ export function HouseholdNamesForm({
           error={errors.own && personNameErrorText(errors.own)}
           onInput={(value) => edit(() => setOwn(value))}
         />
-        {saveError && <ErrorAlert title={saveError.title}>{saveError.message}</ErrorAlert>}
+        {saveError && (
+          <ErrorAlert title={saveError.title()}>
+            {saveError.household ? householdMessage(saveError.cause) : errorText(saveError.cause)}
+          </ErrorAlert>
+        )}
         <div class="button-row">
           <button class="btn btn--secondary" type="submit">
             {HOUSEHOLD_TEXTS.saveNames}

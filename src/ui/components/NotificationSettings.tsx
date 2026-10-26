@@ -97,7 +97,8 @@ export function NotificationSettings({
   const [errors, setErrors] = useState<Partial<Record<PushSettingsProblem, string>>>({});
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string>();
-  const [failed, setFailed] = useState<{ title: string; message: string }>();
+  /** What failed and why; the sentences are made when it is drawn (language switch). */
+  const [failed, setFailed] = useState<{ title: () => string; cause: unknown }>();
   const { report, status } = useFieldErrorFocus();
   // What the form shows now, for the callbacks of events (online) that outlive a render.
   const latest = useRef({ draft, saved, phase });
@@ -130,7 +131,7 @@ export function NotificationSettings({
         setPhase("unreachable");
       }
       if (!(error instanceof PushError && error.failure === "offline")) {
-        setFailed({ title: TEXTS.loadFailed, message: failureText(error) });
+        setFailed({ title: () => TEXTS.loadFailed, cause: error });
       }
     }
   }
@@ -179,7 +180,7 @@ export function NotificationSettings({
       setSaved({ settings: draft, pending: result === "pending" });
       setMessage(result === "pending" ? TEXTS.pending : TEXTS.saved);
     } catch (error) {
-      setFailed({ title: TEXTS.saveFailed, message: failureText(error) });
+      setFailed({ title: () => TEXTS.saveFailed, cause: error });
       if (error instanceof PushError && error.failure === "deviceUnknown") {
         onStatusChange();
       }
@@ -209,7 +210,7 @@ export function NotificationSettings({
           </div>
         </>
       )}
-      {failed && <ErrorAlert title={failed.title}>{failed.message}</ErrorAlert>}
+      {failed && <ErrorAlert title={failed.title()}>{failureText(failed.cause)}</ErrorAlert>}
       {phase === "ready" && draft !== undefined && (
         <form class="form" noValidate onSubmit={(event) => void save(event)}>
           <p class="muted">{TEXTS.intro}</p>

@@ -25,8 +25,11 @@ export interface PushApi {
   sendTest(deviceId: string): Promise<void>;
   /** The settings of the device, or `null` when the server does not know the device (any more). */
   settings(deviceId: string): Promise<PushSettings | null>;
-  /** Saves the settings of the device. Throws `settingsInvalid` for settings that break the rules. */
-  updateSettings(deviceId: string, settings: PushSettings): Promise<void>;
+  /**
+   * Saves the settings of the device, and tells the server the device's language along with them
+   * (EN-c). Throws `settingsInvalid` for settings that break the rules.
+   */
+  updateSettings(deviceId: string, settings: PushSettings, locale: string): Promise<void>;
 }
 
 /** A step of the notifications that failed, with the reason (`NOTIFICATION_TEXTS` has the words). */

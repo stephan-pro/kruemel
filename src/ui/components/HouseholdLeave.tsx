@@ -1,6 +1,7 @@
 import { Download, LogOut, UserMinus } from "lucide-preact";
 import { useRef, useState } from "preact/hooks";
 import { ACCOUNT_TEXTS } from "../accountTexts";
+import { type Failure, failureOf } from "../errorText";
 import { LEAVE_TEXTS } from "../householdTexts";
 import { householdMessage } from "../pages/HouseholdPage";
 import { ErrorAlert } from "./Alert";
@@ -46,7 +47,7 @@ interface RemoveMemberProps {
 export function RemoveMember({ name, onRemove }: RemoveMemberProps) {
   const [asking, setAsking] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [failed, setFailed] = useState<string>();
+  const [failed, setFailed] = useState<Failure>();
   const opener = useRef<HTMLButtonElement | null>(null);
 
   async function remove() {
@@ -55,7 +56,7 @@ export function RemoveMember({ name, onRemove }: RemoveMemberProps) {
     try {
       await onRemove();
     } catch (error) {
-      setFailed(householdMessage(error));
+      setFailed(failureOf(error));
       opener.current?.focus();
     } finally {
       setBusy(false);
@@ -80,7 +81,9 @@ export function RemoveMember({ name, onRemove }: RemoveMemberProps) {
         <UserMinus size={20} />
         {LEAVE_TEXTS.remove(name)}
       </button>
-      {failed && <ErrorAlert title={LEAVE_TEXTS.removeFailed}>{failed}</ErrorAlert>}
+      {failed && (
+        <ErrorAlert title={LEAVE_TEXTS.removeFailed}>{householdMessage(failed.cause)}</ErrorAlert>
+      )}
       <ConfirmDialog
         open={asking}
         title={LEAVE_TEXTS.removeQuestion(name)}
@@ -114,7 +117,7 @@ export function LeaveHousehold({ other, onPrepare, onLeave, onBackup }: LeaveHou
   const [asking, setAsking] = useState(false);
   const [busy, setBusy] = useState(false);
   const [pending, setPending] = useState(0);
-  const [failed, setFailed] = useState<string>();
+  const [failed, setFailed] = useState<Failure>();
   const opener = useRef<HTMLButtonElement | null>(null);
   const last = other === undefined;
 
@@ -137,7 +140,7 @@ export function LeaveHousehold({ other, onPrepare, onLeave, onBackup }: LeaveHou
       await onLeave();
     } catch (error) {
       setBusy(false);
-      setFailed(householdMessage(error));
+      setFailed(failureOf(error));
       opener.current?.focus();
     }
   }
@@ -158,7 +161,9 @@ export function LeaveHousehold({ other, onPrepare, onLeave, onBackup }: LeaveHou
       <p class="form-status" role="status">
         {busy ? ACCOUNT_TEXTS.busy : ""}
       </p>
-      {failed && <ErrorAlert title={LEAVE_TEXTS.leaveFailed}>{failed}</ErrorAlert>}
+      {failed && (
+        <ErrorAlert title={LEAVE_TEXTS.leaveFailed}>{householdMessage(failed.cause)}</ErrorAlert>
+      )}
       <ConfirmDialog
         open={asking}
         title={LEAVE_TEXTS.leaveQuestion}

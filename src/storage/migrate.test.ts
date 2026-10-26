@@ -1,5 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
+import { resetLanguage, setLanguage } from "../i18n/language";
 import { emptyAppData, SCHEMA_VERSION } from "./appData";
+import { importData } from "./exportImport";
 import { migrateAppData } from "./migrate";
 import { asVersion1, asVersion2, sampleData } from "./storage.fixtures";
 import { parseAppData } from "./validate";
@@ -11,6 +13,42 @@ function migrated(raw: unknown) {
   }
   return result.value;
 }
+
+describe("EN-c Fundstellen in der Sprache der Anzeige", () => {
+  afterEach(() => resetLanguage());
+
+  it("Fehler in einer Sicherung, den Daten oder der Kopie nennen die Stelle in der eingestellten Sprache", () => {
+    const broken = { schemaVersion: SCHEMA_VERSION, settings: {}, tasks: "x", completions: [{}] };
+
+    const german = parseAppData(broken);
+    const germanErrors = german.ok ? [] : german.errors;
+    expect(germanErrors).toContain("tasks: erwartet eine Liste");
+
+    setLanguage("en");
+    const english = parseAppData(broken);
+    const englishErrors = english.ok ? [] : english.errors;
+    expect(englishErrors).toContain("tasks: expected a list");
+    expect(englishErrors.some((line) => /completions\[0\]\.id: missing/.test(line))).toBe(true);
+    expect(parseAppData({ ...broken, tasks: [{ id: 3 }] }).ok).toBe(false);
+    expect(errorsOf(5)).toEqual(["File: expected an object"]);
+    expect(errorsOf({})).toEqual(["The file is not a Krümel backup (the version is missing)."]);
+    expect(errorsOf({ schemaVersion: SCHEMA_VERSION + 1 })).toEqual([
+      "This data comes from a newer version of Krümel. Reload the app and try again.",
+    ]);
+    expect(importData("kein JSON")).toEqual({
+      ok: false,
+      errors: ["The file is not a Krümel backup."],
+    });
+    // The wrong value of a field says what it should have been.
+    const wrongDate = parseAppData({
+      ...emptyAppData(),
+      tasks: [{ id: "t", kind: "oneOff", title: "x", dueDate: "morgen", assignee: "both" }],
+    });
+    expect(wrongDate.ok ? [] : wrongDate.errors).toContain(
+      "tasks[0].dueDate: invalid, expected a date YYYY-MM-DD",
+    );
+  });
+});
 
 function errorsOf(raw: unknown): readonly string[] {
   const result = migrateAppData(raw);

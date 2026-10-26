@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { dayFromDate } from "../domain/date";
+import { resetLanguage, setLanguage } from "../i18n/language";
 import { createLocalStorage } from "../storage/localStorage";
 import { FakeStore } from "../storage/storage.fixtures";
 import { DEMO_NAMESPACE, demoData } from "./demoData";
@@ -32,6 +33,26 @@ describe("startDemo", () => {
     });
     const storage = createLocalStorage({ store, namespace: DEMO_NAMESPACE });
     expect(await storage.load()).toEqual(expected);
+  });
+
+  it("EN-c schreibt die Wörter der Beispieldaten in der Sprache des Geräts; ein Neuladen mit ?demo=neu übernimmt die neue", async () => {
+    const store = new FakeStore();
+    const storage = createLocalStorage({ store, namespace: DEMO_NAMESPACE });
+    try {
+      setLanguage("en");
+      await startDemo(store, "", now);
+      expect(await storage.load()).toEqual(demoData(dayFromDate(now), "en"));
+
+      // Switching the language later does not translate what is stored ...
+      setLanguage("de");
+      await startDemo(store, "", now);
+      expect(await storage.load()).toEqual(demoData(dayFromDate(now), "en"));
+      // ... but fresh example data have the words of the language then set.
+      await startDemo(store, "?demo=neu", now);
+      expect(await storage.load()).toEqual(demoData(dayFromDate(now), "de"));
+    } finally {
+      resetLanguage();
+    }
   });
 
   it("lädt mit ?demo=neu frische Daten und meldet das", async () => {

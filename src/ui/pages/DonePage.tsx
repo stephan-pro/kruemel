@@ -7,7 +7,7 @@ import type { PersonNames } from "../../storage/appData";
 import { ErrorAlert } from "../components/Alert";
 import { PageTitle } from "../components/PageTitle";
 import { TaskSymbol } from "../components/TaskSymbol";
-import { errorText } from "../errorText";
+import { errorText, type Failure, failureOf } from "../errorText";
 import { countEntries, describeCompletedBy, undoNotice } from "../format";
 import { routeInfo } from "../route";
 
@@ -26,7 +26,7 @@ interface DonePageProps {
 export function DonePage({ tasks, completions, names, onUndo }: DonePageProps) {
   const [notice, setNotice] = useState<string>();
   const [noticeCount, setNoticeCount] = useState(0);
-  const [error, setError] = useState<string>();
+  const [error, setError] = useState<Failure>();
   const noticeBox = useRef<HTMLElement>(null);
   const busy = useRef(false);
   const entries = doneEntries(tasks, completions);
@@ -50,7 +50,7 @@ export function DonePage({ tasks, completions, names, onUndo }: DonePageProps) {
       setNotice(undoNotice(title, task.dueDate));
       setNoticeCount((count) => count + 1);
     } catch (failure) {
-      setError(errorText(failure));
+      setError(failureOf(failure));
     } finally {
       busy.current = false;
     }
@@ -65,7 +65,7 @@ export function DonePage({ tasks, completions, names, onUndo }: DonePageProps) {
         </section>
       )}
       <div class="page-stack">
-        {error && <ErrorAlert title={t().common.notSaved}>{error}</ErrorAlert>}
+        {error && <ErrorAlert title={t().common.notSaved}>{errorText(error.cause)}</ErrorAlert>}
 
         <section class="tile" aria-labelledby="erledigt-liste">
           <div class="tile__head">

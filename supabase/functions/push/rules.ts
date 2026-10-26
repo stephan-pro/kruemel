@@ -94,10 +94,39 @@ export function fromBase64Url(text: string): Uint8Array {
 }
 
 /**
+ * The languages of the messages (EN-c). Each device has one (`push_devices.locale`, told by the app
+ * when it registers, saves its settings and changes its language); a value the server does not know
+ * counts as German, in the database (`private.push_language`) as here.
+ */
+export const PUSH_LANGUAGES = ["de", "en"] as const;
+
+export type PushLanguage = (typeof PUSH_LANGUAGES)[number];
+
+/** The language for what a device (or an old row) says: "en" or else German. */
+export function pushLanguageOf(value: unknown): PushLanguage {
+  return value === "en" ? "en" : "de";
+}
+
+/**
+ * How a payload names its language: `l: "en"` for English, nothing for German. The device writes
+ * the text (the service worker knows both languages, `src/push/messageTexts.ts`); a payload
+ * without `l` is German, so devices and servers of before EN-c still understand each other.
+ */
+export type LanguageField = { readonly l?: "en" };
+
+function languageField(language: PushLanguage): LanguageField {
+  return language === "en" ? { l: "en" } : {};
+}
+
+/**
  * What a push carries (encrypted, small, without texts; the device writes the text): the test
  * notification (NT-a) and the daily overview (`DailyPayload`, NT-c).
  */
-export const TEST_PAYLOAD = { v: 1, k: "test" } as const;
+export type TestPayload = { readonly v: 1; readonly k: "test" } & LanguageField;
+
+export function testPayload(language: PushLanguage = "de"): TestPayload {
+  return { v: 1, k: "test", ...languageField(language) };
+}
 
 /** How long the push service keeps a test notification for a device that is off: 5 minutes. */
 export const TEST_TTL_SECONDS = 300;
@@ -112,10 +141,14 @@ export type DailyPayload = {
   readonly k: "daily";
   readonly due: number;
   readonly overdue: number;
-};
+} & LanguageField;
 
-export function dailyPayload(due: number, overdue: number): DailyPayload {
-  return { v: 1, k: "daily", due, overdue };
+export function dailyPayload(
+  due: number,
+  overdue: number,
+  language: PushLanguage = "de",
+): DailyPayload {
+  return { v: 1, k: "daily", due, overdue, ...languageField(language) };
 }
 
 /** How long the push service keeps a daily overview for a device that is off: 6 hours. */
@@ -132,24 +165,39 @@ export type PartnerPayload = {
   readonly name?: string;
   readonly done: number;
   readonly took: number;
-};
+} & LanguageField;
 
 export function partnerPayload(
   name: string | undefined,
   done: number,
   took: number,
+  language: PushLanguage = "de",
 ): PartnerPayload {
-  return { v: 1, k: "partner", ...(name === undefined ? {} : { name }), done, took };
+  return {
+    v: 1,
+    k: "partner",
+    ...(name === undefined ? {} : { name }),
+    done,
+    took,
+    ...languageField(language),
+  };
 }
 
 /** How long the push service keeps a message about the other person: 12 hours. */
 export const PARTNER_TTL_SECONDS = 12 * 60 * 60;
 
 /** Somebody joined the household (NT-d): only their name in it, if the household has names. */
-export type JoinedPayload = { readonly v: 1; readonly k: "joined"; readonly name?: string };
+export type JoinedPayload = {
+  readonly v: 1;
+  readonly k: "joined";
+  readonly name?: string;
+} & LanguageField;
 
-export function joinedPayload(name: string | undefined): JoinedPayload {
-  return { v: 1, k: "joined", ...(name === undefined ? {} : { name }) };
+export function joinedPayload(
+  name: string | undefined,
+  language: PushLanguage = "de",
+): JoinedPayload {
+  return { v: 1, k: "joined", ...(name === undefined ? {} : { name }), ...languageField(language) };
 }
 
 /** How long the push service keeps a message about joining: 24 hours. */

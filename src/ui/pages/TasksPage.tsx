@@ -8,7 +8,7 @@ import { ErrorAlert } from "../components/Alert";
 import { DeleteTaskDialog } from "../components/DeleteTaskDialog";
 import { PageTitle } from "../components/PageTitle";
 import { TaskSymbol } from "../components/TaskSymbol";
-import { errorText } from "../errorText";
+import { errorText, type Failure, failureOf } from "../errorText";
 import { describeRecurrence, describeResponsibility, formatDay } from "../format";
 import { editTaskHash, routeInfo } from "../route";
 
@@ -34,7 +34,7 @@ export function TasksPage({
   onLeave,
 }: TasksPageProps) {
   const [deleting, setDeleting] = useState<Task>();
-  const [deleteError, setDeleteError] = useState<string>();
+  const [deleteError, setDeleteError] = useState<Failure>();
   // The live region is there from the start and gets its text afterwards: text that is already in
   // a region when the page appears is not reliably announced.
   const [announced, setAnnounced] = useState<string>();
@@ -61,7 +61,7 @@ export function TasksPage({
       await onDelete(task.id);
       setFocusHeading((count) => count + 1);
     } catch (error) {
-      setDeleteError(errorText(error));
+      setDeleteError(failureOf(error));
     }
   }
 
@@ -72,7 +72,9 @@ export function TasksPage({
       </div>
       <div class="page-stack">
         <div role="status">{announced && <p class="success-note">{announced}</p>}</div>
-        {deleteError && <ErrorAlert title={t().common.notDeleted}>{deleteError}</ErrorAlert>}
+        {deleteError && (
+          <ErrorAlert title={t().common.notDeleted}>{errorText(deleteError.cause)}</ErrorAlert>
+        )}
 
         {groups.recurring.length === 0 && groups.oneOff.length === 0 && (
           <div class="tile">

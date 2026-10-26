@@ -1,9 +1,10 @@
 // What the service worker shows for a push (NT-a): the server sends only codes and numbers
 // (`{"v":1,"k":"test"}`, NT-c `{"v":1,"k":"daily","due":3,"overdue":1}`, NT-d
 // `{"v":1,"k":"partner","name":"Robin","done":2,"took":1}` and `{"v":1,"k":"joined","name":"Robin"}`),
-// the device writes the text. Pure, so it is tested without a worker.
+// the device writes the text. For a device whose language is English the server adds `"l":"en"` (EN-c);
+// without it the text is German. Pure, so it is tested without a worker.
 
-import { PUSH_MESSAGE_TEXTS } from "./messageTexts";
+import { type MessageLanguage, messageLanguageOf, messageTextsFor } from "./messageTexts";
 
 /**
  * The pages a tap on a message may open. "#/einstellungen" stays for messages shown before UX-a
@@ -40,7 +41,16 @@ function nameOf(value: unknown): string | undefined {
     : undefined;
 }
 
-/** The message for a push's payload; anything unreadable gets the general one. */
+/** The language a payload names (`l`, EN-c); German if it names none or cannot be read. */
+export function languageOf(payload: unknown): MessageLanguage {
+  const named = (payload as { l?: unknown } | null | undefined)?.l;
+  return messageLanguageOf(named);
+}
+
+/**
+ * The message for a push's payload, in the language the payload names; anything unreadable gets
+ * the general one.
+ */
 export function notificationFor(payload: unknown): ShownNotification {
   const kind =
     (payload as
@@ -55,9 +65,10 @@ export function notificationFor(payload: unknown): ShownNotification {
         }
       | null
       | undefined) ?? {};
-  const title = PUSH_MESSAGE_TEXTS.title;
+  const texts = messageTextsFor(languageOf(payload));
+  const title = texts.title;
   if (kind.v === 1 && kind.k === "test") {
-    return { title, body: PUSH_MESSAGE_TEXTS.test, tag: "test", open: "#/heute" };
+    return { title, body: texts.test, tag: "test", open: "#/heute" };
   }
   const { due, overdue, done, took } = kind;
   if (
@@ -68,12 +79,12 @@ export function notificationFor(payload: unknown): ShownNotification {
     due > 0 &&
     overdue <= due
   ) {
-    return { title, body: PUSH_MESSAGE_TEXTS.daily(due, overdue), tag: "daily", open: "#/heute" };
+    return { title, body: texts.daily(due, overdue), tag: "daily", open: "#/heute" };
   }
   if (kind.v === 1 && kind.k === "partner" && isCount(done) && isCount(took) && done + took > 0) {
     return {
       title,
-      body: PUSH_MESSAGE_TEXTS.partner(nameOf(kind.name), done, took),
+      body: texts.partner(nameOf(kind.name), done, took),
       tag: "partner",
       // What was done is in "Erledigt"; what was only taken over, in the week.
       open: done > 0 ? "#/erledigt" : "#/woche",
@@ -82,13 +93,13 @@ export function notificationFor(payload: unknown): ShownNotification {
   if (kind.v === 1 && kind.k === "joined") {
     return {
       title,
-      body: PUSH_MESSAGE_TEXTS.joined(nameOf(kind.name)),
+      body: texts.joined(nameOf(kind.name)),
       tag: "joined",
       // Who joined is seen under "Konto und Haushalt".
       open: "#/einstellungen/konto",
     };
   }
-  return { title, body: PUSH_MESSAGE_TEXTS.fallback, tag: "kruemel", open: "#/heute" };
+  return { title, body: texts.fallback, tag: "kruemel", open: "#/heute" };
 }
 
 /** The payload of a push event: its JSON, or `undefined` if there is none or it is not JSON. */

@@ -45,7 +45,8 @@
       // EN-a: the language of the page before the first drawing, by the rule of
       // src/i18n/language.ts: the choice kept on this device, else the browser's (en gives
       // English, everything else German). In this one script: the content security policy
-      // (src/csp.ts) allows exactly one inline script.
+      // (src/csp.ts) allows exactly one inline script. The title "Krümel" is the same in both
+      // languages; the loading picture below has a text for each and app.css shows the one that fits.
       (() => {
         let language = "";
         try {
@@ -68,7 +69,10 @@
       <div class="splash" role="status">
         <img class="splash__icon" src="%BASE_URL%icon.svg" alt="" width="96" height="96" />
         <p class="splash__name">Krümel</p>
-        <p class="splash__text">Wird geladen …</p>
+        <!-- One text per language (EN-c): the script above has set `lang` before the first drawing,
+             and app.css shows the one that fits, so the language never changes under the eye. -->
+        <p class="splash__text" lang="de">Wird geladen …</p>
+        <p class="splash__text" lang="en">Loading …</p>
       </div>
     </div>
     <script type="module" src="/src/main.tsx"></script>

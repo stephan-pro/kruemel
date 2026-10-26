@@ -92,6 +92,8 @@ function server() {
   const settings = new Map<string, PushSettings>();
   const tests: string[] = [];
   const apiCalls: string[] = [];
+  /** The language each device told with its settings (EN-c), in the order of the calls. */
+  const settingsLanguages: string[] = [];
   const state: { failure?: PushError; fail: Partial<Record<ApiCall, PushError>> } = { fail: {} };
   const enter = (call: ApiCall) => {
     apiCalls.push(call);
@@ -117,12 +119,13 @@ function server() {
       enter("settings");
       return settings.get(deviceId) ?? null;
     },
-    updateSettings: async (deviceId, next) => {
+    updateSettings: async (deviceId, next, locale) => {
       enter("updateSettings");
       settings.set(deviceId, next);
+      settingsLanguages.push(locale);
     },
   };
-  return { api, devices, settings, tests, apiCalls, state };
+  return { api, devices, settings, tests, apiCalls, settingsLanguages, state };
 }
 
 function setup(
@@ -130,6 +133,7 @@ function setup(
     publicKey?: string;
     userId?: string;
     timeZone?: () => string;
+    locale?: () => string;
   } = {},
 ) {
   const b = browser(options);
@@ -143,6 +147,7 @@ function setup(
       publicKey: options.publicKey ?? KEY,
       userId,
       timeZone: options.timeZone ?? (() => "Europe/Berlin"),
+      ...(options.locale === undefined ? {} : { locale: options.locale }),
     });
   return { ...b, ...s, store, notifications: make(), make };
 }
@@ -372,6 +377,35 @@ describe("NT-b Abgleich beim Start", () => {
       timeZone: "America/New_York",
     });
     expect(await notifications.status()).toBe("active");
+  });
+
+  it("EN-c Die Sprache des Geräts geht beim Einschalten, beim Abgleich (auch nach einem Sprachwechsel) und mit den Einstellungen zum Server; ohne Angabe Deutsch", async () => {
+    let language = "en";
+    const { notifications, devices, settingsLanguages, state } = setup({ locale: () => language });
+    await notifications.enable();
+    const deviceId = [...devices.keys()][0] ?? "";
+    expect(devices.get(deviceId)?.locale).toBe("en");
+
+    // The person switches the language: the app asks for an unforced sync at once.
+    language = "de";
+    await notifications.sync(true);
+    expect(devices.get(deviceId)?.locale).toBe("de");
+
+    await notifications.saveSettings(DEFAULT_PUSH_SETTINGS);
+    language = "en";
+    expect(settingsLanguages).toEqual(["de"]);
+    // Saved without internet: it goes out later with the language of that moment.
+    state.fail.updateSettings = new PushError("offline");
+    await notifications.saveSettings({ ...DEFAULT_PUSH_SETTINGS, householdEnabled: false });
+    delete state.fail.updateSettings;
+    language = "de";
+    await notifications.sendWaitingSettings();
+    expect(settingsLanguages).toEqual(["de", "de"]);
+
+    // Nothing named: German.
+    const plain = setup();
+    await plain.notifications.enable();
+    expect([...plain.devices.values()][0]?.locale).toBe("de");
   });
 
   it("NT-b Hat der Browser die Adresse verloren, macht die App still eine neue; gelingt das nicht: abgemeldet", async () => {

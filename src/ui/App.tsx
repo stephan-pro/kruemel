@@ -14,6 +14,7 @@ import {
   undoInData,
 } from "../domain/taskManagement";
 import { t } from "../i18n";
+import { subscribeLanguage } from "../i18n/language";
 import { useLanguage } from "../i18n/useLanguage";
 import type { Notifications } from "../push/notifications";
 import { onNewVersion } from "../registerServiceWorker";
@@ -57,7 +58,7 @@ import {
 import { LEAVE_TEXTS, SHARED_TEXTS } from "./householdTexts";
 import { offersInstallHint, useInstallWay } from "./install";
 import { DonePage } from "./pages/DonePage";
-import { HouseholdPage, HouseholdUnavailablePage } from "./pages/HouseholdPage";
+import { HouseholdPage, HouseholdUnavailablePage, householdMessage } from "./pages/HouseholdPage";
 import { InvitePage } from "./pages/InvitePage";
 import { LegalPage } from "./pages/LegalPage";
 import { SettingsPage } from "./pages/SettingsPage";
@@ -272,7 +273,8 @@ export function App({
     [push, session?.userId],
   );
   // At every start, and when the internet is back: tell the server this device is still in use,
-  // with the time zone it is in now (NT-b), and finish what waited for the internet.
+  // with the time zone it is in now (NT-b), and finish what waited for the internet. A switch of
+  // the language is told too: the server writes the messages in the language of each device (EN-c).
   useEffect(() => {
     if (notifications === undefined) {
       return;
@@ -280,7 +282,11 @@ export function App({
     void notifications.sync();
     const again = () => void notifications.sync(true);
     window.addEventListener("online", again);
-    return () => window.removeEventListener("online", again);
+    const unsubscribe = subscribeLanguage(again);
+    return () => {
+      window.removeEventListener("online", again);
+      unsubscribe();
+    };
   }, [notifications]);
   const [invite, setInvite] = useState(() => takeInvite(householdApi !== undefined));
   const [friendInvite, setFriendInvite] = useState(() =>
@@ -1002,7 +1008,10 @@ export function App({
             />
           )}
           {gate === "unavailable" && household.state.status === "failed" && (
-            <HouseholdUnavailablePage message={household.state.message} onRetry={household.retry} />
+            <HouseholdUnavailablePage
+              message={householdMessage(household.state.cause)}
+              onRetry={household.retry}
+            />
           )}
           {gate === "invite" && session && (
             <InvitePage

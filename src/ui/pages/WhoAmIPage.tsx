@@ -5,7 +5,7 @@ import type { PersonNames } from "../../storage/appData";
 import { ErrorAlert } from "../components/Alert";
 import { PageTitle } from "../components/PageTitle";
 import { PersonChoice } from "../components/PersonChoice";
-import { errorText } from "../errorText";
+import { errorText, type Failure, failureOf } from "../errorText";
 
 interface WhoAmIPageProps {
   readonly names: PersonNames;
@@ -17,7 +17,7 @@ export function WhoAmIPage({ names, onSubmit }: WhoAmIPageProps) {
   const [person, setPerson] = useState<Person>();
   /** Nobody was chosen; the sentence is read when drawing, so it follows the language. */
   const [missing, setMissing] = useState(false);
-  const [saveError, setSaveError] = useState<string>();
+  const [saveError, setSaveError] = useState<Failure>();
 
   async function submit(event: Event) {
     event.preventDefault();
@@ -30,7 +30,7 @@ export function WhoAmIPage({ names, onSubmit }: WhoAmIPageProps) {
     try {
       await onSubmit(person);
     } catch (caught) {
-      setSaveError(errorText(caught));
+      setSaveError(failureOf(caught));
     }
   }
 
@@ -44,7 +44,9 @@ export function WhoAmIPage({ names, onSubmit }: WhoAmIPageProps) {
           error={missing ? t().formErrors.personMissing : undefined}
           onChange={setPerson}
         />
-        {saveError && <ErrorAlert title={t().common.notSaved}>{saveError}</ErrorAlert>}
+        {saveError && (
+          <ErrorAlert title={t().common.notSaved}>{errorText(saveError.cause)}</ErrorAlert>
+        )}
         <div class="button-row">
           <button class="btn btn--primary" type="submit">
             {t().names.whoSubmit}

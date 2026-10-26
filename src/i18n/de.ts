@@ -3,9 +3,12 @@
 // numbers or names are functions that return a whole sentence, so every language can put the
 // parts where its own word order wants them; counts go through `plural`.
 //
-// Not here yet (EN-c): notifications, legal texts, the loading picture, the web app manifest, the
-// e-mail template and the demo data. They stay German in both languages until then.
+// Not in this file, because they cannot import it: the texts of the messages the service worker shows
+// (`src/push/messageTexts.ts`, both languages in one file), the loading picture and the title in
+// `index.html`, the e-mail template (`supabase/templates/code.html`) and the long legal texts, which
+// have both languages side by side in `src/ui/legalTexts.ts`.
 
+import type { PushFailure } from "../../supabase/functions/push/rules";
 import {
   CODE_DIGITS,
   CODE_MINUTES,
@@ -14,6 +17,7 @@ import {
   INVITE_DAYS,
   NAME_MAX,
 } from "../auth/limits";
+import type { NotificationWay } from "../ui/notificationTexts";
 import { formatNumber, plural } from "./intl";
 
 /** The sentence under the greeting in three parts, so the count can be set in bold. */
@@ -41,7 +45,6 @@ export const de = {
     settingsAppearance: { label: "Darstellung", title: "Darstellung" },
     settingsData: { label: "Daten", title: "Daten" },
     settingsLegal: { label: "Rechtliches", title: "Rechtliches" },
-    // The legal pages keep their German names until their texts are translated (EN-c).
     imprint: { label: "Impressum", title: "Impressum" },
     privacy: { label: "Datenschutz", title: "Datenschutzerklärung" },
     taskNew: { label: "Neue Aufgabe", title: "Neue Aufgabe" },
@@ -943,6 +946,191 @@ export const de = {
     confirm: "Ja, Daten löschen",
     dialog:
       "Die gespeicherten Daten in diesem Browser werden gelöscht. Das lässt sich nicht rückgängig machen. Die heruntergeladene Datei bleibt erhalten.",
+  },
+
+  /**
+   * The tile "Benachrichtigungen" and its settings (NT-a, NT-b). The texts of the messages
+   * themselves are in `src/push/messageTexts.ts`: the service worker may not import this file.
+   */
+  notifications: {
+    /** Where the notifications of this device stand. */
+    status: {
+      checking: "Wird geprüft …",
+      unavailable:
+        "Benachrichtigungen gibt es nur in der gemeinsamen Version von Krümel, mit Anmeldung.",
+      notConfigured:
+        "Benachrichtigungen sind noch nicht eingerichtet. Sobald sie es sind, kannst du sie hier aktivieren.",
+      unsupported: "Dieser Browser kann keine Benachrichtigungen empfangen.",
+      iosHomeScreen:
+        "Auf dem iPhone gibt es Benachrichtigungen nur in der Krümel-App vom Home-Bildschirm. Füge Krümel zuerst zum Home-Bildschirm hinzu, öffne es von dort und aktiviere die Benachrichtigungen dann hier.",
+      blocked: "Blockiert: Dieser Browser darf Krümel keine Benachrichtigungen schicken.",
+      off: "Auf diesem Gerät nicht aktiviert.",
+      lost: "Dieses Gerät ist abgemeldet: Der Browser oder der Server hat die Benachrichtigungen beendet, zum Beispiel weil das Gerät lange nicht benutzt wurde. Schalte sie wieder ein, dann kommen sie wieder an.",
+      active: "Auf diesem Gerät aktiv.",
+    },
+    tile: {
+      tileTitle: "Benachrichtigungen",
+      intro:
+        "Krümel kann dir Nachrichten auf dieses Gerät schicken, auch wenn die App geschlossen ist. Der Browser fragt erst, wenn du auf „Aktivieren“ tippst.",
+      /** Only in the test build (mode `e2e`): nothing reaches a real device there. */
+      testOnly: "Testumgebung: Testbenachrichtigungen werden nur aufgezeichnet, nicht zugestellt.",
+      enable: "Aktivieren",
+      /** For a device that was switched on before and got lost. */
+      reenable: "Neu einschalten",
+      sendTest: "Testbenachrichtigung senden",
+      disable: "Auf diesem Gerät ausschalten",
+      busy: "Einen Moment …",
+      enabled: "Aktiviert. Probier es mit einer Testbenachrichtigung aus.",
+      testSent: "Gesendet. Die Testbenachrichtigung sollte in wenigen Sekunden erscheinen.",
+      turnedOff: "Ausgeschaltet. Du kannst Benachrichtigungen jederzeit wieder aktivieren.",
+      notAsked: "Du hast die Frage des Browsers geschlossen. Tippe noch einmal auf „Aktivieren“.",
+      enableFailed: "Nicht aktiviert",
+      testFailed: "Nicht gesendet",
+      disableFailed: "Nicht ausgeschaltet",
+      blockedGuide: "So erlaubst du Benachrichtigungen wieder",
+      blockedAfter: "Danach diese Seite neu laden.",
+      iosGuide: "So kommt Krümel auf den Home-Bildschirm",
+      /** In the question before signing out, while notifications are on here. */
+      signOutNote: "Benachrichtigungen auf diesem Gerät werden ausgeschaltet.",
+    },
+    /** Monday first, as the bit mask of the settings counts (`dailyDays`); short and full name. */
+    weekdays: [
+      { short: "Mo", full: "Montag" },
+      { short: "Di", full: "Dienstag" },
+      { short: "Mi", full: "Mittwoch" },
+      { short: "Do", full: "Donnerstag" },
+      { short: "Fr", full: "Freitag" },
+      { short: "Sa", full: "Samstag" },
+      { short: "So", full: "Sonntag" },
+    ] as { short: string; full: string }[],
+    /** The settings of a device (NT-b), shown while notifications are on. */
+    settings: {
+      title: "Einstellungen für dieses Gerät",
+      intro:
+        "Diese Einstellungen gelten nur für dieses Gerät. Auf einem anderen Gerät kannst du es anders wählen.",
+      loading: "Die Einstellungen werden geladen …",
+      unreachable:
+        "Der Server ist gerade nicht erreichbar. Die Einstellungen erscheinen, sobald du wieder online bist.",
+      retry: "Erneut versuchen",
+      /** Said in the tile when nothing about the settings could be read. */
+      loadFailed: "Einstellungen nicht geladen",
+      dailyLabel: "Tagesüberblick",
+      dailyHint:
+        "Morgens eine Nachricht, was heute für dich ansteht. Steht nichts an, kommt auch keine.",
+      dailyTimeLabel: "Uhrzeit des Tagesüberblicks",
+      dailyDaysLegend: "An diesen Tagen",
+      partnerLabel: (name: string) => `Wenn ${name} etwas für dich erledigt oder übernimmt`,
+      partnerHint: "Eine Nachricht, kurz nachdem es passiert ist. Mehrere werden zusammengefasst.",
+      /** Instead of the other person's name when the household does not tell it. */
+      otherPerson: "die andere Person",
+      householdLabel: "Wenn jemand dem Haushalt beitritt",
+      quietLabel: "Ruhezeit",
+      quietHint:
+        "In dieser Zeit warten Nachrichten über die andere Person und über den Haushalt. Sie kommen gesammelt danach. Der Tagesüberblick kommt immer zur gewählten Uhrzeit.",
+      quietFromLabel: "Ruhezeit von",
+      quietToLabel: "Ruhezeit bis",
+      save: "Speichern",
+      saving: "Wird gespeichert …",
+      saved: "Gespeichert.",
+      /** Chosen on this device, the server has no news yet. */
+      pending:
+        "Gespeichert, aber noch nicht übertragen. Sobald du wieder online bist, wird es gesendet.",
+      pendingNote: "Noch nicht übertragen.",
+      nowSent: "Jetzt übertragen.",
+      saveFailed: "Nicht gespeichert",
+      /** Beside the fields when a value is wrong (`pushSettingsProblems`). */
+      problems: {
+        dailyTime: "Bitte gib eine Uhrzeit an, zum Beispiel 07:30.",
+        dailyDays: "Wähle mindestens einen Tag.",
+        quietFrom: "Bitte gib an, wann die Ruhezeit beginnt, zum Beispiel 21:00.",
+        quietTo: "Bitte gib an, wann die Ruhezeit endet, zum Beispiel 07:00.",
+        quietSame: "Beginn und Ende der Ruhezeit dürfen nicht gleich sein.",
+      },
+    },
+    /** Why a step failed, in words for the person (one per `PushFailure`). */
+    failures: {
+      notSignedIn: "Deine Anmeldung ist abgelaufen. Bitte melde dich neu an.",
+      notConfigured:
+        "Benachrichtigungen sind auf dem Server noch nicht eingerichtet. Bitte versuch es später noch einmal.",
+      badRequest: "Das hat nicht geklappt. Bitte schalte Benachrichtigungen aus und wieder ein.",
+      deviceUnknown:
+        "Dieses Gerät ist für Benachrichtigungen nicht mehr angemeldet. Bitte aktiviere sie neu.",
+      deviceGone:
+        "Der Browser hat die Benachrichtigungen für dieses Gerät beendet. Bitte aktiviere sie neu.",
+      testWait: "Bitte warte eine Minute bis zur nächsten Testbenachrichtigung.",
+      testToday: "Für heute sind genug Testbenachrichtigungen verschickt. Morgen geht es wieder.",
+      keyChanged:
+        "Die Benachrichtigungen wurden neu eingerichtet. Bitte schalte sie auf diesem Gerät aus und wieder ein.",
+      endpointInvalid: "Dieser Browser wird für Benachrichtigungen nicht unterstützt.",
+      settingsInvalid:
+        "Diese Einstellungen sind nicht möglich. Bitte prüfe die Uhrzeiten und die Tage und versuch es noch einmal.",
+      pushFailed:
+        "Der Benachrichtigungsdienst des Browsers ist gerade nicht erreichbar. Bitte versuch es in ein paar Minuten noch einmal.",
+      pushRejected:
+        "Der Benachrichtigungsdienst des Browsers hat die Nachricht abgelehnt. Das liegt an der Einrichtung auf dem Server, nicht an deinem Gerät; ein neuer Versuch hilft erst, wenn sie behoben ist.",
+      notFound: "Das hat nicht geklappt. Bitte lade die App neu.",
+      offline: "Ohne Internet geht das nicht. Bitte versuch es mit Verbindung noch einmal.",
+      noWorker: "Krümel ist auf diesem Gerät noch nicht fertig geladen. Bitte lade die Seite neu.",
+      unknown: "Das hat nicht geklappt. Bitte versuch es später noch einmal.",
+    } satisfies Record<PushFailure, string>,
+    /** How to allow notifications again, for the browser at hand (`NotificationWay`). */
+    blockedSteps: {
+      ios: [
+        "Öffne die Einstellungen-App des iPhones.",
+        "Tippe auf „Mitteilungen“ und dann auf „Krümel“.",
+        "Schalte „Mitteilungen erlauben“ ein.",
+      ],
+      firefoxAndroid: [
+        "In Firefox das Menü ⋮ öffnen, dann Einstellungen → Website-Berechtigungen → Benachrichtigungen.",
+        "Die Adresse von Krümel wählen und „Erlauben“ einstellen.",
+        "In den Android-Einstellungen unter Apps → Firefox → Benachrichtigungen einschalten.",
+        "Auf Handys von Xiaomi, Redmi und POCO außerdem: Apps → Firefox → Akku → „Keine Einschränkungen“ und Autostart einschalten.",
+      ],
+      other: [
+        "Auf das Symbol links neben der Adresse klicken oder tippen.",
+        "„Berechtigungen“ oder „Website-Einstellungen“ öffnen und bei „Benachrichtigungen“ „Zulassen“ wählen.",
+        "Unter Windows zusätzlich: Einstellungen → System → Benachrichtigungen → den Browser einschalten und „Nicht stören“ ausschalten.",
+      ],
+    } as Record<NotificationWay, string[]>,
+  },
+
+  /**
+   * The places found wrong in a backup file or in the stored data ("tasks[0].title: fehlt"). Shown
+   * folded, as details for troubleshooting (`ErrorDetails`); the paths in front stay as they are.
+   */
+  validation: {
+    expectedObject: "erwartet ein Objekt",
+    expectedList: "erwartet eine Liste",
+    expectedKind: "erwartet recurring oder oneOff",
+    missing: "fehlt",
+    invalid: (expected: string) => `ungültig, erwartet ${expected}`,
+    duplicate: (id: string) => `die Kennung „${id}“ kommt mehrfach vor`,
+    noTask: (id: string) => `es gibt keine Aufgabe „${id}“`,
+    /** What a field should have been; after "ungültig, erwartet". */
+    expected: {
+      id: "eine Kennung",
+      text: "einen Text",
+      bool: "wahr oder falsch",
+      title: "einen Titel",
+      symbol: "ein Symbol aus der Liste",
+      assignee: "personA, personB oder both",
+      date: "ein Datum JJJJ-MM-TT",
+      recurrence: "unit und interval",
+      person: "personA oder personB",
+      idList: "eine Liste von Kennungen",
+      timestamp: "einen Zeitpunkt JJJJ-MM-TTThh:mm:ssZ",
+      name: "einen Namen",
+    },
+    fileNotObject: "Datei: erwartet ein Objekt",
+    noVersion: "Die Datei ist keine Krümel-Sicherung (die Angabe der Version fehlt).",
+    tooNew:
+      "Die Daten stammen aus einer neueren Version von Krümel. Lade die App neu und versuch es dann noch einmal.",
+    notBackup: "Die Datei ist keine Krümel-Sicherung.",
+    /** In front of the places found wrong in the local copy of the shared data. */
+    copy: "Kopie",
+    copyCursor: "Kopie.cursor: erwartet Text oder nichts",
+    copyQueue: "Kopie.outbox: erwartet eine Liste von Änderungen",
+    copyRejected: "Kopie.rejected: erwartet eine Liste abgelehnter Änderungen",
   },
 
   /** The hint of the demo mode (`npm run demo`). */

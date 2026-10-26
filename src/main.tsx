@@ -3,7 +3,7 @@ import "@fontsource-variable/archivo/wght.css";
 import "./ui/tokens.css";
 import "./ui/app.css";
 import { type ComponentChild, render } from "preact";
-import { initLanguage } from "./i18n/language";
+import { getLanguage, initLanguage } from "./i18n/language";
 import { registerServiceWorker } from "./registerServiceWorker";
 import { createLocalStorage, type KeyValueStore } from "./storage/localStorage";
 import { App } from "./ui/App";
@@ -89,6 +89,7 @@ if (import.meta.env.MODE === "demo") {
           store,
           publicKey: fakeVapidPublicKey(store),
           userId,
+          locale: getLanguage,
         }),
       testOnly: true,
     };
@@ -141,6 +142,7 @@ if (import.meta.env.MODE === "demo") {
         store,
         publicKey: import.meta.env.VITE_VAPID_PUBLIC_KEY ?? "",
         userId,
+        locale: getLanguage,
       }),
   };
   show(<App storage={local} auth={auth} household={household} shared={shared} push={push} />);

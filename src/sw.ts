@@ -10,7 +10,7 @@
 // Notifications (NT-a): a push shows a message (`notificationFor`, texts on the device); a tap on
 // it brings the app to the front or opens it (`openApp`), on the message's page (NT-d).
 
-import { notificationFor, openApp, openPageOf, payloadOf } from "./push/messages";
+import { languageOf, notificationFor, openApp, openPageOf, payloadOf } from "./push/messages";
 import { isAppRequest } from "./swScope";
 
 const sw = self as unknown as ServiceWorkerGlobalScope;
@@ -116,12 +116,13 @@ sw.addEventListener("fetch", (event) => {
 });
 
 sw.addEventListener("push", (event) => {
-  const shown = notificationFor(payloadOf(event.data));
+  const payload = payloadOf(event.data);
+  const shown = notificationFor(payload);
   event.waitUntil(
     sw.registration.showNotification(shown.title, {
       body: shown.body,
       tag: shown.tag,
-      lang: "de",
+      lang: languageOf(payload),
       icon: new URL("icon-192.png", SCOPE).href,
       data: { open: shown.open },
     }),

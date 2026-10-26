@@ -115,8 +115,12 @@ async function switchOn(
   person: Person,
   settings: Partial<PushSettings> = {},
   deviceId?: string,
+  language = "de",
 ): Promise<Device> {
-  const phone = pushDevice(deviceId === undefined ? {} : { p_device_id: deviceId });
+  const phone = pushDevice({
+    ...(deviceId === undefined ? {} : { p_device_id: deviceId }),
+    p_locale: language,
+  });
   await call(person, "register_push_device", phone);
   await call(person, "update_push_settings", {
     p_device_id: phone.p_device_id,
@@ -166,14 +170,25 @@ interface Claimed {
 const claim = (moment: string) =>
   sqlJson<Claimed>(`select private.claim_push_jobs(100, ${moment})`);
 
-/** What the claim handed out for these devices, without the address and keys. */
+/** What the claim handed out for these devices, without the address, keys and language. */
 const told = (claimed: Claimed, devices: readonly Device[]) =>
   claimed.jobs
     .filter((job) => devices.some((device) => device.endpoint === job.endpoint))
     .map(
-      ({ id: _id, endpoint: _endpoint, p256dh: _p256dh, auth: _auth, keyId: _keyId, ...what }) =>
-        what,
+      ({
+        id: _id,
+        endpoint: _endpoint,
+        p256dh: _p256dh,
+        auth: _auth,
+        keyId: _keyId,
+        locale: _locale,
+        ...what
+      }) => what,
     );
+
+/** The language the claim named for each of these devices, in the order given. */
+const languagesOf = (claimed: Claimed, devices: readonly Device[]) =>
+  devices.map((device) => claimed.jobs.find((job) => job.endpoint === device.endpoint)?.locale);
 
 const AFTER_WAIT = "now() + interval '6 minutes'";
 
@@ -265,6 +280,26 @@ describe("NT-d Ereignisse aus Erledigen und Übernehmen", () => {
       { kind: "partner", name: "Robin", done: 3, took: 1 },
     ]);
     expect(JSON.stringify(claimed)).not.toContain("Bad putzen");
+  });
+
+  it("EN-c Die Meldung über die andere Person und über den Beitritt nennt je Gerät dessen Sprache, auch für zwei Geräte eines Kontos", async () => {
+    clearJobs();
+    const { a, b } = await couple();
+    const english = await switchOn(a, {}, undefined, "en");
+    const german = await switchOn(a, {}, undefined, "de");
+    const unknown = await switchOn(a, {}, undefined, "fr");
+    const robinsPhone = await switchOn(b, {}, undefined, "en");
+    await complete(b, completion(await addTask(a, task("personA")), "personB"));
+
+    const claimed = claim(AFTER_WAIT);
+
+    expect(languagesOf(claimed, [english, german, unknown])).toEqual(["en", "de", "de"]);
+    // Nothing for Robin: they did it themselves.
+    expect(languagesOf(claimed, [robinsPhone])).toEqual([undefined]);
+    expect(told(claimed, [english, german])).toEqual([
+      { kind: "partner", name: "Robin", done: 1, took: 0 },
+      { kind: "partner", name: "Robin", done: 1, took: 0 },
+    ]);
   });
 
   it("NT-d Keine Meldung für Eigenes, keine Doppelten bei Wiederholung derselben Änderung oder Erledigung, keine nach 24 Stunden Offline", async () => {

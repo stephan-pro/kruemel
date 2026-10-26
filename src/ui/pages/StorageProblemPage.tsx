@@ -7,7 +7,7 @@ import { ErrorAlert, ErrorDetails } from "../components/Alert";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { PageTitle } from "../components/PageTitle";
 import { downloadTextFile } from "../download";
-import { errorText } from "../errorText";
+import { errorText, type Failure, failureOf } from "../errorText";
 import { SHARED_TEXTS } from "../householdTexts";
 
 interface StorageProblemPageProps {
@@ -41,7 +41,7 @@ export function StorageProblemPage({
 }: StorageProblemPageProps) {
   const [downloaded, setDownloaded] = useState(false);
   const [asking, setAsking] = useState(false);
-  const [discardError, setDiscardError] = useState<string>();
+  const [discardError, setDiscardError] = useState<Failure>();
   const canRescue = rawData !== undefined;
   const words = t().storageProblem;
 
@@ -58,7 +58,7 @@ export function StorageProblemPage({
     try {
       await onDiscard();
     } catch (error) {
-      setDiscardError(errorText(error));
+      setDiscardError(failureOf(error));
     }
   }
 
@@ -94,7 +94,9 @@ export function StorageProblemPage({
                 </h2>
                 <p>{shared ? SHARED_TEXTS.fromServerText : words.step2Text}</p>
                 {discardError && (
-                  <ErrorAlert title={t().common.notDeleted}>{discardError}</ErrorAlert>
+                  <ErrorAlert title={t().common.notDeleted}>
+                    {errorText(discardError.cause)}
+                  </ErrorAlert>
                 )}
                 <div class="button-row">
                   <button class="btn btn--secondary" type="button" onClick={() => setAsking(true)}>

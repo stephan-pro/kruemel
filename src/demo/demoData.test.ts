@@ -22,6 +22,33 @@ describe("Beispieldaten (Q8)", () => {
     expect(importData(exportData(data))).toEqual({ ok: true, data });
   });
 
+  it("EN-c gibt es auch auf Englisch: dieselben Aufgaben, Ids und Termine, nur die Wörter sind englisch", () => {
+    const german = demoData(today);
+    const english = demoData(today, "en");
+
+    expect(parseAppData(JSON.parse(JSON.stringify(english))).ok).toBe(true);
+    const shape = (data: typeof german) =>
+      data.tasks.map((task) => ({
+        id: task.id,
+        dueDate: task.dueDate,
+        symbol: task.symbol,
+        assignee: task.assignee,
+        items: task.checklist.map((item) => [item.id, item.checked]),
+      }));
+    expect(shape(english)).toEqual(shape(german));
+    expect(english.completions).toEqual(german.completions);
+    for (const [index, task] of english.tasks.entries()) {
+      expect(task.title.trim(), task.id).not.toBe("");
+      expect(task.title, task.id).not.toBe(german.tasks[index]?.title);
+      for (const item of task.checklist) {
+        expect(item.text.trim()).not.toBe("");
+      }
+    }
+    expect(english.tasks.map((task) => task.title)).toContain("Clean the bathroom");
+    // German is the default, as before.
+    expect(demoData(today, "de")).toEqual(german);
+  });
+
   it("sind gültig, egal an welchem Tag man sie erzeugt (auch Monatsende und Schaltjahr)", () => {
     for (const day of ["2026-01-31", "2028-02-29", "2026-12-31", "2026-03-01"]) {
       expect(parseAppData(demoData(calendarDay(day))).ok).toBe(true);

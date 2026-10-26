@@ -157,7 +157,7 @@ NT-a legt die Version fest (exakte Version im Import der Edge Function und als E
 5. **Antippen:** `notificationclick` → vorhandenes Fenster der App nach vorn holen und `#/heute` öffnen, sonst neues Fenster. Die App gleicht beim Sichtbarwerden ohnehin ab.
 6. **Testbenachrichtigung:** Knopf → Edge Function `push/test` mit der Anmeldung der Person (JWT, in der Funktion über `SUPABASE_JWKS`/supabase-js geprüft) → RPC `request_test_push(Gerät)` als diese Person (Grenzen) → sofortiger Versand nur dieser Meldung.
 
-**Nutzlast (verschlüsselt, klein, ohne Texte):** `{"v":1,"k":"daily","due":3,"overdue":1}`, `{"v":1,"k":"partner","name":"Robin","done":2,"took":1}`, `{"v":1,"k":"joined","name":"Robin"}`, `{"v":1,"k":"test"}`. Die Texte baut erst das Gerät; so kommt Englisch später ohne Server-Änderung (Spalte `locale` je Gerät, Standard `de`). TTL: Test 5 Min., Tagesüberblick 6 Std., Partner 12 Std., Haushalt 24 Std.; Urgency `normal`.
+**Nutzlast (verschlüsselt, klein, ohne Texte):** `{"v":1,"k":"daily","due":3,"overdue":1}`, `{"v":1,"k":"partner","name":"Robin","done":2,"took":1}`, `{"v":1,"k":"joined","name":"Robin"}`, `{"v":1,"k":"test"}`. Die Texte baut erst das Gerät. Seit EN-c steht für ein englisches Gerät zusätzlich `"l":"en"` in der Nutzlast (z. B. `{"v":1,"k":"test","l":"en"}`); für Deutsch fehlt das Feld, ebenso bei unbekannten Werten (Spalte `push_devices.locale`, `de`/`en`, Standard `de`). TTL: Test 5 Min., Tagesüberblick 6 Std., Partner 12 Std., Haushalt 24 Std.; Urgency `normal`.
 
 ## 6. Datenmodell und Sicherheit
 
@@ -173,7 +173,8 @@ public.push_devices                      -- eine Zeile je Gerät und Konto
   auth          text not null            -- base64url, genau 22 Zeichen
   key_id        text not null            -- Kurzkennung des öffentlichen VAPID-Schlüssels (Rotation)
   time_zone     text not null            -- gegen pg_timezone_names geprüft
-  locale        text not null default 'de'
+  locale        text not null default 'de'  -- EN-c: nur 'de' oder 'en'; App meldet sie beim Registrieren,
+                                            --       mit den Einstellungen und beim Sprachwechsel
   daily_enabled boolean not null default true,  daily_time time not null default '07:30',
   daily_days    smallint not null default 127   -- Bitmaske Mo..So
   partner_enabled boolean not null default true, household_enabled boolean not null default true
@@ -288,7 +289,7 @@ Im Projektordner (eigenes Terminal, wie bei `db push`): `npx supabase login` (fa
 
 - **`src/push/messages.ts`:** Texte der Meldungen als Funktionen der Nutzlast (`{ de: … }`, nur Deutsch jetzt), genutzt vom Service Worker und von der Vorschau in der Kachel.
 - **`src/ui/notificationTexts.ts`:** alle Texte der Kachel und der Anleitungen, wie `accountTexts.ts`.
-- Server schickt nur Codes und Zahlen; `push_devices.locale` ist vorbereitet. Englisch (EN-a bis EN-d) ist zurückgestellt bis nach den Benachrichtigungen.
+- Server schickt nur Codes und Zahlen und (EN-c) die Sprache des Geräts (`l`); `src/push/messageTexts.ts` hat beide Sprachen (`messageTextsFor`), die Texte der Kachel stehen in den Wörterbüchern (`notifications` in `src/i18n/`). Unbekannte Sprache = Deutsch. Dazu Migration `20261102120000_push_language.sql`: Prüfung der Werte, `update_push_settings(…, p_locale)`, Sprache in `request_test_push` und `claim_push_jobs`. Einspielen vor dem Bereitstellen der Funktion (die neue Funktion kommt auch ohne Migration zurecht und sendet dann Deutsch).
 
 ### 8.4 Barrierefreiheit (WCAG 2.2 AA)
 

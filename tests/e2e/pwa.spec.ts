@@ -341,7 +341,13 @@ test.describe("N3 Service Worker und Nutzung ohne Internet", () => {
     const splash = await page.evaluate(async () => {
       const html = await caches.match(location.href.split("#")[0] as string, { ignoreVary: true });
       const parsed = new DOMParser().parseFromString(await (html as Response).text(), "text/html");
-      return parsed.querySelector('#app [role="status"]')?.textContent?.replace(/\s+/g, " ").trim();
+      // Das Ladebild hat je Sprache einen Text; hier zählt der deutsche (EN-c: der englische steht
+      // in language.spec.ts).
+      const status = parsed.querySelector('#app [role="status"]');
+      for (const english of status?.querySelectorAll('[lang="en"]') ?? []) {
+        english.remove();
+      }
+      return status?.textContent?.replace(/\s+/g, " ").trim();
     });
     expect(splash).toBe("Krümel Wird geladen …");
     await expect(page.locator(".splash")).toHaveCount(0);

@@ -2,6 +2,7 @@
 // holds example data. Only reached from `main.tsx` when the app is built in mode "demo".
 
 import { dayFromDate } from "../domain/date";
+import { getLanguage } from "../i18n/language";
 import { createLocalStorage, type KeyValueStore } from "../storage/localStorage";
 import { DEMO_NAMESPACE } from "./demoData";
 import { seedDemo } from "./seed";
@@ -26,7 +27,8 @@ export async function startDemo(
 ): Promise<DemoInfo> {
   const storage = createLocalStorage({ store, namespace: DEMO_NAMESPACE });
   const reset = wantsReset(search);
-  const data = await seedDemo(storage, dayFromDate(now), { reset });
+  // The words of the example data are in the language of the device (EN-c); they are made once.
+  const data = await seedDemo(storage, dayFromDate(now), { reset, language: getLanguage() });
   return {
     taskCount: data.tasks.length,
     completionCount: data.completions.length,

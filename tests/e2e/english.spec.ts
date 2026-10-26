@@ -414,7 +414,9 @@ test.describe("EN-b Speicherproblem auf Englisch", () => {
     });
     await expect(page.getByRole("alert")).toContainText(en.errors.storage.incomplete);
     await page.getByText(en.errors.details).click();
-    await expect(page.getByText("tasks: erwartet eine Liste")).toBeVisible();
+    // Seit EN-c steht auch die Fundstelle auf Englisch.
+    await expect(page.getByText(`tasks: ${en.validation.expectedList}`)).toBeVisible();
+    await expect(page.getByText("tasks: erwartet eine Liste")).toHaveCount(0);
   });
 
   test("EN-b Speicher voll beim ersten Einrichten: Meldung auf Englisch", async ({ page }) => {

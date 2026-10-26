@@ -35,7 +35,7 @@ export function FriendInviteTile({ onCreate, onList, onCancel }: FriendInviteTil
   const [open, setOpen] = useState<readonly Invite[]>([]);
   const [shown, setShown] = useState<Invite>();
   const [listFailed, setListFailed] = useState(false);
-  const [failed, setFailed] = useState<{ title: string; message: string }>();
+  const [failed, setFailed] = useState<{ title: () => string; cause: unknown }>();
   const [status, setStatus] = useState<string>();
   const [busy, setBusy] = useState(false);
 
@@ -52,7 +52,8 @@ export function FriendInviteTile({ onCreate, onList, onCancel }: FriendInviteTil
     void refresh();
   }, []);
 
-  async function run(title: string, action: () => Promise<void>) {
+  /** `title` is read when the failure is drawn, so a switch of the language changes it. */
+  async function run(title: () => string, action: () => Promise<void>) {
     if (busy) {
       return;
     }
@@ -62,31 +63,37 @@ export function FriendInviteTile({ onCreate, onList, onCancel }: FriendInviteTil
     try {
       await action();
     } catch (error) {
-      setFailed({ title, message: householdMessage(error) });
+      setFailed({ title, cause: error });
     } finally {
       setBusy(false);
     }
   }
 
   function create() {
-    void run(FRIEND_TEXTS.failed, async () => {
-      const invite = await onCreate();
-      setShown(invite);
-      await refresh();
-    });
+    void run(
+      () => FRIEND_TEXTS.failed,
+      async () => {
+        const invite = await onCreate();
+        setShown(invite);
+        await refresh();
+      },
+    );
   }
 
   function cancel(token: string) {
-    void run(FRIEND_TEXTS.cancelFailed, async () => {
-      await onCancel(token);
-      if (shown?.token === token) {
-        setShown(undefined);
-      }
-      await refresh();
-      setStatus(FRIEND_TEXTS.cancelled);
-      // The row is gone with its buttons: the focus goes on to making a new link.
-      document.getElementById(CREATE_BUTTON)?.focus();
-    });
+    void run(
+      () => FRIEND_TEXTS.cancelFailed,
+      async () => {
+        await onCancel(token);
+        if (shown?.token === token) {
+          setShown(undefined);
+        }
+        await refresh();
+        setStatus(FRIEND_TEXTS.cancelled);
+        // The row is gone with its buttons: the focus goes on to making a new link.
+        document.getElementById(CREATE_BUTTON)?.focus();
+      },
+    );
   }
 
   return (
@@ -106,7 +113,7 @@ export function FriendInviteTile({ onCreate, onList, onCancel }: FriendInviteTil
           qrLabel={FRIEND_TEXTS.qrLabel}
         />
       )}
-      {failed && <ErrorAlert title={failed.title}>{failed.message}</ErrorAlert>}
+      {failed && <ErrorAlert title={failed.title()}>{householdMessage(failed.cause)}</ErrorAlert>}
       <div class="button-row">
         <button
           class={`btn ${shown === undefined ? "btn--primary" : "btn--quiet"}`}

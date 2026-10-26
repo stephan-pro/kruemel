@@ -51,11 +51,13 @@ import {
   type PushFailure,
   partnerPayload,
   pushAnswerFailure,
+  pushLanguageOf,
   raisedPushFailure,
   retryAfterSeconds,
   sameSecret,
-  TEST_PAYLOAD,
   TEST_TTL_SECONDS,
+  type TestPayload,
+  testPayload,
 } from "./rules.ts";
 
 export interface PushConfig {
@@ -91,6 +93,11 @@ export interface TestTarget {
   readonly p256dh: string;
   readonly auth: string;
   readonly keyId: string;
+  /**
+   * The language of the device (`push_devices.locale`, EN-c): the message names it, the device
+   * writes the text. Missing or unknown (a database without that column yet) counts as German.
+   */
+  readonly locale?: string;
 }
 
 /** A refusal of the database; `message` is what it raised (e.g. "push_test_wait"). */
@@ -152,7 +159,7 @@ export interface EncryptedPush {
 
 export type Encrypt = (
   message: {
-    data: typeof TEST_PAYLOAD | DailyPayload | PartnerPayload | JoinedPayload;
+    data: TestPayload | DailyPayload | PartnerPayload | JoinedPayload;
     options: { ttl: number; topic: string; urgency: typeof PUSH_URGENCY };
   },
   subscription: {
@@ -425,7 +432,7 @@ export async function handlePush(request: Request, deps: PushDeps): Promise<Resp
   } = await deliver(
     target,
     {
-      data: TEST_PAYLOAD,
+      data: testPayload(pushLanguageOf(target.locale)),
       options: { ttl: TEST_TTL_SECONDS, topic: "test", urgency: PUSH_URGENCY },
     },
     config,
@@ -443,23 +450,27 @@ export async function handlePush(request: Request, deps: PushDeps): Promise<Resp
   return failure === undefined ? finish(200, { sent: true }) : fail(failure);
 }
 
-/** The message of a due job; a newer one of the same kind replaces it at the push service. */
+/**
+ * The message of a due job in the language of its device (the payload names it, the device writes
+ * the text); a newer one of the same kind replaces it at the push service.
+ */
 export function messageOf(job: PushJob): Parameters<Encrypt>[0] {
   const urgency = PUSH_URGENCY;
+  const language = pushLanguageOf(job.locale);
   switch (job.kind) {
     case "daily":
       return {
-        data: dailyPayload(job.due, job.overdue),
+        data: dailyPayload(job.due, job.overdue, language),
         options: { ttl: DAILY_TTL_SECONDS, topic: "daily", urgency },
       };
     case "partner":
       return {
-        data: partnerPayload(job.name, job.done, job.took),
+        data: partnerPayload(job.name, job.done, job.took, language),
         options: { ttl: PARTNER_TTL_SECONDS, topic: "partner", urgency },
       };
     case "joined":
       return {
-        data: joinedPayload(job.name),
+        data: joinedPayload(job.name, language),
         options: { ttl: JOINED_TTL_SECONDS, topic: "joined", urgency },
       };
   }

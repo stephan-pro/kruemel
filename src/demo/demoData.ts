@@ -16,6 +16,7 @@ import {
   type Task,
   type TaskState,
 } from "../domain/task";
+import type { Language } from "../i18n/language";
 import { type AppData, SCHEMA_VERSION } from "../storage/appData";
 import type { DeviceSettings } from "../storage/storage";
 
@@ -124,33 +125,77 @@ class Builder {
 }
 
 /**
- * A lived-in household: one task overdue, several due today and in the next days, a task taken
- * over for one cycle, checklists with and without ticks, and a history in "Erledigt".
+ * The words of the example data: titles, notes and checklist items. The data is made once, in the
+ * language of the device at that moment (like anything a person types), and is not translated
+ * afterwards. Only the demo mode loads this file.
  */
-export function demoData(today: CalendarDay): AppData {
+const DEMO_TEXTS = {
+  de: {
+    bath: { title: "Bad putzen", note: "Mit Essigreiniger, nicht mit Scheuermilch" },
+    bathItems: ["Waschbecken", "Toilette", "Dusche"],
+    vacuum: "Staubsaugen",
+    trash: "Müll rausbringen",
+    kitchen: "Küche wischen",
+    kitchenItems: ["Herd", "Arbeitsplatte", "Boden"],
+    windows: "Fenster putzen",
+    bedding: "Bettwäsche wechseln",
+    craftsman: { title: "Handwerker anrufen", note: "Wegen des tropfenden Wasserhahns" },
+    shopping: "Einkaufen",
+    shoppingItems: ["Milch", "Brot", "Obst", "Spülmittel"],
+    parcel: "Paket abholen",
+    gift: "Geschenk kaufen",
+    giftItems: ["Karte", "Geschenkpapier"],
+    glass: "Altglas wegbringen",
+  },
+  en: {
+    bath: { title: "Clean the bathroom", note: "With vinegar cleaner, not with scouring cream" },
+    bathItems: ["Sink", "Toilet", "Shower"],
+    vacuum: "Vacuum",
+    trash: "Take out the trash",
+    kitchen: "Mop the kitchen",
+    kitchenItems: ["Stove", "Countertop", "Floor"],
+    windows: "Clean the windows",
+    bedding: "Change the bedding",
+    craftsman: { title: "Call the plumber", note: "About the dripping tap" },
+    shopping: "Go shopping",
+    shoppingItems: ["Milk", "Bread", "Fruit", "Washing-up liquid"],
+    parcel: "Pick up the parcel",
+    gift: "Buy a gift",
+    giftItems: ["Card", "Wrapping paper"],
+    glass: "Take the old glass to the bottle bank",
+  },
+} as const satisfies Record<Language, unknown>;
+
+/**
+ * A lived-in household: one task overdue, several due today and in the next days, a task taken
+ * over for one cycle, checklists with and without ticks, and a history in "Erledigt". The words
+ * are in `language` (German unless told otherwise).
+ */
+export function demoData(today: CalendarDay, language: Language = "de"): AppData {
   const b = new Builder(today);
+  const words = DEMO_TEXTS[language];
 
   // Overdue by two days; its checklist is half ticked.
   b.recurring(
     {
       id: "demo-bad",
-      title: "Bad putzen",
+      title: words.bath.title,
       symbol: "bath",
       recurrence: { unit: "week", interval: 1 },
       assignee: "personA",
-      note: "Mit Essigreiniger, nicht mit Scheuermilch",
+      note: words.bath.note,
     },
     [
       [16, "personA"],
       [9, "personA"],
     ],
-    { items: ["Waschbecken", "Toilette", "Dusche"], checked: [0] },
+    { items: words.bathItems, checked: [0] },
   );
   // Due today, for both.
   b.recurring(
     {
       id: "demo-staubsaugen",
-      title: "Staubsaugen",
+      title: words.vacuum,
       symbol: "broom",
       recurrence: { unit: "week", interval: 1 },
       assignee: "both",
@@ -164,7 +209,7 @@ export function demoData(today: CalendarDay): AppData {
   b.recurring(
     {
       id: "demo-muell",
-      title: "Müll rausbringen",
+      title: words.trash,
       symbol: "trash",
       recurrence: { unit: "day", interval: 3 },
       assignee: "personB",
@@ -177,19 +222,19 @@ export function demoData(today: CalendarDay): AppData {
   b.recurring(
     {
       id: "demo-kueche",
-      title: "Küche wischen",
+      title: words.kitchen,
       symbol: "cooking",
       recurrence: { unit: "week", interval: 1 },
       assignee: "personB",
     },
     [[4, "personB"]],
-    { items: ["Herd", "Arbeitsplatte", "Boden"] },
+    { items: words.kitchenItems },
   );
   // Monthly rhythm, taken over by the other person for this cycle only.
   b.recurring(
     {
       id: "demo-fenster",
-      title: "Fenster putzen",
+      title: words.windows,
       symbol: "cleaner",
       recurrence: { unit: "month", interval: 2 },
       assignee: "personB",
@@ -200,7 +245,7 @@ export function demoData(today: CalendarDay): AppData {
   b.recurring(
     {
       id: "demo-bettwaesche",
-      title: "Bettwäsche wechseln",
+      title: words.bedding,
       symbol: "bed",
       recurrence: { unit: "week", interval: 2 },
       assignee: "both",
@@ -211,38 +256,38 @@ export function demoData(today: CalendarDay): AppData {
   // One-off tasks: overdue, today, soon, later, and one already done.
   b.oneOff({
     id: "demo-handwerker",
-    title: "Handwerker anrufen",
+    title: words.craftsman.title,
     symbol: "phone",
     assignee: "personA",
-    note: "Wegen des tropfenden Wasserhahns",
+    note: words.craftsman.note,
     dueInDays: -1,
   });
   b.oneOff(
     {
       id: "demo-einkaufen",
-      title: "Einkaufen",
+      title: words.shopping,
       symbol: "shopping",
       assignee: "both",
       dueInDays: 0,
     },
-    { items: ["Milch", "Brot", "Obst", "Spülmittel"], checked: [0, 1] },
+    { items: words.shoppingItems, checked: [0, 1] },
   );
   // Nobody chose a symbol: the default one.
-  b.oneOff({ id: "demo-paket", title: "Paket abholen", assignee: "personB", dueInDays: 1 });
+  b.oneOff({ id: "demo-paket", title: words.parcel, assignee: "personB", dueInDays: 1 });
   b.oneOff(
     {
       id: "demo-geschenk",
-      title: "Geschenk kaufen",
+      title: words.gift,
       symbol: "gift",
       assignee: "personA",
       dueInDays: 6,
     },
-    { items: ["Karte", "Geschenkpapier"] },
+    { items: words.giftItems },
   );
   b.oneOff(
     {
       id: "demo-altglas",
-      title: "Altglas wegbringen",
+      title: words.glass,
       symbol: "recycling",
       assignee: "personB",
       dueInDays: -4,

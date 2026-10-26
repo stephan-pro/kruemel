@@ -14,6 +14,7 @@ import {
   type Task,
 } from "../domain/task";
 import { isTaskSymbolId } from "../domain/taskSymbols";
+import { t } from "../i18n";
 import { type AppData, type PersonNames, SCHEMA_VERSION, type Settings } from "./appData";
 import { migrateAppData } from "./migrate";
 
@@ -29,6 +30,15 @@ interface Context {
 }
 
 type Guard<T> = (value: unknown) => value is T;
+
+/**
+ * The words of the places found wrong ("tasks[0].title: fehlt"): in the language set when the data
+ * is checked, since they are shown to the person (folded, as details for troubleshooting).
+ */
+const words = () => t().validation;
+
+/** What a field should have been, in words. */
+const shape = () => t().validation.expected;
 
 function fail(context: Context, path: string, message: string): void {
   if (context.errors.length < MAX_ERRORS) {
@@ -69,7 +79,7 @@ function readRecord(
   if (isRecord(value)) {
     return value;
   }
-  fail(context, path, "erwartet ein Objekt");
+  fail(context, path, words().expectedObject);
   return undefined;
 }
 
@@ -77,7 +87,7 @@ function readList(value: unknown, path: string, context: Context): unknown[] | u
   if (Array.isArray(value)) {
     return value;
   }
-  fail(context, path, "erwartet eine Liste");
+  fail(context, path, words().expectedList);
   return undefined;
 }
 
@@ -94,7 +104,11 @@ function required<T>(
   if (guard(value)) {
     return value;
   }
-  fail(context, `${path}.${key}`, value === undefined ? "fehlt" : `ungültig, erwartet ${expected}`);
+  fail(
+    context,
+    `${path}.${key}`,
+    value === undefined ? words().missing : words().invalid(expected),
+  );
   return undefined;
 }
 
@@ -116,7 +130,7 @@ function noDuplicateIds(ids: readonly string[], path: string, context: Context):
   const seen = new Set<string>();
   for (const id of ids) {
     if (seen.has(id)) {
-      fail(context, path, `die Kennung „${id}“ kommt mehrfach vor`);
+      fail(context, path, words().duplicate(id));
     }
     seen.add(id);
   }
@@ -131,9 +145,9 @@ function parseChecklistItem(
   if (record === undefined) {
     return undefined;
   }
-  const id = required(record, "id", path, context, isFilledText, "eine Kennung");
-  const text = required(record, "text", path, context, isFilledText, "einen Text");
-  const checked = required(record, "checked", path, context, isBoolean, "wahr oder falsch");
+  const id = required(record, "id", path, context, isFilledText, shape().id);
+  const text = required(record, "text", path, context, isFilledText, shape().text);
+  const checked = required(record, "checked", path, context, isBoolean, shape().bool);
   return id === undefined || text === undefined || checked === undefined
     ? undefined
     : { id, text, checked };
@@ -166,26 +180,12 @@ function parseTask(value: unknown, path: string, context: Context): Task | undef
   if (record === undefined) {
     return undefined;
   }
-  const id = required(record, "id", path, context, isFilledText, "eine Kennung");
-  const title = required(record, "title", path, context, isFilledText, "einen Titel");
-  const symbol = required(
-    record,
-    "symbol",
-    path,
-    context,
-    isTaskSymbolId,
-    "ein Symbol aus der Liste",
-  );
-  const assignee = required(
-    record,
-    "assignee",
-    path,
-    context,
-    isAssignee,
-    "personA, personB oder both",
-  );
-  const dueDate = required(record, "dueDate", path, context, isCalendarDay, "ein Datum JJJJ-MM-TT");
-  const note = optional(record, "note", path, context, isText, "einen Text");
+  const id = required(record, "id", path, context, isFilledText, shape().id);
+  const title = required(record, "title", path, context, isFilledText, shape().title);
+  const symbol = required(record, "symbol", path, context, isTaskSymbolId, shape().symbol);
+  const assignee = required(record, "assignee", path, context, isAssignee, shape().assignee);
+  const dueDate = required(record, "dueDate", path, context, isCalendarDay, shape().date);
+  const note = optional(record, "note", path, context, isText, shape().text);
   const checklist = parseChecklist(record.checklist, `${path}.checklist`, context);
 
   const base =
@@ -213,16 +213,9 @@ function parseTask(value: unknown, path: string, context: Context): Task | undef
       path,
       context,
       isRecurrenceValue,
-      "unit und interval",
+      shape().recurrence,
     );
-    const takenOverBy = optional(
-      record,
-      "takenOverBy",
-      path,
-      context,
-      isPerson,
-      "personA oder personB",
-    );
+    const takenOverBy = optional(record, "takenOverBy", path, context, isPerson, shape().person);
     return base === undefined || recurrence === undefined
       ? undefined
       : {
@@ -233,10 +226,10 @@ function parseTask(value: unknown, path: string, context: Context): Task | undef
         };
   }
   if (record.kind === "oneOff") {
-    const done = required(record, "done", path, context, isBoolean, "wahr oder falsch");
+    const done = required(record, "done", path, context, isBoolean, shape().bool);
     return base === undefined || done === undefined ? undefined : { ...base, kind: "oneOff", done };
   }
-  fail(context, `${path}.kind`, "erwartet recurring oder oneOff");
+  fail(context, `${path}.kind`, words().expectedKind);
   return undefined;
 }
 
@@ -249,47 +242,26 @@ function parseCompletion(value: unknown, path: string, context: Context): Comple
   if (record === undefined) {
     return undefined;
   }
-  const id = required(record, "id", path, context, isFilledText, "eine Kennung");
-  const taskId = required(record, "taskId", path, context, isFilledText, "eine Kennung");
-  const completedOn = required(
-    record,
-    "completedOn",
-    path,
-    context,
-    isCalendarDay,
-    "ein Datum JJJJ-MM-TT",
-  );
-  const completedBy = required(
-    record,
-    "completedBy",
-    path,
-    context,
-    isPerson,
-    "personA oder personB",
-  );
+  const id = required(record, "id", path, context, isFilledText, shape().id);
+  const taskId = required(record, "taskId", path, context, isFilledText, shape().id);
+  const completedOn = required(record, "completedOn", path, context, isCalendarDay, shape().date);
+  const completedBy = required(record, "completedBy", path, context, isPerson, shape().person);
   const previousDueDate = required(
     record,
     "previousDueDate",
     path,
     context,
     isCalendarDay,
-    "ein Datum JJJJ-MM-TT",
+    shape().date,
   );
-  const nextDueDate = optional(
-    record,
-    "nextDueDate",
-    path,
-    context,
-    isCalendarDay,
-    "ein Datum JJJJ-MM-TT",
-  );
+  const nextDueDate = optional(record, "nextDueDate", path, context, isCalendarDay, shape().date);
   const checkedItemIds = required(
     record,
     "checkedItemIds",
     path,
     context,
     isIdList,
-    "eine Liste von Kennungen",
+    shape().idList,
   );
   const previousTakenOverBy = optional(
     record,
@@ -297,7 +269,7 @@ function parseCompletion(value: unknown, path: string, context: Context): Comple
     path,
     context,
     isPerson,
-    "personA oder personB",
+    shape().person,
   );
   const completedAt = optional(
     record,
@@ -305,7 +277,7 @@ function parseCompletion(value: unknown, path: string, context: Context): Comple
     path,
     context,
     isTimestamp,
-    "einen Zeitpunkt JJJJ-MM-TTThh:mm:ssZ",
+    shape().timestamp,
   );
   const assigneeAtCompletion = optional(
     record,
@@ -313,7 +285,7 @@ function parseCompletion(value: unknown, path: string, context: Context): Comple
     path,
     context,
     isAssignee,
-    "personA, personB oder both",
+    shape().assignee,
   );
   if (
     id === undefined ||
@@ -352,8 +324,8 @@ function parseSettings(value: unknown, path: string, context: Context): Settings
   if (names === undefined) {
     return undefined;
   }
-  const personA = required(names, "personA", namesPath, context, isFilledText, "einen Namen");
-  const personB = required(names, "personB", namesPath, context, isFilledText, "einen Namen");
+  const personA = required(names, "personA", namesPath, context, isFilledText, shape().name);
+  const personB = required(names, "personB", namesPath, context, isFilledText, shape().name);
   return personA === undefined || personB === undefined
     ? undefined
     : { personNames: { personA: personA.trim(), personB: personB.trim() } satisfies PersonNames };
@@ -417,7 +389,7 @@ export function parseAppData(value: unknown): ParseResult {
   const allTasksRead = tasks?.every((task) => task !== undefined) ?? false;
   completions?.forEach((completion, index) => {
     if (allTasksRead && completion !== undefined && !knownTaskIds.has(completion.taskId)) {
-      fail(context, `completions[${index}].taskId`, `es gibt keine Aufgabe „${completion.taskId}“`);
+      fail(context, `completions[${index}].taskId`, words().noTask(completion.taskId));
     }
   });
 

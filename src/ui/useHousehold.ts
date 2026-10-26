@@ -1,14 +1,13 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { HouseholdApi, HouseholdInfo } from "../auth/household";
 import { forgetHousehold, rememberedHousehold, rememberHousehold } from "./householdMemory";
-import { householdMessage } from "./pages/HouseholdPage";
 
 export type HouseholdState =
   | { readonly status: "loading" }
   /** `household` is `null` while the person has none. */
   | { readonly status: "ready"; readonly household: HouseholdInfo | null }
-  /** Not readable and none remembered on this device. */
-  | { readonly status: "failed"; readonly message: string };
+  /** Not readable and none remembered on this device; `cause` becomes a sentence when drawn. */
+  | { readonly status: "failed"; readonly cause: unknown };
 
 /**
  * The household of the signed-in person (stage 2). The one remembered on the device is shown at
@@ -56,9 +55,7 @@ export function useHousehold(
     } catch (error) {
       // Offline with a remembered household: keep showing it.
       setState((current) =>
-        current.status === "ready"
-          ? current
-          : { status: "failed", message: householdMessage(error) },
+        current.status === "ready" ? current : { status: "failed", cause: error },
       );
     }
   }

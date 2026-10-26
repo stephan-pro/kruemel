@@ -8,7 +8,7 @@ import type { PersonNames } from "../storage/appData";
 import { ErrorAlert } from "./components/Alert";
 import { TakeOverDialog } from "./components/TakeOverDialog";
 import { TaskDetailDialog } from "./components/TaskDetailDialog";
-import { errorText } from "./errorText";
+import { errorText, type Failure, failureOf } from "./errorText";
 import { completionNotice, takeOverNotice, undoNotice } from "./format";
 
 /** What the page just did, with the way back for a completion. */
@@ -79,7 +79,7 @@ export function useTaskActions(input: TaskActionsInput) {
   const [detail, setDetail] = useState<DetailTarget>();
   const [takingOver, setTakingOver] = useState<Task>();
   const [returnFocusCount, setReturnFocusCount] = useState(0);
-  const [error, setError] = useState<string>();
+  const [error, setError] = useState<Failure>();
   const noticeBox = useRef<HTMLElement>(null);
   /** The button that opened the details or the question; it gets the focus back afterwards. */
   const opener = useRef<{ readonly element: HTMLElement; readonly taskId: string } | undefined>(
@@ -120,7 +120,7 @@ export function useTaskActions(input: TaskActionsInput) {
       setNotice(await action());
       setNoticeCount((count) => count + 1);
     } catch (failure) {
-      setError(errorText(failure));
+      setError(failureOf(failure));
     } finally {
       busy.current = false;
     }
@@ -195,7 +195,7 @@ export function useTaskActions(input: TaskActionsInput) {
       setError(undefined);
       await input.onChecklistItem(task.id, itemId, checked);
     } catch (failure) {
-      setError(errorText(failure));
+      setError(failureOf(failure));
     }
   }
 
@@ -238,7 +238,7 @@ export function useTaskActions(input: TaskActionsInput) {
           )}
         </section>
       )}
-      {error && <ErrorAlert title={t().common.notSaved}>{error}</ErrorAlert>}
+      {error && <ErrorAlert title={t().common.notSaved}>{errorText(error.cause)}</ErrorAlert>}
     </>
   );
 

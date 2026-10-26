@@ -13,8 +13,10 @@ import {
   type PushFailure,
   type PushSettings,
   pushAnswerFailure,
+  pushLanguageOf,
   pushSettingsProblems,
-  TEST_PAYLOAD,
+  type TestPayload,
+  testPayload,
 } from "../../supabase/functions/push/rules";
 import type { DeviceRegistration } from "./pushApi";
 import { PushError } from "./pushApi";
@@ -27,7 +29,7 @@ interface Device extends DeviceRegistration {
 
 export interface RecordedPush {
   readonly deviceId: string;
-  readonly payload: typeof TEST_PAYLOAD;
+  readonly payload: TestPayload;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -96,7 +98,6 @@ export class FakePushService {
       throw new PushError("badRequest");
     }
     const zone = text(body, "timeZone");
-    const locale = text(body, "locale");
     // Registering again keeps what the device chose.
     const settings =
       this.devices.find((other) => other.userId === userId && other.deviceId === deviceId)
@@ -110,7 +111,7 @@ export class FakePushService {
       auth: text(body, "auth"),
       keyId,
       timeZone: knownTimeZone(zone) ? zone : "Europe/Berlin",
-      locale: /^[a-z]{2}$/.test(locale) ? locale : "de",
+      locale: pushLanguageOf(text(body, "locale")),
       seen: this.now(),
     };
     const others = this.devices.filter(
@@ -140,10 +141,14 @@ export class FakePushService {
     if (this.settingsOf(userId, deviceId) === null) {
       throw new PushError("deviceUnknown");
     }
+    // Like `update_push_settings`: a language that comes along is set (an unknown one is German),
+    // without one the old one stays.
+    const sent = (body as Record<string, unknown>).locale;
     this.devices = this.devices.map((device) =>
       device.userId === userId && device.deviceId === deviceId
         ? {
             ...device,
+            locale: typeof sent === "string" ? pushLanguageOf(sent) : device.locale,
             settings: {
               dailyEnabled: settings.dailyEnabled,
               dailyTime: settings.dailyTime,
@@ -201,14 +206,24 @@ export class FakePushService {
     if (answerFailure !== undefined) {
       throw new PushError(answerFailure);
     }
-    this.pushes.set(userId, [...this.pushesOf(userId), { deviceId, payload: TEST_PAYLOAD }]);
+    this.pushes.set(userId, [
+      ...this.pushesOf(userId),
+      { deviceId, payload: testPayload(pushLanguageOf(device.locale)) },
+    ]);
   }
 
   /** The devices of an account (for the tests), without their keys. */
-  devicesOf(userId: string): readonly { deviceId: string; endpoint: string; timeZone: string }[] {
+  devicesOf(
+    userId: string,
+  ): readonly { deviceId: string; endpoint: string; timeZone: string; locale: string }[] {
     return this.devices
       .filter((device) => device.userId === userId)
-      .map(({ deviceId, endpoint, timeZone }) => ({ deviceId, endpoint, timeZone }));
+      .map(({ deviceId, endpoint, timeZone, locale }) => ({
+        deviceId,
+        endpoint,
+        timeZone,
+        locale,
+      }));
   }
 
   /** What "reached" the devices of an account. */

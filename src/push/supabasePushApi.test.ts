@@ -135,7 +135,7 @@ describe("NT-b SupabasePushApi: Einstellungen", () => {
     const api = new SupabasePushApi(client(stub));
 
     const settings = await api.settings(DEVICE.deviceId);
-    await api.updateSettings(DEVICE.deviceId, DEFAULT_PUSH_SETTINGS);
+    await api.updateSettings(DEVICE.deviceId, DEFAULT_PUSH_SETTINGS, "en");
 
     expect(settings).toEqual({
       dailyEnabled: false,
@@ -161,6 +161,7 @@ describe("NT-b SupabasePushApi: Einstellungen", () => {
           p_quiet_enabled: true,
           p_quiet_from: "21:00",
           p_quiet_to: "07:00",
+          p_locale: "en",
         },
       ],
     ]);
@@ -178,6 +179,7 @@ describe("NT-b SupabasePushApi: Einstellungen", () => {
         failing({ message: "push_settings_invalid", code: "P0001" }).updateSettings(
           "x",
           DEFAULT_PUSH_SETTINGS,
+          "de",
         ),
       ),
     ).toBe("settingsInvalid");
@@ -186,6 +188,7 @@ describe("NT-b SupabasePushApi: Einstellungen", () => {
         failing({ message: "push_device_unknown", code: "P0001" }).updateSettings(
           "x",
           DEFAULT_PUSH_SETTINGS,
+          "de",
         ),
       ),
     ).toBe("deviceUnknown");
@@ -255,12 +258,15 @@ describe("NT-a FakeHttpPushApi", () => {
 
     expect(await api.settings("a")).toEqual(DEFAULT_PUSH_SETTINGS);
     expect(await api.settings("b")).toBeNull();
-    await api.updateSettings("a", DEFAULT_PUSH_SETTINGS);
+    await api.updateSettings("a", DEFAULT_PUSH_SETTINGS, "en");
 
     expect(sent).toEqual([
       ["http://fake/push/settings", { deviceId: "a" }],
       ["http://fake/push/settings", { deviceId: "b" }],
-      ["http://fake/push/update-settings", { deviceId: "a", ...DEFAULT_PUSH_SETTINGS }],
+      [
+        "http://fake/push/update-settings",
+        { deviceId: "a", ...DEFAULT_PUSH_SETTINGS, locale: "en" },
+      ],
     ]);
   });
 

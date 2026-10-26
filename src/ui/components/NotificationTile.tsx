@@ -48,7 +48,8 @@ export function NotificationTile({
   const [status, setStatus] = useState<Shown>(notifications ? "checking" : "unavailable");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string>();
-  const [failed, setFailed] = useState<{ title: string; message: string }>();
+  /** What failed and why; the sentences are made when it is drawn (language switch). */
+  const [failed, setFailed] = useState<{ title: () => string; cause: unknown }>();
   const heading = useRef<HTMLHeadingElement>(null);
   const way = notificationWay(navigator);
 
@@ -83,7 +84,7 @@ export function NotificationTile({
     }
   }
 
-  async function run(title: string, action: (n: Notifications) => Promise<void>) {
+  async function run(title: () => string, action: (n: Notifications) => Promise<void>) {
     if (busy || notifications === undefined) {
       return;
     }
@@ -93,7 +94,7 @@ export function NotificationTile({
     try {
       await action(notifications);
     } catch (error) {
-      setFailed({ title, message: failureText(error) });
+      setFailed({ title, cause: error });
       setStatus(await notifications.status());
     } finally {
       setBusy(false);
@@ -101,32 +102,43 @@ export function NotificationTile({
   }
 
   function enable() {
-    void run(NOTIFICATION_TEXTS.enableFailed, async (n) => {
-      const next = await n.enable();
-      setStatus(next);
-      if (next === "off") {
-        // The question was closed: the button stays, with the focus on it.
-        setMessage(NOTIFICATION_TEXTS.notAsked);
-        return;
-      }
-      setMessage(next === "active" ? NOTIFICATION_TEXTS.enabled : NOTIFICATION_STATUS_TEXTS[next]);
-      heading.current?.focus();
-    });
+    void run(
+      () => NOTIFICATION_TEXTS.enableFailed,
+      async (n) => {
+        const next = await n.enable();
+        setStatus(next);
+        if (next === "off") {
+          // The question was closed: the button stays, with the focus on it.
+          setMessage(NOTIFICATION_TEXTS.notAsked);
+          return;
+        }
+        setMessage(
+          next === "active" ? NOTIFICATION_TEXTS.enabled : NOTIFICATION_STATUS_TEXTS[next],
+        );
+        heading.current?.focus();
+      },
+    );
   }
 
   function sendTest() {
-    void run(NOTIFICATION_TEXTS.testFailed, async (n) => {
-      await n.sendTest();
-      setMessage(NOTIFICATION_TEXTS.testSent);
-    });
+    void run(
+      () => NOTIFICATION_TEXTS.testFailed,
+      async (n) => {
+        await n.sendTest();
+        setMessage(NOTIFICATION_TEXTS.testSent);
+      },
+    );
   }
 
   function disable() {
-    void run(NOTIFICATION_TEXTS.disableFailed, async (n) => {
-      setStatus(await n.disable());
-      setMessage(NOTIFICATION_TEXTS.turnedOff);
-      heading.current?.focus();
-    });
+    void run(
+      () => NOTIFICATION_TEXTS.disableFailed,
+      async (n) => {
+        setStatus(await n.disable());
+        setMessage(NOTIFICATION_TEXTS.turnedOff);
+        heading.current?.focus();
+      },
+    );
   }
 
   return (
@@ -156,7 +168,7 @@ export function NotificationTile({
           <InstallSteps way="ios" shared />
         </details>
       )}
-      {failed && <ErrorAlert title={failed.title}>{failed.message}</ErrorAlert>}
+      {failed && <ErrorAlert title={failed.title()}>{failureText(failed.cause)}</ErrorAlert>}
       {(status === "off" || status === "lost") && (
         <div class="button-row">
           <button class="btn btn--primary" type="button" onClick={enable}>

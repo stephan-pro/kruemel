@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { type AppWindows, notificationFor, openApp, openPageOf, payloadOf } from "./messages";
+import {
+  type AppWindows,
+  languageOf,
+  notificationFor,
+  openApp,
+  openPageOf,
+  payloadOf,
+} from "./messages";
+import { messageTextsFor, PUSH_MESSAGE_TEXTS } from "./messageTexts";
 
 const SCOPE = "https://stephan-pro.github.io/kruemel/";
 
@@ -100,6 +108,112 @@ describe("NT-a Meldungen des Service Workers", () => {
       "2 überfällige Aufgaben warten auf dich.",
       "Heute 5 Aufgaben für dich, davon 3 überfällig.",
     ]);
+  });
+
+  it("EN-c Englisch: Titel, Test, Tagesüberblick, Partner, Beitritt und Ersatzmeldung in der Sprache der Nutzlast; Seiten und Tags bleiben gleich", () => {
+    const english = (payload: object) => notificationFor({ v: 1, l: "en", ...payload });
+    expect(english({ k: "test" })).toEqual({
+      title: "Krümel",
+      body: "Test notification from Krümel",
+      tag: "test",
+      open: "#/heute",
+    });
+    expect(
+      [
+        english({ k: "daily", due: 3, overdue: 1 }),
+        ...[
+          [1, 0],
+          [2, 0],
+          [1, 1],
+          [2, 2],
+          [5, 3],
+        ].map(([due, overdue]) => english({ k: "daily", due, overdue })),
+      ].map((shown) => shown.body),
+    ).toEqual([
+      "3 tasks for you today, 1 of them overdue.",
+      "1 task for you today.",
+      "2 tasks for you today.",
+      "1 overdue task is waiting for you.",
+      "2 overdue tasks are waiting for you.",
+      "5 tasks for you today, 3 of them overdue.",
+    ]);
+    const partner = (done: number, took: number, name?: string) =>
+      english({ k: "partner", ...(name === undefined ? {} : { name }), done, took });
+    expect(partner(2, 0, "Robin")).toEqual({
+      title: "Krümel",
+      body: "Robin did 2 tasks for you.",
+      tag: "partner",
+      open: "#/erledigt",
+    });
+    expect(partner(0, 1, "Robin")).toMatchObject({
+      body: "Robin took over 1 task from you.",
+      open: "#/woche",
+    });
+    expect(
+      [partner(1, 0), partner(0, 3, "Robin"), partner(1, 1, "Robin"), partner(3, 4, "Robin")].map(
+        (shown) => shown.body,
+      ),
+    ).toEqual([
+      "The other person did 1 task for you.",
+      "Robin took over 3 tasks from you.",
+      "Robin did 1 task for you and took over 1.",
+      "Robin did 3 tasks for you and took over 4.",
+    ]);
+    expect(english({ k: "joined", name: "Robin" })).toEqual({
+      title: "Krümel",
+      body: "Robin has joined the household.",
+      tag: "joined",
+      open: "#/einstellungen/konto",
+    });
+    expect(english({ k: "joined" }).body).toBe("Someone has joined your household.");
+    // A payload that names English but is not understood still gets the general message.
+    expect(english({ k: "neu" })).toEqual({
+      title: "Krümel",
+      body: "Something new in Krümel.",
+      tag: "kruemel",
+      open: "#/heute",
+    });
+  });
+
+  it("EN-c Die Sprache der Nutzlast: nur „en“ ist Englisch, alles andere (fehlend, unbekannt, kaputt) Deutsch", () => {
+    expect(languageOf({ v: 1, k: "test", l: "en" })).toBe("en");
+    for (const payload of [
+      { v: 1, k: "test" },
+      { v: 1, k: "test", l: "de" },
+      { v: 1, k: "test", l: "fr" },
+      { v: 1, k: "test", l: "EN" },
+      { v: 1, k: "test", l: 1 },
+      undefined,
+      null,
+      "Text",
+    ]) {
+      expect(languageOf(payload), JSON.stringify(payload)).toBe("de");
+    }
+    expect(notificationFor({ v: 1, k: "test", l: "fr" }).body).toBe(
+      "Testbenachrichtigung von Krümel",
+    );
+  });
+
+  it("EN-c Beide Sprachen haben dieselben Texte, keiner ist leer; ohne Angabe gilt Deutsch", () => {
+    const [de, en] = [messageTextsFor("de"), messageTextsFor("en")];
+    expect(Object.keys(en)).toEqual(Object.keys(de));
+    for (const texts of [de, en]) {
+      for (const text of [
+        texts.title,
+        texts.test,
+        texts.fallback,
+        texts.daily(1, 0),
+        texts.daily(2, 2),
+        texts.daily(4, 1),
+        texts.partner(undefined, 1, 0),
+        texts.partner("Robin", 1, 2),
+        texts.joined(undefined),
+        texts.joined("Robin"),
+      ]) {
+        expect(text.trim()).not.toBe("");
+      }
+    }
+    expect(PUSH_MESSAGE_TEXTS).toBe(de);
   });
 
   it("NT-a Unbekannte oder kaputte Nutzlast: trotzdem eine allgemeine Meldung", () => {

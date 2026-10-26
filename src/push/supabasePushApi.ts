@@ -81,10 +81,11 @@ export class SupabasePushApi implements PushApi {
     return data === null ? null : settingsFromRow(data as unknown as SettingsRow);
   }
 
-  async updateSettings(deviceId: string, settings: PushSettings): Promise<void> {
+  async updateSettings(deviceId: string, settings: PushSettings, locale: string): Promise<void> {
     const { error } = await this.client.rpc("update_push_settings", {
       p_device_id: deviceId,
       ...settingsArguments(settings),
+      p_locale: locale,
     });
     if (error) {
       throw rpcFailure(error);

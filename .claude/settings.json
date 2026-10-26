@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(sed -i*)",
+      "Bash(sed -ni*)",
+      "Bash(sed -Ei*)",
+      "Bash(sed -ri*)",
+      "Bash(sed -si*)",
+      "Bash(sed * -i*)",
+      "Bash(sed --in-place*)",
+      "Bash(sed * --in-place*)",
+      "Bash(*biome*--write*)",
+      "Bash(*biome*--fix*)",
+      "PowerShell(*biome*--write*)",
+      "PowerShell(*biome*--fix*)",
+      "PowerShell(sed -i*)",
+      "PowerShell(sed * -i*)",
+      "PowerShell(sed --in-place*)"
+    ]
+  }
+}

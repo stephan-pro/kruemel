@@ -19,7 +19,7 @@ import {
 import { DEFAULT_TASK_SYMBOL } from "../../domain/taskSymbols";
 import { t } from "../../i18n";
 import type { PersonNames } from "../../storage/appData";
-import { errorText } from "../errorText";
+import { errorText, type Failure, failureOf } from "../errorText";
 import { taskFormErrorText } from "../formErrors";
 import { routeHash } from "../route";
 import { ErrorAlert } from "./Alert";
@@ -120,7 +120,7 @@ export function TaskForm({ task, names, today, currentPerson, onSubmit, onDelete
   const [draftError, setDraftError] = useState<TaskFormError>();
   const [errors, setErrors] = useState<TaskFormErrors>({});
   const { report, status } = useFieldErrorFocus();
-  const [saveError, setSaveError] = useState<string>();
+  const [saveError, setSaveError] = useState<Failure>();
   const [saving, setSaving] = useState(false);
   const creating = task === undefined;
   const recurring = kind === "recurring";
@@ -173,7 +173,7 @@ export function TaskForm({ task, names, today, currentPerson, onSubmit, onDelete
     try {
       await onSubmit(kind, checked.values);
     } catch (error) {
-      setSaveError(errorText(error));
+      setSaveError(failureOf(error));
     } finally {
       setSaving(false);
     }
@@ -294,7 +294,9 @@ export function TaskForm({ task, names, today, currentPerson, onSubmit, onDelete
         error={message("checklist")}
       />
 
-      {saveError && <ErrorAlert title={t().common.notSaved}>{saveError}</ErrorAlert>}
+      {saveError && (
+        <ErrorAlert title={t().common.notSaved}>{errorText(saveError.cause)}</ErrorAlert>
+      )}
 
       <div class="button-row">
         <button class="btn btn--primary" type="submit">

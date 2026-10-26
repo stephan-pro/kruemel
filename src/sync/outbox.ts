@@ -4,6 +4,7 @@
 // a change from the outbox aside and a change of the base are never half written. Nothing in it
 // is trusted blindly: it is read like an import file.
 
+import { t } from "../i18n";
 import type { AppData } from "../storage/appData";
 import { type KeyValueStore, readKey, removeKey, writeKey } from "../storage/localStorage";
 import { StorageError } from "../storage/storage";
@@ -103,21 +104,19 @@ export class SyncStateStore {
     if (!result.ok) {
       throw new StorageError(
         "copyIncomplete",
-        result.errors.map((error) => `Kopie: ${error}`),
+        result.errors.map((error) => `${t().validation.copy}: ${error}`),
       );
     }
     if (!(cursor === null || typeof cursor === "string")) {
-      throw new StorageError("copyDamaged", ["Kopie.cursor: erwartet Text oder nichts"]);
+      throw new StorageError("copyDamaged", [t().validation.copyCursor]);
     }
     if (!Array.isArray(outbox) || !outbox.every(isChange)) {
-      throw new StorageError("queueDamaged", ["Kopie.outbox: erwartet eine Liste von Änderungen"]);
+      throw new StorageError("queueDamaged", [t().validation.copyQueue]);
     }
     if (
       !(rejected === undefined || (Array.isArray(rejected) && rejected.every(isRejectedChange)))
     ) {
-      throw new StorageError("rejectedDamaged", [
-        "Kopie.rejected: erwartet eine Liste abgelehnter Änderungen",
-      ]);
+      throw new StorageError("rejectedDamaged", [t().validation.copyRejected]);
     }
     return { base: result.data, cursor, outbox, ...(rejected === undefined ? {} : { rejected }) };
   }

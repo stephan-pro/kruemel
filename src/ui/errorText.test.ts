@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { AuthError } from "../auth/auth";
 import { resetLanguage, setLanguage } from "../i18n/language";
 import { StorageError, StorageUnavailableError } from "../storage/storage";
-import { errorText, unexpectedErrorText } from "./errorText";
+import { errorText, failureOf, unexpectedErrorText } from "./errorText";
 
 afterEach(() => resetLanguage());
 
@@ -26,6 +26,17 @@ describe("EN-b Fehlertexte für Personen", () => {
     setLanguage("en");
     expect(new StorageError("damaged").message).toBe("The stored data is damaged.");
     expect(new StorageError("damaged").failure).toBe("damaged");
+  });
+
+  it("EN-c Ein im Zustand gehaltener Fehler wird erst beim Zeichnen zum Satz, also in der Sprache zu diesem Zeitpunkt", () => {
+    const kept = failureOf(new StorageError("full", ["x"]));
+
+    expect(errorText(kept.cause)).toContain("Speichern nicht möglich");
+    setLanguage("en");
+    expect(errorText(kept.cause)).toContain("Saving is not possible");
+    // Whatever the cause is, also nothing, it counts as a failure.
+    expect(failureOf(undefined)).toEqual({ cause: undefined });
+    expect(errorText(failureOf(undefined).cause)).toBe(unexpectedErrorText());
   });
 
   it("Unbekannte Fehler fallen auf einen allgemeinen Satz zurück, nie auf den rohen Text", () => {

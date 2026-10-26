@@ -2,7 +2,7 @@ import { LogOut, UserX } from "lucide-preact";
 import { useRef, useState } from "preact/hooks";
 import type { Notifications } from "../../push/notifications";
 import { ACCOUNT_TEXTS, DELETE_ACCOUNT_TEXTS } from "../accountTexts";
-import { errorText } from "../errorText";
+import { errorText, type Failure, failureOf } from "../errorText";
 import { SHARED_TEXTS } from "../householdTexts";
 import { NOTIFICATION_TEXTS } from "../notificationTexts";
 import { householdMessage } from "../pages/HouseholdPage";
@@ -51,11 +51,11 @@ export function AccountTile({
   const [notifying, setNotifying] = useState(false);
   /** Which question is open: signing out, or deleting the account. */
   const [question, setQuestion] = useState<"signOut" | "delete">("signOut");
-  const [deleteError, setDeleteError] = useState<string>();
+  const [deleteError, setDeleteError] = useState<Failure>();
   const [checking, setChecking] = useState(false);
   /** Changes still waiting for the server when the question opened. */
   const [pending, setPending] = useState(0);
-  const [error, setError] = useState<string>();
+  const [error, setError] = useState<Failure>();
   const opener = useRef<HTMLButtonElement | null>(null);
 
   function cancel() {
@@ -85,7 +85,7 @@ export function AccountTile({
     try {
       await onSignOut();
     } catch (failed) {
-      setError(errorText(failed));
+      setError(failureOf(failed));
       opener.current?.focus();
     }
   }
@@ -97,7 +97,7 @@ export function AccountTile({
       await deleteAccount?.onDelete();
     } catch (failed) {
       setChecking(false);
-      setDeleteError(householdMessage(failed));
+      setDeleteError(failureOf(failed));
       opener.current?.focus();
     }
   }
@@ -122,7 +122,9 @@ export function AccountTile({
       <p class="form-status" role="status">
         {checking ? ACCOUNT_TEXTS.busy : ""}
       </p>
-      {error && <ErrorAlert title={ACCOUNT_TEXTS.signOutFailed}>{error}</ErrorAlert>}
+      {error && (
+        <ErrorAlert title={ACCOUNT_TEXTS.signOutFailed}>{errorText(error.cause)}</ErrorAlert>
+      )}
       {deleteAccount && (
         <>
           <p class="muted">{DELETE_ACCOUNT_TEXTS.intro}</p>
@@ -138,7 +140,9 @@ export function AccountTile({
             </button>
           </div>
           {deleteError && (
-            <ErrorAlert title={DELETE_ACCOUNT_TEXTS.failed}>{deleteError}</ErrorAlert>
+            <ErrorAlert title={DELETE_ACCOUNT_TEXTS.failed}>
+              {householdMessage(deleteError.cause)}
+            </ErrorAlert>
           )}
           <DeleteAccountDialog
             open={asking && question === "delete"}

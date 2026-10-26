@@ -133,6 +133,12 @@ textarea {
   color: var(--text-muted);
 }
 
+/* One text per language (EN-c): index.html sets `lang` before the first drawing. */
+html[lang="en"] .splash__text[lang="de"],
+html:not([lang="en"]) .splash__text[lang="en"] {
+  display: none;
+}
+
 /* The Krümel, "Krümel" and, once set, the household's name (E2-4c). */
 .app-brand {
   display: flex;
@@ -603,6 +609,12 @@ main:focus {
 
 .legal-back {
   margin-top: 24px;
+}
+
+/* The line at the top of the English text: it is a translation, the German text counts. */
+.legal-note {
+  margin-bottom: 8px;
+  font-weight: 600;
 }
 
 .legal p + p,

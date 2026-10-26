@@ -2,6 +2,7 @@
 // the app can change things and reload; a reset replaces it with fresh example data.
 
 import type { CalendarDay } from "../domain/date";
+import type { Language } from "../i18n/language";
 import type { AppData } from "../storage/appData";
 import { type AppStorage, StorageError } from "../storage/storage";
 import { DEMO_DEVICE, demoData } from "./demoData";
@@ -9,6 +10,8 @@ import { DEMO_DEVICE, demoData } from "./demoData";
 export interface SeedOptions {
   /** Replace whatever is stored with fresh example data. */
   readonly reset?: boolean;
+  /** The language of the example data's words; German by default. */
+  readonly language?: Language;
 }
 
 function isEmpty(data: AppData): boolean {
@@ -34,7 +37,7 @@ export async function seedDemo(
       }
     }
   }
-  const data = demoData(today);
+  const data = demoData(today, options.language);
   await storage.save(data);
   await storage.saveDevice(DEMO_DEVICE);
   return data;

@@ -3,6 +3,7 @@
 // everything else is checked afterwards, so a broken old file gets the usual messages.
 
 import { DEFAULT_TASK_SYMBOL } from "../domain/taskSymbols";
+import { t } from "../i18n";
 import { SCHEMA_VERSION } from "./appData";
 
 export type MigrationResult =
@@ -34,22 +35,14 @@ function toVersion3(root: Record<string, unknown>): Record<string, unknown> {
  */
 export function migrateAppData(raw: unknown): MigrationResult {
   if (!isRecord(raw)) {
-    return { ok: false, errors: ["Datei: erwartet ein Objekt"] };
+    return { ok: false, errors: [t().validation.fileNotObject] };
   }
   const version = raw.schemaVersion;
   if (typeof version !== "number" || !Number.isInteger(version) || version < 1) {
-    return {
-      ok: false,
-      errors: ["Die Datei ist keine Krümel-Sicherung (die Angabe der Version fehlt)."],
-    };
+    return { ok: false, errors: [t().validation.noVersion] };
   }
   if (version > SCHEMA_VERSION) {
-    return {
-      ok: false,
-      errors: [
-        "Die Daten stammen aus einer neueren Version von Krümel. Lade die App neu und versuch es dann noch einmal.",
-      ],
-    };
+    return { ok: false, errors: [t().validation.tooNew] };
   }
   // One step after the other, so a version 1 file passes through every migration.
   let value: Record<string, unknown> = raw;

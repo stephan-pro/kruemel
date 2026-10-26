@@ -52,8 +52,8 @@ export class FakeHttpPushApi implements PushApi {
     return (answer as { settings?: PushSettings | null } | null)?.settings ?? null;
   }
 
-  async updateSettings(deviceId: string, settings: PushSettings): Promise<void> {
-    await this.call("/push/update-settings", { deviceId, ...settings });
+  async updateSettings(deviceId: string, settings: PushSettings, locale: string): Promise<void> {
+    await this.call("/push/update-settings", { deviceId, ...settings, locale });
   }
 
   private async call(path: string, body: object): Promise<unknown> {

@@ -82,6 +82,48 @@ describe("NT-a Geräte für Benachrichtigungen (Datenbank)", () => {
     ]);
   });
 
+  it("EN-c Sprache des Geräts: nur „de“ und „en“; beim Anmelden, mit den Einstellungen und beim erneuten Anmelden gesetzt, ohne Angabe bleibt sie", async () => {
+    const alex = await signedIn();
+    const phone = device({ p_locale: "en" });
+    const language = async () => (await devicesOf(alex))[0]?.locale;
+
+    await call(alex, "register_push_device", phone);
+    expect(await language()).toBe("en");
+
+    // Saving settings without a language keeps it; with one, sets it (unknown: German).
+    await save(alex, phone.p_device_id, DEFAULT_PUSH_SETTINGS);
+    expect(await language()).toBe("en");
+    for (const [sent, kept] of [
+      ["de", "de"],
+      ["en", "en"],
+      ["fr", "de"],
+      ["EN", "de"],
+    ] as const) {
+      await call(alex, "update_push_settings", {
+        p_device_id: phone.p_device_id,
+        ...settingsArguments(DEFAULT_PUSH_SETTINGS),
+        p_locale: sent,
+      });
+      expect(await language(), sent).toBe(kept);
+    }
+    // Registering again (start of the app, switch of the language) sets it too.
+    await call(alex, "register_push_device", { ...phone, p_locale: "en" });
+    expect(await language()).toBe("en");
+    await call(alex, "register_push_device", { ...phone, p_locale: "" });
+    expect(await language()).toBe("de");
+    await call(alex, "register_push_device", { ...phone, p_locale: null });
+    expect(await language()).toBe("de");
+
+    // The table refuses any other value, also for the owner of the database.
+    const direct = await admin.from("push_devices").update({ locale: "fr" }).eq("user_id", alex.id);
+    expect(direct.error?.message).toMatch(/push_devices_locale/);
+    // A person reads the language of their own devices, and cannot write it directly.
+    const own = await alex.client.from("push_devices").select("locale");
+    expect(own.data).toEqual([{ locale: "de" }]);
+    const written = await alex.client.from("push_devices").update({ locale: "en" });
+    expect(written.error?.message).toMatch(/permission denied/);
+  });
+
   it("NT-a Erlaubtliste: nur Adressen der Push-Dienste der Browser, dieselben Fälle wie in der Edge Function", async () => {
     const alex = await signedIn();
 
@@ -179,10 +221,26 @@ describe("NT-a Testbenachrichtigung (Datenbank)", () => {
       p256dh: phone.p_p256dh,
       auth: phone.p_auth,
       keyId: phone.p_key_id,
+      locale: "de",
     });
     expect(
       await failure(call(alex, "request_test_push", { p_device_id: phone.p_device_id })),
     ).toContain("push_test_wait");
+  });
+
+  it("EN-c Die Testbenachrichtigung nennt die Sprache des Geräts", async () => {
+    const alex = await signedIn();
+    const [english, german] = [device({ p_locale: "en" }), device({ p_locale: "de" })];
+    await call(alex, "register_push_device", english);
+    await call(alex, "register_push_device", german);
+
+    const asked = async (phone: { p_device_id: string }) =>
+      (await call(alex, "request_test_push", { p_device_id: phone.p_device_id })) as {
+        locale: string;
+      };
+
+    expect((await asked(english)).locale).toBe("en");
+    expect((await asked(german)).locale).toBe("de");
   });
 
   it("NT-a Höchstens 10 Testbenachrichtigungen am Tag je Konto", async () => {

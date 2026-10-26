@@ -36,7 +36,12 @@ describe("NT-a Fake-Server: Geräte und Testbenachrichtigung", () => {
 
     push.register("u1", phone);
     expect(push.devicesOf("u1")).toEqual([
-      { deviceId: phone.deviceId, endpoint: phone.endpoint, timeZone: "Europe/Berlin" },
+      {
+        deviceId: phone.deviceId,
+        endpoint: phone.endpoint,
+        timeZone: "Europe/Berlin",
+        locale: "de",
+      },
     ]);
     expect(failureOf(() => push.register("u1", device({ endpoint: "https://x.example/" })))).toBe(
       "endpointInvalid",
@@ -46,6 +51,40 @@ describe("NT-a Fake-Server: Geräte und Testbenachrichtigung", () => {
     );
     expect(failureOf(() => push.register("u1", device({ auth: "kurz" })))).toBe("badRequest");
     expect(failureOf(() => push.register("u1", device({ keyId: "" })))).toBe("badRequest");
+  });
+
+  it("EN-c Sprache des Geräts wie in der Datenbank: „de“ oder „en“, Unbekanntes Deutsch; beim Einschalten und mit den Einstellungen gesetzt, die Testmeldung trägt sie", () => {
+    const push = new FakePushService(() => 0);
+    const [english, german] = [device({ locale: "en" }), device({ locale: "de" })];
+    const unknown = device({ locale: "fr" });
+    for (const phone of [english, german, unknown]) {
+      push.register("u1", phone);
+    }
+    const language = (id: string) =>
+      push.devicesOf("u1").find((kept) => kept.deviceId === id)?.locale;
+    expect([english, german, unknown].map((phone) => language(phone.deviceId))).toEqual([
+      "en",
+      "de",
+      "de",
+    ]);
+
+    push.test("u1", english.deviceId);
+    push.test("u1", german.deviceId);
+    expect(push.pushesOf("u1").map((sent) => sent.payload)).toEqual([
+      { v: 1, k: "test", l: "en" },
+      { v: 1, k: "test" },
+    ]);
+
+    // The settings carry the language: set when it is known, else the old one stays.
+    push.updateSettings("u1", german.deviceId, { ...DEFAULT_PUSH_SETTINGS, locale: "en" });
+    expect(language(german.deviceId)).toBe("en");
+    push.updateSettings("u1", german.deviceId, DEFAULT_PUSH_SETTINGS);
+    expect(language(german.deviceId)).toBe("en");
+    push.updateSettings("u1", german.deviceId, { ...DEFAULT_PUSH_SETTINGS, locale: "fr" });
+    expect(language(german.deviceId)).toBe("de");
+    // Registering again (the app started, the language was switched) sets it anew.
+    push.register("u1", { ...german, locale: "en" });
+    expect(language(german.deviceId)).toBe("en");
   });
 
   it("NT-a Höchstens 10 Geräte, eine Adresse gehört einem Konto, Ausschalten nur eigenes", () => {

@@ -1,13 +1,8 @@
 import { ArrowLeft } from "lucide-preact";
+import { LanguageSwitch } from "../components/LanguageSwitch";
 import { LegalLinks } from "../components/LegalLinks";
 import { PageTitle } from "../components/PageTitle";
-import {
-  IMPRINT_SECTIONS,
-  LEGAL_DATE,
-  LEGAL_TEXTS,
-  type LegalSection,
-  PRIVACY_SECTIONS,
-} from "../legalTexts";
+import { type LegalSection, legalContent } from "../legalTexts";
 import { type LegalRoute, routeHash, routeInfo } from "../route";
 
 interface LegalPageProps {
@@ -46,27 +41,31 @@ function Section({ section }: { readonly section: LegalSection }) {
 }
 
 /**
- * "Impressum" and "Datenschutzerklärung" (E2-5c): text pages that open without signing in, also
- * without a connection once the app is loaded (the service worker keeps the app).
+ * "Impressum" and "Datenschutzerklärung" (E2-5c, English: EN-c): text pages that open without
+ * signing in, also without a connection once the app is loaded (the service worker keeps the app).
+ * The English text is a translation and says so at its top; the language can be switched here.
  */
 export function LegalPage({ route }: LegalPageProps) {
-  const sections = route === "imprint" ? IMPRINT_SECTIONS : PRIVACY_SECTIONS;
+  const { date, words, imprint, privacy } = legalContent();
+  const sections = route === "imprint" ? imprint : privacy;
   return (
     <>
       <PageTitle title={routeInfo(route).title} />
       <article class="tile tile--narrow legal">
-        <p class="muted">{LEGAL_TEXTS.stateLabel(LEGAL_DATE)}</p>
-        <p class="intro">{LEGAL_TEXTS.intro}</p>
+        {words.translationNote !== undefined && <p class="legal-note">{words.translationNote}</p>}
+        <p class="muted">{words.stateLabel(date)}</p>
+        <p class="intro">{words.intro}</p>
         {sections.map((section) => (
           <Section key={section.id} section={section} />
         ))}
         <div class="button-row legal-back">
           <button class="btn btn--secondary" type="button" onClick={goBack}>
             <ArrowLeft size={20} />
-            {LEGAL_TEXTS.back}
+            {words.back}
           </button>
         </div>
       </article>
+      <LanguageSwitch variant="compact" />
       <LegalLinks />
     </>
   );

@@ -6,7 +6,7 @@ import {
 } from "../../domain/personNames";
 import type { Person } from "../../domain/task";
 import { t } from "../../i18n";
-import { errorText } from "../errorText";
+import { errorText, type Failure, failureOf } from "../errorText";
 import { personNameErrorText } from "../formErrors";
 import { ErrorAlert } from "./Alert";
 import { TextField, useFieldErrorFocus } from "./fields";
@@ -39,7 +39,7 @@ export function NamesForm({
   const [person, setPerson] = useState(initialPerson);
   const [errors, setErrors] = useState<FieldErrors>({});
   const { report, status } = useFieldErrorFocus();
-  const [saveError, setSaveError] = useState<string>();
+  const [saveError, setSaveError] = useState<Failure>();
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -76,7 +76,7 @@ export function NamesForm({
       setNames(checked.names);
       setSaved(true);
     } catch (error) {
-      setSaveError(errorText(error));
+      setSaveError(failureOf(error));
     } finally {
       setSaving(false);
     }
@@ -111,7 +111,9 @@ export function NamesForm({
           error={errors.person ? t().formErrors.personMissing : undefined}
           onChange={(chosen) => edit(() => setPerson(chosen))}
         />
-        {saveError && <ErrorAlert title={t().common.notSaved}>{saveError}</ErrorAlert>}
+        {saveError && (
+          <ErrorAlert title={t().common.notSaved}>{errorText(saveError.cause)}</ErrorAlert>
+        )}
         <div class="button-row">
           <button class="btn btn--primary" type="submit">
             {submitLabel}

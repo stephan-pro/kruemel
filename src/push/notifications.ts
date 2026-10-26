@@ -159,8 +159,11 @@ export interface NotificationsOptions {
   readonly userId: string;
   /** Default: the device's (`Intl`). */
   readonly timeZone?: () => string;
-  /** Default: "de". */
-  readonly locale?: string;
+  /**
+   * The language of the device, read whenever the server is told (it writes the messages in it,
+   * EN-c). Default: "de".
+   */
+  readonly locale?: () => string;
 }
 
 /** `sync` called again within this time (the app and the tile both start it) does nothing. */
@@ -301,8 +304,10 @@ export class Notifications {
    * this device. It tells the server the device is still in use and what time zone it is in (a
    * trip changes it), registers a new push address if the browser replaced it, gets a new one if
    * the browser lost it, finishes a sign-out that could not tell the server, and sends settings
-   * that waited. If the server no longer knows the device (not used for 90 days), the status
-   * becomes `lost`. Never throws: without internet nothing changes and it tries again later.
+   * that waited. It tells the server the device's language too (EN-c); the app calls it again
+   * with `force` when the language is switched. If the server no longer knows the device (not
+   * used for 90 days), the status becomes `lost`. Never throws: without internet nothing changes
+   * and it tries again later.
    */
   sync(force = false): Promise<void> {
     if (this.syncing === undefined && !force && Date.now() - this.lastSync < SYNC_PAUSE_MS) {
@@ -412,7 +417,7 @@ export class Notifications {
     const before = this.settingsMemory();
     this.rememberSettings({ settings, pending: true });
     try {
-      await this.options.api.updateSettings(memory.deviceId, settings);
+      await this.options.api.updateSettings(memory.deviceId, settings, this.locale());
     } catch (error) {
       if (error instanceof PushError && error.failure === "offline") {
         return "pending";
@@ -439,7 +444,7 @@ export class Notifications {
       return false;
     }
     try {
-      await this.options.api.updateSettings(waiting.deviceId, waiting.settings);
+      await this.options.api.updateSettings(waiting.deviceId, waiting.settings, this.locale());
     } catch (error) {
       if (error instanceof PushError && error.failure === "offline") {
         return true;
@@ -506,8 +511,12 @@ export class Notifications {
       auth: address.auth,
       keyId,
       timeZone,
-      locale: this.options.locale ?? "de",
+      locale: this.locale(),
     };
+  }
+
+  private locale(): string {
+    return this.options.locale?.() ?? "de";
   }
 
   /** The server or the browser ended this device while it was on. */

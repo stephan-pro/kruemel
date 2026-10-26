@@ -9,7 +9,7 @@ import { ErrorAlert } from "../components/Alert";
 import { DeleteTaskDialog } from "../components/DeleteTaskDialog";
 import { PageTitle } from "../components/PageTitle";
 import { TaskForm } from "../components/TaskForm";
-import { errorText } from "../errorText";
+import { errorText, type Failure, failureOf } from "../errorText";
 import { routeHash, routeInfo } from "../route";
 
 interface TaskFormPageProps {
@@ -39,7 +39,7 @@ export function TaskFormPage({
   onDelete,
 }: TaskFormPageProps) {
   const [asking, setAsking] = useState(false);
-  const [deleteError, setDeleteError] = useState<string>();
+  const [deleteError, setDeleteError] = useState<Failure>();
   // Deleting removes the task before the page is left; the form must not turn into "nicht
   // gefunden" for that moment, so the task shown last stays.
   const lastTask = useRef(task);
@@ -70,7 +70,7 @@ export function TaskFormPage({
       setDeleteError(undefined);
       await onDelete(shown.id);
     } catch (error) {
-      setDeleteError(errorText(error));
+      setDeleteError(failureOf(error));
     }
   }
 
@@ -78,7 +78,9 @@ export function TaskFormPage({
     <>
       <PageTitle title={routeInfo(shown === undefined ? "taskNew" : "taskEdit").title} />
       <div class="page-stack page-stack--narrow">
-        {deleteError && <ErrorAlert title={t().common.notDeleted}>{deleteError}</ErrorAlert>}
+        {deleteError && (
+          <ErrorAlert title={t().common.notDeleted}>{errorText(deleteError.cause)}</ErrorAlert>
+        )}
         <div class="tile">
           <TaskForm
             key={shown?.id ?? "neu"}

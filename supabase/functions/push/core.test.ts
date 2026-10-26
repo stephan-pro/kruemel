@@ -170,7 +170,14 @@ function testRequest(
 
 /** Everything the function needs, with a real key pair and two devices (Alex's, Robin's). */
 async function setup(
-  options: { status?: Answer; refusal?: string; endpoint?: string; keyId?: string } = {},
+  options: {
+    status?: Answer;
+    refusal?: string;
+    endpoint?: string;
+    keyId?: string;
+    /** The language the database names for Alex's device (EN-c); none by default. */
+    locale?: string;
+  } = {},
 ) {
   const vapid = await vapidKeys();
   const browser = await browserKeys();
@@ -180,6 +187,9 @@ async function setup(
     p256dh: browser.p256dh,
     auth: browser.auth,
     keyId,
+    ...(options.locale === undefined || endpoint.includes("robin")
+      ? {}
+      : { locale: options.locale }),
   });
   const db = database(
     {
@@ -301,6 +311,19 @@ describe("NT-a Edge Function push: Testbenachrichtigung", () => {
       sub: "mailto:test@beispiel.de",
     });
     expect(payload.exp * 1000 - Date.now()).toBeLessThanOrEqual(24 * 60 * 60_000);
+  });
+
+  it("EN-c Testbenachrichtigung in der Sprache des Geräts: Englisch trägt „l“, Deutsch und alles Unbekannte bleibt wie zuvor", async () => {
+    const payloadFor = async (locale: string | undefined) => {
+      const { browser, service, deps } = await setup(locale === undefined ? {} : { locale });
+      expect((await handlePush(testRequest(ALEX), deps)).status).toBe(200);
+      return decrypt(service.sent[0]?.init.body as Uint8Array, browser);
+    };
+
+    expect(await payloadFor("en")).toBe('{"v":1,"k":"test","l":"en"}');
+    for (const locale of ["de", "fr", "EN", "", undefined]) {
+      expect(await payloadFor(locale), String(locale)).toBe('{"v":1,"k":"test"}');
+    }
   });
 
   it("NT-a Antwort 404 oder 410 des Push-Dienstes: Gerät wird gelöscht, Fehler deviceGone", async () => {
@@ -751,6 +774,45 @@ describe("NT-c Edge Function push: Senden für den Zeitplan (flush)", () => {
       topic: "partner",
       urgency: "high",
     });
+  });
+
+  it("EN-c Die Meldungen mehrerer Geräte desselben Kontos entstehen in der Sprache des jeweiligen Geräts; unbekannt oder ohne Angabe ist Deutsch, nie ein Aufgabentitel", async () => {
+    const base = await flushSetup([]);
+    const keyId = await keyIdOf(base.vapid.publicKey);
+    const device = (name: string, locale?: string) => ({
+      endpoint: `https://fcm.googleapis.com/fcm/send/device-${name}`,
+      p256dh: base.browser.p256dh,
+      auth: base.browser.auth,
+      keyId,
+      ...(locale === undefined ? {} : { locale }),
+    });
+    const jobs: PushJob[] = [
+      { id: 1, kind: "daily", ...device("a-en", "en"), due: 3, overdue: 1 },
+      { id: 2, kind: "daily", ...device("b-de", "de"), due: 3, overdue: 1 },
+      { id: 3, kind: "partner", ...device("c-en", "en"), name: "Robin", done: 2, took: 1 },
+      { id: 4, kind: "partner", ...device("d-ohne"), name: "Robin", done: 2, took: 1 },
+      { id: 5, kind: "joined", ...device("e-en", "en"), name: "Robin" },
+      { id: 6, kind: "joined", ...device("f-fr", "fr") },
+    ];
+    const queue = jobQueue(jobs);
+    const deps: PushDeps = { ...base.deps, jobs: queue.backend };
+
+    const response = await handlePush(cronRequest(CRON), deps);
+
+    expect(await failureOf(response)).toMatchObject({ status: 200, body: { sent: 6 } });
+    const sent = [...base.service.sent].sort((one, two) => one.url.localeCompare(two.url));
+    const payloads = await Promise.all(
+      sent.map((request) => decrypt(request.init.body as Uint8Array, base.browser)),
+    );
+    expect(payloads).toEqual([
+      '{"v":1,"k":"daily","due":3,"overdue":1,"l":"en"}',
+      '{"v":1,"k":"daily","due":3,"overdue":1}',
+      '{"v":1,"k":"partner","name":"Robin","done":2,"took":1,"l":"en"}',
+      '{"v":1,"k":"partner","name":"Robin","done":2,"took":1}',
+      '{"v":1,"k":"joined","name":"Robin","l":"en"}',
+      '{"v":1,"k":"joined"}',
+    ]);
+    expect(payloads.join()).not.toContain("Bad putzen");
   });
 
   it("NT-c Antworten des Push-Dienstes: 404/410 Gerät weg, 429/5xx/kein Netz später erneut (mit Retry-After), sonst verworfen", async () => {

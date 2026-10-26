@@ -2,6 +2,19 @@ import { AUTH_MESSAGES, AuthError } from "../auth/auth";
 import { t } from "../i18n";
 import { StorageError } from "../storage/storage";
 
+/**
+ * A failure kept in the state of a page while it is shown. The sentence is made when the page
+ * draws (`errorText(failure.cause)`), not when the failure happens, so a switch of the language
+ * changes it. Wrapped, so any cause (also `undefined`) is a failure.
+ */
+export interface Failure {
+  readonly cause: unknown;
+}
+
+export function failureOf(cause: unknown): Failure {
+  return { cause };
+}
+
 /** Said when something failed for a reason the app has no words of its own for. */
 export function unexpectedErrorText(): string {
   return t().errors.unexpected;

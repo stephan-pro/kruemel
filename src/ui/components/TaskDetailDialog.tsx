@@ -5,7 +5,7 @@ import { type CalendarDay, daysBetween } from "../../domain/date";
 import type { Completion, Person, Task } from "../../domain/task";
 import { t } from "../../i18n";
 import type { PersonNames } from "../../storage/appData";
-import { errorText } from "../errorText";
+import { errorText, type Failure, failureOf } from "../errorText";
 import {
   describeChecklist,
   describeCompletedBy,
@@ -59,7 +59,7 @@ export function TaskDetailDialog({
   onToggleItem,
   onTakeOver,
 }: TaskDetailDialogProps) {
-  const [error, setError] = useState<string>();
+  const [error, setError] = useState<Failure>();
   // The dialog closes a moment after `task` is gone; until then it keeps showing that task.
   const last = useRef({ task, completion });
   if (task !== undefined) {
@@ -73,7 +73,7 @@ export function TaskDetailDialog({
     try {
       await action();
     } catch (failure) {
-      setError(errorText(failure));
+      setError(failureOf(failure));
     }
   }
 
@@ -142,7 +142,7 @@ export function TaskDetailDialog({
             </section>
           )}
 
-          {error && <ErrorAlert title={t().common.notSaved}>{error}</ErrorAlert>}
+          {error && <ErrorAlert title={t().common.notSaved}>{errorText(error.cause)}</ErrorAlert>}
 
           <div class="button-row">
             <a class="btn btn--secondary" href={editTaskHash(shown.id)}>

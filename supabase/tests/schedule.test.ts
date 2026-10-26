@@ -125,6 +125,7 @@ interface ClaimedJob {
   readonly p256dh: string;
   readonly auth: string;
   readonly keyId: string;
+  readonly locale: string;
   readonly due: number;
   readonly overdue: number;
 }
@@ -372,6 +373,7 @@ describe("NT-c Abholen und Ergebnisse (für die Edge Function)", () => {
         p256dh: phoneA.p256dh,
         auth: phoneA.auth,
         keyId: "schluessel-1",
+        locale: "de",
         due: 4,
         overdue: 2,
       },
@@ -389,6 +391,37 @@ describe("NT-c Abholen und Ergebnisse (für die Edge Function)", () => {
     expect(claimedFor(next, [phoneB])).toEqual([]);
     expect(jobsOf([phoneB])).toEqual([]);
     expect(claimedFor(next, [phoneA])).toHaveLength(1);
+  });
+
+  it("EN-c Die Meldungen zweier Geräte desselben Kontos tragen die Sprache des jeweiligen Geräts; ein Sprachwechsel gilt ab der nächsten Meldung", async () => {
+    clearJobs();
+    const alex = await withHousehold();
+    await addTask(alex, task("2027-04-20", "personA"));
+    const phone = await switchOn(alex, { p_locale: "en" });
+    const tablet = await switchOn(alex, { p_locale: "de" });
+    // A language the server does not know is German.
+    const old = await switchOn(alex, { p_locale: "fr" });
+
+    plan("2027-04-20T05:30:00Z");
+    const languages = (claimed: Claimed) =>
+      Object.fromEntries(
+        claimedFor(claimed, [phone, tablet, old]).map((job) => [
+          [phone, tablet, old].findIndex((device) => device.endpoint === job.endpoint),
+          job.locale,
+        ]),
+      );
+    expect(languages(claim("2027-04-20T05:31:00Z"))).toEqual({ 0: "en", 1: "de", 2: "de" });
+
+    // The person switches the tablet to English (the app saves its settings with the language).
+    await call(alex, "update_push_settings", {
+      p_device_id: tablet.deviceId,
+      ...settingsArguments(DEFAULT_PUSH_SETTINGS),
+      p_locale: "en",
+    });
+    clearJobs();
+    plan("2027-04-21T05:30:00Z");
+    await addTask(alex, task("2027-04-21", "personA"));
+    expect(languages(claim("2027-04-21T05:31:00Z"))).toEqual({ 0: "en", 1: "en", 2: "de" });
   });
 
   it("NT-c Nichts zu tun: der Überblick entfällt ohne Meldung", async () => {

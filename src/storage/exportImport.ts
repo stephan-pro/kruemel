@@ -1,6 +1,7 @@
 // Data backup (F7): all data as one JSON file, and back again after checking it.
 
 import type { CalendarDay } from "../domain/date";
+import { t } from "../i18n";
 import type { AppData } from "./appData";
 import { type ParseResult, parseAppData } from "./validate";
 
@@ -73,7 +74,7 @@ export function importData(text: string): ParseResult {
   try {
     parsed = JSON.parse(text);
   } catch {
-    return { ok: false, errors: ["Die Datei ist keine Krümel-Sicherung."] };
+    return { ok: false, errors: [t().validation.notBackup] };
   }
   return parseAppData(parsed);
 }
