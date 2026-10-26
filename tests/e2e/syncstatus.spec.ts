@@ -4,7 +4,7 @@ import { type AppData, emptyAppData } from "../../src/storage/appData";
 import { SYNC_TEXTS } from "../../src/ui/householdTexts";
 import { householdOfTwo, type Member, openMember } from "./account";
 import { expectNoAccessibilityViolations } from "./axe";
-import { goToPage, today } from "./helpers";
+import { goToPage, openSettings, today } from "./helpers";
 import { FAKE_SERVER } from "./shared";
 
 // Package E2-3c: where the shared data stand and what went wrong (mode `e2e` = fake server). The
@@ -80,7 +80,7 @@ test.describe("E2-3c Abgleichsstand und Fehlerhinweise", () => {
     await expect(waitingHint(a)).toHaveText(SYNC_TEXTS.waitingOffline(2));
     // K2b: only the step to offline is read out, not every further change that waits.
     await expect(announced(a, SYNC_TEXTS.waitingOffline(2))).toHaveCount(0);
-    await goToPage(a, "Einstellungen");
+    await openSettings(a, "Daten");
     await expect(syncTile(a)).toContainText(SYNC_TEXTS.waitingOffline(2));
     await expectNoAccessibilityViolations(a);
 
@@ -89,7 +89,7 @@ test.describe("E2-3c Abgleichsstand und Fehlerhinweise", () => {
     await expect(announced(a, SYNC_TEXTS.allSent)).toHaveCount(1);
     await expect(syncTile(a)).toContainText(SYNC_TEXTS.allSent);
     // Die Ansage nimmt den Fokus nicht weg.
-    await expect(a.getByRole("heading", { level: 1, name: "Einstellungen" })).toBeFocused();
+    await expect(a.getByRole("heading", { level: 1, name: "Daten" })).toBeFocused();
   });
 
   test("Server nicht erreichbar: der Hinweis nennt das, und die Änderung geht beim nächsten Abgleich durch", async ({
@@ -132,7 +132,7 @@ test.describe("E2-3c Abgleichsstand und Fehlerhinweise", () => {
 
     await a.reload();
     await expect(rejectedHint(a)).toContainText(SYNC_TEXTS.rejected(1));
-    await goToPage(a, "Einstellungen");
+    await openSettings(a, "Daten");
     await expect(syncTile(a)).toContainText(SYNC_TEXTS.rejectedTile(1));
 
     const [download] = await Promise.all([
@@ -161,7 +161,7 @@ test.describe("E2-3c Abgleichsstand und Fehlerhinweise", () => {
     await discard.press("Enter");
     await dialog.getByRole("button", { name: SYNC_TEXTS.discardConfirm }).click();
     await expect(rejectedHint(a)).toHaveCount(0);
-    await expect(a.getByRole("heading", { level: 1, name: "Einstellungen" })).toBeFocused();
+    await expect(a.getByRole("heading", { level: 1, name: "Daten" })).toBeFocused();
     await a.reload();
     await expect(syncTile(a)).toContainText(SYNC_TEXTS.allSent);
     await expect(rejectedHint(a)).toHaveCount(0);

@@ -7,6 +7,7 @@ import {
   deviceKey,
   goToPage,
   greetingHeading,
+  openSettings,
   startConfigured,
   startLocal,
   store,
@@ -286,7 +287,7 @@ test.describe("Rahmen und Navigation", () => {
 test.describe("Einstellungen (F5 Namen, Modus local)", () => {
   test("ändert Namen und „Ich bin“ und meldet das Speichern", async ({ page }) => {
     await startLocal(page);
-    await goToPage(page, "Einstellungen");
+    await openSettings(page, "Konto und Haushalt");
     await expect(page.getByLabel("Name der ersten Person")).toHaveValue(DEMO_NAMES.personA);
     await expect(page.getByRole("radio", { name: DEMO_NAMES.personA })).toBeChecked();
 
@@ -308,7 +309,7 @@ test.describe("Einstellungen (F5 Namen, Modus local)", () => {
 
   test("lehnt ungültige Namen auch hier ab", async ({ page }) => {
     await startLocal(page);
-    await goToPage(page, "Einstellungen");
+    await openSettings(page, "Konto und Haushalt");
 
     await page.getByLabel("Name der ersten Person").fill("");
     await page.getByRole("button", { name: "Speichern" }).click();

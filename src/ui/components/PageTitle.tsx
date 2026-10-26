@@ -16,6 +16,8 @@ interface PageTitleProps {
    * Changing it neither renames the tab nor moves the focus.
    */
   readonly heading?: string;
+  /** `false` when the page puts the focus somewhere else itself (the settings overview, UX-a). */
+  readonly takeFocus?: boolean;
 }
 
 /**
@@ -23,7 +25,7 @@ interface PageTitleProps {
  * heading, so keyboard and screen reader users start at the top of the new content. (Not for the
  * very first page after loading, see `headingShown`.)
  */
-export function PageTitle({ title, heading }: PageTitleProps) {
+export function PageTitle({ title, heading, takeFocus = true }: PageTitleProps) {
   const element = useRef<HTMLHeadingElement>(null);
   // Decided while drawing, not in the effect: a page that is replaced before its effect ran (the
   // address changes right after loading) drops that effect, and the next page would wrongly take
@@ -32,7 +34,7 @@ export function PageTitle({ title, heading }: PageTitleProps) {
   headingShown = true;
   useEffect(() => {
     document.title = `${title} – ${APP_NAME}`;
-    if (!first.current) {
+    if (!first.current && takeFocus) {
       element.current?.focus();
     }
     first.current = false;

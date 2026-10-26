@@ -209,6 +209,26 @@ export async function goToPage(page: Page, link: string, title: string | RegExp 
   await expectPageShown(page, title);
 }
 
+/** The groups of the settings overview (UX-a), as the rows and the group pages call them. */
+export type SettingsGroup =
+  | "Konto und Haushalt"
+  | "Benachrichtigungen"
+  | "Darstellung"
+  | "Daten"
+  | "Rechtliches";
+
+/**
+ * Opens "Einstellungen" and, with a group, the page of that group: "öffne Einstellungen > Gruppe".
+ * Start from another page than the settings (the overview takes the focus only then).
+ */
+export async function openSettings(page: Page, group?: SettingsGroup) {
+  await goToPage(page, "Einstellungen");
+  if (group !== undefined) {
+    await page.getByRole("link", { name: new RegExp(`^${group}\\b`) }).click();
+    await expectPageShown(page, group);
+  }
+}
+
 /** A file for a file chooser, made from text: `chooser.setFiles(textFile("sicherung.json", "{}"))`. */
 export function textFile(name: string, text: string) {
   return { name, mimeType: "application/json", buffer: Buffer.from(text, "utf8") };

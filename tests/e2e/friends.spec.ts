@@ -13,7 +13,7 @@ import {
   signInWithCode,
 } from "./account";
 import { expectNoAccessibilityViolations } from "./axe";
-import { expectPageShown, goToPage, greetingHeading } from "./helpers";
+import { expectPageShown, goToPage, greetingHeading, openSettings } from "./helpers";
 import { E2E_APP, FAKE_SERVER } from "./shared";
 
 // Package E2-5b: new accounts only with an invite, against the fake server (its gate follows the
@@ -49,7 +49,7 @@ async function founder(browser: Browser): Promise<Page> {
 /** In the settings of `page`: a new friend invite link. */
 async function friendLink(page: Page): Promise<string> {
   if (!(await friendTile(page).isVisible())) {
-    await goToPage(page, "Einstellungen");
+    await openSettings(page, "Konto und Haushalt");
   }
   const before =
     (await friendLinkField(page).count()) > 0 ? await friendLinkField(page).inputValue() : "";
@@ -77,7 +77,7 @@ test.describe("E2-5b Neue Konten nur mit Einladung", () => {
     browser,
   }) => {
     const alex = await founder(browser);
-    await goToPage(alex, "Einstellungen");
+    await openSettings(alex, "Konto und Haushalt");
     const tile = friendTile(alex);
     await expect(tile.getByRole("heading", { name: FRIEND_TEXTS.tileTitle })).toBeVisible();
     await expect(tile).toContainText(FRIEND_TEXTS.limits);
@@ -109,10 +109,10 @@ test.describe("E2-5b Neue Konten nur mit Einladung", () => {
     await expectPageShown(sam, greetingHeading("Sam"));
 
     // Eigener Haushalt: Sam lädt selbst ein, Alex sieht den Link nicht mehr als offen.
-    await goToPage(sam, "Einstellungen");
+    await openSettings(sam, "Konto und Haushalt");
     await expect(sam.locator('section[aria-labelledby="haushalt"]')).toContainText("Kim");
     await goToPage(alex, "Heute", greetingHeading("Alex"));
-    await goToPage(alex, "Einstellungen");
+    await openSettings(alex, "Konto und Haushalt");
     await expect(friendTile(alex)).toBeVisible();
     await expect(openRows(alex)).toHaveCount(0);
   });
@@ -184,7 +184,7 @@ test.describe("E2-5b Neue Konten nur mit Einladung", () => {
     browser,
   }) => {
     const alex = await founder(browser);
-    await goToPage(alex, "Einstellungen");
+    await openSettings(alex, "Konto und Haushalt");
     // K2a: both tiles stand one below the other; their buttons say whom the link is for.
     await expect(alex.getByRole("button", { name: FRIEND_TEXTS.create, exact: true })).toHaveCount(
       1,

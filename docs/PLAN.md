@@ -343,6 +343,8 @@ Plan, Entscheidungen des PO (24.10.2026), Varianten, Datenmodell, Schlüssel und
 | NT-d ✅ 24.10.2026 (Code; Einspielen und Test auf Geräten durch den PO offen) | Partner- und Haushaltsereignisse | Trigger an Erledigungen, Übernahmen, Beitritt; 5 Min. bündeln, Rückgängig entfernt, 24-h-Regel; mittel; Opus Medium. | `db`-Tests und E2E zwei Kontexte grün. |
 | NT-e ✅ 25.10.2026 (Dokumentationspaket; Durchstich getestet, NT-d-Test und Redmi-Hintergrund offen, Protokoll in `BENACHRICHTIGUNGEN.md` Abschnitt 12) | Gerätetest und Abschluss | `GERAETETEST.md`, `SUPABASE.md`, `ANFORDERUNGEN.md` (F9), README, Datenliste; klein; Sonnet Medium. PO: Gerätetest mit Dilan. | Dokumentation fertig; Abnahme der Benachrichtigungen durch den PO, sobald die Backlog-Zeilen „Aus NT-e“ (hoch, mittel) erledigt sind. |
 
+**UX-a ✅ 26.10.2026** – Einstellungen als Übersicht mit fünf Gruppen und Unterseiten (`#/einstellungen/konto|benachrichtigungen|darstellung|daten|rechtliches`); Tests `settings.spec.ts`, `settingsStatus.test.ts`; Muster in `design/DESIGN.md` Abschnitt 7.
+
 ## Vorstellungsvideo für Freunde
 
 Ein kurzes Video, das alle Funktionen von Krümel zeigt (Woche bzw. „Heute“, Abhaken und Rückgängig, Übernehmen, Aufgaben anlegen mit Symbol und Checkliste, Erledigt, Statistik, Sicherung, Installieren).

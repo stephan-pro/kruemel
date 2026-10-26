@@ -17,9 +17,9 @@ import {
   dataKey,
   deviceKey,
   expectPageShown,
-  goToPage,
   greetingHeading,
   localData,
+  openSettings,
   today,
 } from "./helpers";
 import { E2E_APP, FAKE_SERVER } from "./shared";
@@ -235,7 +235,7 @@ test.describe("E2-2c Anmelden mit Code", () => {
     page,
   }) => {
     await signIn(page, newAddress());
-    await goToPage(page, "Einstellungen");
+    await openSettings(page, "Konto und Haushalt");
     const signOut = page
       .getByRole("region", { name: ACCOUNT_TEXTS.accountTile })
       .getByRole("button", { name: ACCOUNT_TEXTS.signOut })

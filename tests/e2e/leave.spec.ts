@@ -12,7 +12,7 @@ import {
   sharedCopyKeys,
 } from "./account";
 import { expectNoAccessibilityViolations } from "./axe";
-import { goToPage } from "./helpers";
+import { openSettings } from "./helpers";
 import { FAKE_SERVER } from "./shared";
 
 // E2-5a: remove the other person, leave the household, delete one's account; against the fake
@@ -35,7 +35,7 @@ async function householdOf(request: APIRequestContext, member: Member) {
 /** A member's device on the settings page. */
 async function settingsOf(browser: Parameters<typeof openMember>[0], member: Member) {
   const page = await openMember(browser, member, "#/heute");
-  await goToPage(page, "Einstellungen");
+  await openSettings(page, "Konto und Haushalt");
   return page;
 }
 
@@ -249,7 +249,7 @@ test.describe("E2-5a Ohne Netz und am Handy", () => {
     await page.context().setOffline(false);
     expect(await householdOf(request, alex)).toMatchObject({ members: ["personA", "personB"] });
     expect(await sharedCopyKeys(page)).toHaveLength(1);
-    await expect(page.getByRole("heading", { level: 1, name: "Einstellungen" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Konto und Haushalt" })).toBeVisible();
   });
 
   test("Am Handy (360 px) passen Kachel und Rückfragen ohne Querlauf", async ({

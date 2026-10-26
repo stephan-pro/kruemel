@@ -2,7 +2,15 @@ import { expect, type Page, test } from "@playwright/test";
 import { demoData } from "../../src/demo/demoData";
 import { APPEARANCE_TEXTS } from "../../src/ui/appearanceTexts";
 import { expectNoAccessibilityViolations } from "./axe";
-import { deviceKey, goToPage, startConfigured, startShared, storedData, today } from "./helpers";
+import {
+  deviceKey,
+  goToPage,
+  openSettings,
+  startConfigured,
+  startShared,
+  storedData,
+  today,
+} from "./helpers";
 
 // Package R1: the own design (N1, DESIGN.md) and the colour scheme setting (N8).
 
@@ -34,7 +42,7 @@ test.describe("N8 Farbschema Hell / Dunkel / Automatisch", () => {
     await page.emulateMedia({ colorScheme: "light" });
     expect(await background(page)).toBe(LIGHT_BG);
 
-    await goToPage(page, "Einstellungen");
+    await openSettings(page, "Darstellung");
     await expect(schemeChoice(page, "Automatisch (wie das Gerät)")).toBeChecked();
   });
 
@@ -43,7 +51,7 @@ test.describe("N8 Farbschema Hell / Dunkel / Automatisch", () => {
   }) => {
     await page.emulateMedia({ colorScheme: "light" });
     await startConfigured(page);
-    await goToPage(page, "Einstellungen");
+    await openSettings(page, "Darstellung");
 
     await schemeChoice(page, "Dunkel").check();
 
@@ -53,7 +61,7 @@ test.describe("N8 Farbschema Hell / Dunkel / Automatisch", () => {
     await expectNoAccessibilityViolations(page);
 
     await page.reload();
-    await expect(page.getByRole("heading", { level: 1, name: "Einstellungen" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Darstellung" })).toBeVisible();
     expect(await background(page)).toBe(DARK_BG);
     await expect(schemeChoice(page, "Dunkel")).toBeChecked();
   });
@@ -63,7 +71,7 @@ test.describe("N8 Farbschema Hell / Dunkel / Automatisch", () => {
   }) => {
     await page.emulateMedia({ colorScheme: "dark" });
     await startConfigured(page);
-    await goToPage(page, "Einstellungen");
+    await openSettings(page, "Darstellung");
 
     await schemeChoice(page, "Hell").check();
     expect(await background(page)).toBe(LIGHT_BG);
@@ -94,7 +102,7 @@ test.describe("N8 Farbschema Hell / Dunkel / Automatisch", () => {
     page,
   }) => {
     await startConfigured(page);
-    await goToPage(page, "Einstellungen");
+    await openSettings(page, "Darstellung");
 
     await schemeChoice(page, "Dunkel").check();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
@@ -107,7 +115,7 @@ test.describe("N8 Farbschema Hell / Dunkel / Automatisch", () => {
   }) => {
     await page.emulateMedia({ colorScheme: "light" });
     await startConfigured(page);
-    await goToPage(page, "Einstellungen");
+    await openSettings(page, "Darstellung");
     await expect(page.locator("legend", { hasText: "Farbschema" })).toBeVisible();
     await expect(page.getByRole("heading", { level: 2, name: "Darstellung" })).toBeVisible();
 
@@ -123,7 +131,7 @@ test.describe("N8 Farbschema Hell / Dunkel / Automatisch", () => {
   }) => {
     await page.emulateMedia({ colorScheme: "light" });
     await startConfigured(page);
-    await goToPage(page, "Einstellungen");
+    await openSettings(page, "Darstellung");
     await page.evaluate(() => {
       Storage.prototype.setItem = () => {
         throw new DOMException("voll", "QuotaExceededError");
@@ -301,7 +309,7 @@ test.describe("E2-4c Krümel in der Kopfzeile", () => {
     );
     await startConfigured(page, undefined, "#/heute");
     await expect.poll(() => logoAnimations(page)).toBeGreaterThan(0);
-    await goToPage(page, "Einstellungen");
+    await openSettings(page, "Darstellung");
 
     await expect(logoSwitch(page)).toBeChecked();
     await expect(logoSwitch(page)).toHaveAccessibleDescription(APPEARANCE_TEXTS.logoMotionHint);
@@ -313,7 +321,7 @@ test.describe("E2-4c Krümel in der Kopfzeile", () => {
     expect(await storedDevice(page)).toMatchObject({ logoMotion: false });
 
     await page.reload();
-    await expect(page.getByRole("heading", { level: 1, name: "Einstellungen" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Darstellung" })).toBeVisible();
     await expect(logoSwitch(page)).not.toBeChecked();
     expect(await logoAnimations(page)).toBe(0);
 

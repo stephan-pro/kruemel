@@ -5,8 +5,17 @@
 
 import { PUSH_MESSAGE_TEXTS } from "./messageTexts";
 
-/** The pages a tap on a message may open. */
-export const OPEN_PAGES = ["#/heute", "#/erledigt", "#/woche", "#/einstellungen"] as const;
+/**
+ * The pages a tap on a message may open. "#/einstellungen" stays for messages shown before UX-a
+ * (their stored page); new ones point to the group page they are about.
+ */
+export const OPEN_PAGES = [
+  "#/heute",
+  "#/erledigt",
+  "#/woche",
+  "#/einstellungen",
+  "#/einstellungen/konto",
+] as const;
 
 export type OpenPage = (typeof OPEN_PAGES)[number];
 
@@ -75,7 +84,8 @@ export function notificationFor(payload: unknown): ShownNotification {
       title,
       body: PUSH_MESSAGE_TEXTS.joined(nameOf(kind.name)),
       tag: "joined",
-      open: "#/einstellungen",
+      // Who joined is seen under "Konto und Haushalt".
+      open: "#/einstellungen/konto",
     };
   }
   return { title, body: PUSH_MESSAGE_TEXTS.fallback, tag: "kruemel", open: "#/heute" };

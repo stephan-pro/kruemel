@@ -6,6 +6,7 @@ import {
   friendInviteTokenFrom,
   inviteHash,
   inviteTokenFrom,
+  isSettingsGroup,
   NAVIGATION,
   navigationRoute,
   newTaskHash,
@@ -15,6 +16,7 @@ import {
   routeHash,
   routeInfo,
   routeLabel,
+  SETTINGS_GROUPS,
 } from "./route";
 
 describe("Navigation (Hash-Router)", () => {
@@ -32,11 +34,28 @@ describe("Navigation (Hash-Router)", () => {
       "#/erledigt",
       "#/statistik",
       "#/einstellungen",
+      "#/einstellungen/konto",
+      "#/einstellungen/benachrichtigungen",
+      "#/einstellungen/darstellung",
+      "#/einstellungen/daten",
+      "#/einstellungen/rechtliches",
       "#/impressum",
       "#/datenschutz",
     ]);
     expect(navigationRoute("imprint")).toBe("settings");
     expect(navigationRoute("privacy")).toBe("settings");
+  });
+
+  it("UX-a Die fünf Gruppen der Einstellungen gehören zu „Einstellungen“ und kennen ihre Adresse", () => {
+    expect(SETTINGS_GROUPS).toHaveLength(5);
+    for (const group of SETTINGS_GROUPS) {
+      expect(isSettingsGroup(group)).toBe(true);
+      expect(navigationRoute(group)).toBe("settings");
+      expect(parseRoute(routeHash(group))).toBe(group);
+    }
+    expect(isSettingsGroup("settings")).toBe(false);
+    expect(parseRoute("#/einstellungen")).toBe("settings");
+    expect(parseRoute("#/einstellungen/gibt-es-nicht")).toBe("today");
   });
 
   it("Die Navigation zeigt Heute, Woche, Statistik und Einstellungen; Aufgaben und Erledigt liegen dahinter", () => {

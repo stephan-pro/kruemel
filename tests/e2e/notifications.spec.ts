@@ -18,7 +18,7 @@ import { FAKE_SERVER } from "./shared";
 // with the browser's Push API played by `pushMock.ts`. The fake server records the test
 // notifications instead of delivering them (`GET /test/pushes`).
 
-const SETTINGS = "#/einstellungen";
+const SETTINGS = "#/einstellungen/benachrichtigungen";
 const IPHONE_SAFARI =
   "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1";
 
@@ -44,7 +44,7 @@ async function openSettings(page: Page, mock: PushMock = {}, items: Record<strin
   }
   const member = await startShared(page, undefined, SETTINGS);
   // The first page takes no focus (see `goToPage`): its heading being there is enough.
-  await expect(page.getByRole("heading", { level: 1, name: "Einstellungen" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Benachrichtigungen" })).toBeVisible();
   return member;
 }
 
@@ -171,7 +171,8 @@ test.describe("NT-a Benachrichtigungen", () => {
 
     await expect(statusOf(page)).toHaveText(NOTIFICATION_STATUS_TEXTS.notConfigured);
     await expect(tileOf(page).getByRole("button")).toHaveCount(0);
-    await expect(page.getByRole("region", { name: "Darstellung" })).toBeVisible();
+    await page.getByRole("link", { name: "Zurück zu Einstellungen" }).click();
+    await expect(page.getByRole("link", { name: /^Darstellung/ })).toBeVisible();
     expect((await pushMockState(page)).asked).toBe(0);
   });
 
@@ -250,6 +251,9 @@ test.describe("NT-a Benachrichtigungen", () => {
     await page.keyboard.press("Enter");
     await expect(tileHeading(page)).toBeFocused();
     // The settings come first, the buttons for the test and for switching off after them.
+    await expect(
+      tileOf(page).getByRole("switch", { name: SETTINGS_TEXTS.dailyLabel }),
+    ).toBeVisible();
     await page.keyboard.press("Tab");
     await expect(
       tileOf(page).getByRole("switch", { name: SETTINGS_TEXTS.dailyLabel }),
@@ -610,14 +614,25 @@ test.describe("NT-b Gerät abmelden, ersetzte Adresse, Zeitzone", () => {
     const account = page.getByRole("region", { name: ACCOUNT_TEXTS.accountTile });
     const dialog = page.getByRole("dialog", { name: ACCOUNT_TEXTS.signOutQuestion });
 
+    // "Abmelden" belongs to "Konto und Haushalt", the switch to "Benachrichtigungen".
+    const goTo = async (hash: string, title: string) => {
+      await page.evaluate((target) => {
+        location.hash = target;
+      }, hash);
+      await expectPageShown(page, title);
+    };
+
     // Not on here: nothing to say about it.
+    await goTo("#/einstellungen/konto", "Konto und Haushalt");
     await account.getByRole("button", { name: ACCOUNT_TEXTS.signOut }).first().click();
     await expect(dialog).toBeVisible();
     await expect(dialog).not.toContainText(NOTIFICATION_TEXTS.signOutNote);
     await dialog.getByRole("button", { name: "Abbrechen" }).click();
 
+    await goTo(SETTINGS, "Benachrichtigungen");
     await enable(page);
     expect(await serverDevices(page, member)).toHaveLength(1);
+    await goTo("#/einstellungen/konto", "Konto und Haushalt");
     await account.getByRole("button", { name: ACCOUNT_TEXTS.signOut }).first().click();
     await expect(dialog).toContainText(NOTIFICATION_TEXTS.signOutNote);
     await dialog.getByRole("button", { name: ACCOUNT_TEXTS.signOut }).click();
@@ -653,7 +668,7 @@ test.describe("NT-a Benachrichtigungen ohne Anmeldung", () => {
     page,
   }) => {
     await startLocal(page, undefined, SETTINGS);
-    await expect(page.getByRole("heading", { level: 1, name: "Einstellungen" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Benachrichtigungen" })).toBeVisible();
 
     await expect(statusOf(page)).toHaveText(NOTIFICATION_STATUS_TEXTS.unavailable);
     await expect(tileOf(page).getByRole("button")).toHaveCount(0);

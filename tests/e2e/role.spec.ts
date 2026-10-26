@@ -12,7 +12,15 @@ import {
   signInWithCode,
 } from "./account";
 import { expectNoAccessibilityViolations } from "./axe";
-import { dataKey, deviceKey, expectPageShown, goToPage, greetingHeading, today } from "./helpers";
+import {
+  dataKey,
+  deviceKey,
+  expectPageShown,
+  goToPage,
+  greetingHeading,
+  openSettings,
+  today,
+} from "./helpers";
 import { E2E_APP } from "./shared";
 
 // Package E2-2e: "Ich bin" comes from the role in the household, not from a choice on the device.
@@ -87,7 +95,7 @@ test.describe("E2-2e „Ich bin“ aus der Rolle", () => {
     await expectPageShown(alex, greetingHeading("Alex"));
 
     await expect(alex.getByText(ACCOUNT_TEXTS.signedInAs)).toContainText("Alex");
-    await goToPage(alex, "Einstellungen");
+    await openSettings(alex, "Konto und Haushalt");
     // Keine Auswahl „Ich bin“ und keine eigenen Namen mehr; die E-Mail-Adresse steht bei „Anmeldung“.
     await expect(alex.getByLabel("Name der ersten Person")).toHaveCount(0);
     await expect(alex.getByRole("group", { name: /Ich bin/ })).toHaveCount(0);
@@ -109,7 +117,7 @@ test.describe("E2-2e „Ich bin“ aus der Rolle", () => {
     await signInWithCode(founder, newAddress());
     await createHousehold(founder, "Alex", "Dilan");
     await expectPageShown(founder, greetingHeading("Alex"));
-    await goToPage(founder, "Einstellungen");
+    await openSettings(founder, "Konto und Haushalt");
     await householdTile(founder)
       .getByRole("button", { name: HOUSEHOLD_TEXTS.createInvite })
       .click();
@@ -125,7 +133,7 @@ test.describe("E2-2e „Ich bin“ aus der Rolle", () => {
     // Die Rolle und die Namen des Haushalts gelten, nicht die des Geräts.
     await expectPageShown(dilan, greetingHeading("Dilan"));
     await expect(dilan.getByText(ACCOUNT_TEXTS.signedInAs)).toContainText("Dilan");
-    await goToPage(dilan, "Einstellungen");
+    await openSettings(dilan, "Konto und Haushalt");
     await expect(dilan.getByLabel("Name der ersten Person")).toHaveCount(0);
     await expect(householdTile(dilan).locator('[data-person="personB"]')).toContainText(
       "Dilan (du)",

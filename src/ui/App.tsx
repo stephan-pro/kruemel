@@ -73,9 +73,13 @@ import {
   inviteHash,
   inviteTokenFrom,
   isLegalRoute,
+  isSettingsGroup,
+  navigationRoute,
   type PageLocation,
   parseLocation,
+  type Route,
   routeHash,
+  type SettingsRoute,
 } from "./route";
 import { useHousehold } from "./useHousehold";
 import { useToday } from "./useToday";
@@ -319,6 +323,21 @@ export function App({
     setInvite(takeInvite(householdApi !== undefined));
     setFriendInvite(takeFriendInvite(householdApi !== undefined));
   });
+  // The page shown just before this one: coming back from a group, the settings overview puts
+  // the focus on that group's row (UX-a).
+  const pages = useRef<{ now: Route; before: Route | undefined }>({
+    now: route,
+    before: undefined,
+  });
+  if (pages.current.now !== route) {
+    pages.current = { now: route, before: pages.current.now };
+  }
+  const cameFrom: SettingsRoute | undefined =
+    route === "settings" &&
+    pages.current.before !== undefined &&
+    isSettingsGroup(pages.current.before)
+      ? pages.current.before
+      : undefined;
   const today = useToday();
   const install = useInstallWay();
 
@@ -832,7 +851,7 @@ export function App({
 
   // The other person may have joined meanwhile: the settings show the household as it is now.
   useEffect(() => {
-    if (route === "settings" && joined !== null) {
+    if (navigationRoute(route) === "settings" && joined !== null) {
       void household.refresh();
     }
   }, [route, joined !== null]);
@@ -1009,8 +1028,10 @@ export function App({
             state.status === "ready" &&
             names !== undefined &&
             person === undefined && <WhoAmIPage names={names} onSubmit={savePerson} />}
-          {inApp && route === "settings" && (
+          {inApp && (route === "settings" || isSettingsGroup(route)) && (
             <SettingsPage
+              group={isSettingsGroup(route) ? route : undefined}
+              cameFrom={cameFrom}
               data={state.data}
               names={names}
               today={today}

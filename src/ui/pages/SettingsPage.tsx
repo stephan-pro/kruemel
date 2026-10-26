@@ -1,4 +1,6 @@
-import { useState } from "preact/hooks";
+import { ArrowLeft } from "lucide-preact";
+import type { ComponentChildren } from "preact";
+import { useEffect, useState } from "preact/hooks";
 import type { HouseholdInfo, Invite } from "../../auth/household";
 import type { CalendarDay } from "../../domain/date";
 import type { PersonNameInput } from "../../domain/personNames";
@@ -20,14 +22,20 @@ import { NamesForm } from "../components/NamesForm";
 import { NotificationTile } from "../components/NotificationTile";
 import { OtherDeviceTile } from "../components/OtherDeviceTile";
 import { PageTitle } from "../components/PageTitle";
+import { SettingsOverview } from "../components/SettingsOverview";
 import { SyncTile } from "../components/SyncTile";
 import { VersionTile } from "../components/VersionTile";
 import { errorText } from "../errorText";
 import type { InstallWay } from "../install";
 import { LEGAL_TEXTS } from "../legalTexts";
-import { routeInfo } from "../route";
+import { routeHash, routeInfo, type SettingsRoute } from "../route";
+import { SETTINGS_TEXTS } from "../settingsTexts";
 
 interface SettingsPageProps {
+  /** The group page to show (UX-a); missing: the overview. */
+  readonly group?: SettingsRoute | undefined;
+  /** The group page the person comes back from; the overview focuses its row. */
+  readonly cameFrom?: SettingsRoute | undefined;
   /** Everything the app keeps: what "Sicherung" writes to a file. */
   readonly data: AppData;
   readonly names: PersonNames;
@@ -103,6 +111,8 @@ const SCHEMES: readonly Choice<ColorScheme>[] = [
 ];
 
 export function SettingsPage({
+  group,
+  cameFrom,
   data,
   names,
   today,
@@ -150,10 +160,36 @@ export function SettingsPage({
     }
   }
 
-  return (
-    <>
-      <PageTitle title={routeInfo("settings").title} />
-      <div class="page-stack">
+  // A group page opens at its top; the overview does the same itself (and the focus).
+  useEffect(() => {
+    if (group !== undefined) {
+      window.scrollTo(0, 0);
+    }
+  }, [group]);
+
+  if (group === undefined) {
+    return (
+      <SettingsOverview
+        signedIn={account !== undefined}
+        {...(household
+          ? {
+              household: {
+                name: household.info.name,
+                people: household.info.members.length,
+              },
+            }
+          : {})}
+        logoMotion={logoMotion}
+        notifications={notifications}
+        {...(sync ? { sync } : {})}
+        cameFrom={cameFrom}
+      />
+    );
+  }
+
+  const tiles: Record<SettingsRoute, ComponentChildren> = {
+    settingsAccount: (
+      <>
         {/* In a household the names and "Ich bin" come from the household; see the tile below. */}
         {!household && (
           <section class="tile tile--narrow" aria-labelledby="namen">
@@ -171,46 +207,6 @@ export function SettingsPage({
             />
           </section>
         )}
-        {/* N8: takes effect at once, without "Speichern": it only changes how this device looks. */}
-        <section class="tile tile--narrow form" aria-labelledby="darstellung">
-          <h2 class="tile__title" id="darstellung">
-            Darstellung
-          </h2>
-          <p class="muted">Gilt nur für dieses Gerät und wirkt sofort.</p>
-          <RadioGroup
-            name="farbschema"
-            legend="Farbschema"
-            choices={SCHEMES}
-            value={colorScheme}
-            onChange={chooseScheme}
-          />
-          {schemeError && <ErrorAlert title="Nicht gespeichert">{schemeError}</ErrorAlert>}
-          <div class="choice">
-            <input
-              class="choice__input choice__input--switch"
-              type="checkbox"
-              role="switch"
-              id="kruemel-bewegt-sich"
-              checked={logoMotion}
-              aria-checked={logoMotion}
-              aria-describedby="kruemel-bewegt-sich-hinweis"
-              onChange={(event) => void chooseLogoMotion(event.currentTarget.checked)}
-            />
-            <label class="choice__label" for="kruemel-bewegt-sich">
-              {APPEARANCE_TEXTS.logoMotionLabel}
-            </label>
-          </div>
-          <p class="muted" id="kruemel-bewegt-sich-hinweis">
-            {APPEARANCE_TEXTS.logoMotionHint}
-          </p>
-        </section>
-        <NotificationTile
-          notifications={notifications}
-          testOnly={notificationsTestOnly}
-          otherName={household ? otherMember(household.info, names) : undefined}
-        />
-        {sync && <SyncTile status={sync.status} rejected={sync.rejected} />}
-        <BackupTile data={data} today={today} shared={shared} onImport={importBackup} />
         {household && (
           <HouseholdTile
             household={household.info}
@@ -253,6 +249,58 @@ export function SettingsPage({
         )}
         <InstallTile way={installWay} onInstall={onInstall} shared={shared} />
         <OtherDeviceTile address={appAddress()} shared={shared} />
+      </>
+    ),
+    settingsNotifications: (
+      <NotificationTile
+        notifications={notifications}
+        testOnly={notificationsTestOnly}
+        otherName={household ? otherMember(household.info, names) : undefined}
+      />
+    ),
+    settingsAppearance: (
+      /* N8: takes effect at once, without "Speichern": it only changes how this device looks. */
+      <section class="tile tile--narrow form" aria-labelledby="darstellung">
+        <h2 class="tile__title" id="darstellung">
+          Darstellung
+        </h2>
+        <p class="muted">Gilt nur für dieses Gerät und wirkt sofort.</p>
+        <RadioGroup
+          name="farbschema"
+          legend="Farbschema"
+          choices={SCHEMES}
+          value={colorScheme}
+          onChange={chooseScheme}
+        />
+        {schemeError && <ErrorAlert title="Nicht gespeichert">{schemeError}</ErrorAlert>}
+        <div class="choice">
+          <input
+            class="choice__input choice__input--switch"
+            type="checkbox"
+            role="switch"
+            id="kruemel-bewegt-sich"
+            checked={logoMotion}
+            aria-checked={logoMotion}
+            aria-describedby="kruemel-bewegt-sich-hinweis"
+            onChange={(event) => void chooseLogoMotion(event.currentTarget.checked)}
+          />
+          <label class="choice__label" for="kruemel-bewegt-sich">
+            {APPEARANCE_TEXTS.logoMotionLabel}
+          </label>
+        </div>
+        <p class="muted" id="kruemel-bewegt-sich-hinweis">
+          {APPEARANCE_TEXTS.logoMotionHint}
+        </p>
+      </section>
+    ),
+    settingsData: (
+      <>
+        {sync && <SyncTile status={sync.status} rejected={sync.rejected} />}
+        <BackupTile data={data} today={today} shared={shared} onImport={importBackup} />
+      </>
+    ),
+    settingsLegal: (
+      <>
         <VersionTile />
         <section class="tile tile--narrow" aria-labelledby="rechtliches">
           <h2 class="tile__title" id="rechtliches">
@@ -261,7 +309,22 @@ export function SettingsPage({
           <p class="muted">{LEGAL_TEXTS.settingsIntro}</p>
           <LegalLinks />
         </section>
-      </div>
+      </>
+    ),
+  };
+
+  return (
+    <>
+      <a
+        class="btn btn--quiet settings-back"
+        href={routeHash("settings")}
+        aria-label={SETTINGS_TEXTS.backLabel}
+      >
+        <ArrowLeft size={20} aria-hidden="true" />
+        {SETTINGS_TEXTS.title}
+      </a>
+      <PageTitle title={routeInfo(group).title} />
+      <div class="page-stack">{tiles[group]}</div>
     </>
   );
 }

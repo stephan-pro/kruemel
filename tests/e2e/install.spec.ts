@@ -1,6 +1,6 @@
 import { expect, type Page, test } from "@playwright/test";
 import { expectNoAccessibilityViolations } from "./axe";
-import { deviceKey, expectPageShown, goToPage, openWeek, startLocal } from "./helpers";
+import { deviceKey, expectPageShown, openSettings, openWeek, startLocal } from "./helpers";
 
 // Package 13: help with installing (N3). A test cannot install an app; it plays the browser's
 // part: the install question (`beforeinstallprompt`, offered by Chromium browsers), the browser
@@ -66,7 +66,7 @@ test.describe("N3 Knopf „App installieren“, wo der Browser es anbietet", () 
     expect(await installPrompts(page)).toBe(1);
     await expect(hint(page)).toHaveCount(0);
     await expectPageShown(page, "Diese Woche");
-    await goToPage(page, "Einstellungen");
+    await openSettings(page, "Konto und Haushalt");
     await expect(installTile(page)).toContainText("als App installiert");
   });
 
@@ -80,7 +80,7 @@ test.describe("N3 Knopf „App installieren“, wo der Browser es anbietet", () 
     await hint(page).getByRole("button", { name: "App installieren" }).click();
 
     await expect(hint(page)).toHaveCount(0);
-    await goToPage(page, "Einstellungen");
+    await openSettings(page, "Konto und Haushalt");
     await expect(installTile(page).getByRole("button")).toHaveCount(0);
     await expect(installTile(page)).toContainText("Zum Startbildschirm hinzufügen");
   });
@@ -88,7 +88,7 @@ test.describe("N3 Knopf „App installieren“, wo der Browser es anbietet", () 
   test("N3 Die Einstellungen bieten „App installieren“ ebenfalls an", async ({ page }) => {
     await openWeek(page);
     await offerInstall(page);
-    await goToPage(page, "Einstellungen");
+    await openSettings(page, "Konto und Haushalt");
 
     await installTile(page).getByRole("button", { name: "App installieren" }).click();
 
@@ -117,7 +117,7 @@ test.describe("N3 Hinweis schließen", () => {
     await expect(page.getByRole("heading", { name: "Überfällig" })).toBeVisible();
     await expect(hint(page)).toHaveCount(0);
 
-    await goToPage(page, "Einstellungen");
+    await openSettings(page, "Konto und Haushalt");
     await expect(installTile(page).getByRole("button", { name: "App installieren" })).toBeVisible();
   });
 });
@@ -132,7 +132,7 @@ test.describe("N3 Ohne Weg zur Installation kein Hinweis", () => {
 
     await expect(page.getByRole("heading", { name: "Woche im Überblick" })).toBeVisible();
     await expect(hint(page)).toHaveCount(0);
-    await goToPage(page, "Einstellungen");
+    await openSettings(page, "Konto und Haushalt");
     await expect(installTile(page)).toContainText("Firefox am PC kann keine Apps installieren");
     await expect(installTile(page)).not.toContainText("Xiaomi");
   });
@@ -153,7 +153,7 @@ test.describe("N3 Als installierte App", () => {
 
     await expect(page.getByRole("heading", { name: "Woche im Überblick" })).toBeVisible();
     await expect(hint(page)).toHaveCount(0);
-    await goToPage(page, "Einstellungen");
+    await openSettings(page, "Konto und Haushalt");
     await expect(installTile(page)).toContainText(
       "Krümel ist auf diesem Gerät als App installiert.",
     );
@@ -199,7 +199,7 @@ test.describe("N3 iPhone: bebilderte Anleitung", () => {
 
   test("N3 Die Einstellungen zeigen dieselbe Anleitung", async ({ page }) => {
     await openWeek(page);
-    await goToPage(page, "Einstellungen");
+    await openSettings(page, "Konto und Haushalt");
 
     await expect(installTile(page).getByRole("listitem")).toHaveCount(3);
     await expect(installTile(page)).toContainText("Zum Home-Bildschirm");
@@ -226,7 +226,7 @@ test.describe("N3 Firefox auf Android: Browsermenü und Erlaubnis auf Xiaomi-Han
     await expectNoAccessibilityViolations(page);
     await page.keyboard.press("Escape");
 
-    await goToPage(page, "Einstellungen");
+    await openSettings(page, "Konto und Haushalt");
     await expect(installTile(page)).toContainText("Startbildschirm-Verknüpfungen");
   });
 });
@@ -236,7 +236,7 @@ test.describe("N3 Auf anderem Gerät öffnen", () => {
     page,
   }) => {
     await openWeek(page);
-    await goToPage(page, "Einstellungen");
+    await openSettings(page, "Konto und Haushalt");
     const tile = page.getByRole("region", { name: "Auf anderem Gerät öffnen" });
     const toggle = tile.getByRole("button", { name: "QR-Code zeigen" });
     const address = new URL("./", page.url()).href;
@@ -272,7 +272,7 @@ test.describe("K2a Ohne Konto (Modus local) bleiben die Daten auf dem Gerät", (
     page,
   }) => {
     await startLocal(page);
-    await goToPage(page, "Einstellungen");
+    await openSettings(page, "Konto und Haushalt");
 
     await expect(page.getByRole("region", { name: "Auf anderem Gerät öffnen" })).toContainText(
       "Die Daten kommen nicht mit",
@@ -290,7 +290,7 @@ test.describe("N3 QR-Code nach einem Update", () => {
   }) => {
     await page.route(/\/assets\/qrCode-.*\.js$/, (route) => route.fulfill({ status: 404 }));
     await openWeek(page);
-    await goToPage(page, "Einstellungen");
+    await openSettings(page, "Konto und Haushalt");
     const tile = page.getByRole("region", { name: "Auf anderem Gerät öffnen" });
 
     await tile.getByRole("button", { name: "QR-Code zeigen" }).click();
@@ -307,7 +307,7 @@ test.describe("Version", () => {
     page,
   }) => {
     await openWeek(page);
-    await goToPage(page, "Einstellungen");
+    await openSettings(page, "Rechtliches");
     const tile = page.getByRole("region", { name: "Version" });
 
     await expect(tile).toContainText(/Stand: \d\d\.\d\d\.\d{4}, \d\d:\d\d Uhr \(lokal gebaut\)/);
@@ -318,6 +318,6 @@ test.describe("Version", () => {
     await tile.getByRole("button", { name: "Neu laden" }).click();
 
     await expect.poll(() => page.evaluate(() => "beforeReload" in window)).toBe(false);
-    await expect(page.getByRole("heading", { level: 1, name: "Einstellungen" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Rechtliches" })).toBeVisible();
   });
 });

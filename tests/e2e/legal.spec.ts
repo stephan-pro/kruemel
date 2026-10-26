@@ -11,7 +11,7 @@ import {
 } from "../../src/ui/legalTexts";
 import { createHousehold, newAddress, signInWithCode } from "./account";
 import { expectNoAccessibilityViolations } from "./axe";
-import { expectPageShown, goToPage, greetingHeading } from "./helpers";
+import { expectPageShown, greetingHeading, openSettings } from "./helpers";
 import { E2E_APP } from "./shared";
 
 // Package E2-5c: Impressum and Datenschutzerklärung. Both open without signing in, are linked
@@ -137,7 +137,7 @@ test.describe("E2-5c Impressum und Datenschutzerklärung", () => {
 
     await createHousehold(alex, "Alex", "Dilan");
     await expectPageShown(alex, greetingHeading("Alex"));
-    await goToPage(alex, "Einstellungen");
+    await openSettings(alex, "Rechtliches");
     const tile = alex.locator('section[aria-labelledby="rechtliches"]');
     await expect(tile.getByRole("heading", { name: LEGAL_TEXTS.settingsTitle })).toBeVisible();
 
@@ -151,8 +151,9 @@ test.describe("E2-5c Impressum und Datenschutzerklärung", () => {
         name: "Einstellungen",
       }),
     ).toHaveAttribute("aria-current", "true");
+    // UX-a: back to where the person came from, the group page "Rechtliches".
     await backButton(alex).click();
-    await expectPageShown(alex, "Einstellungen");
+    await expectPageShown(alex, "Rechtliches");
     await alex.context().setOffline(false);
   });
 
@@ -162,7 +163,7 @@ test.describe("E2-5c Impressum und Datenschutzerklärung", () => {
     await signInWithCode(host, newAddress());
     await createHousehold(host, "Alex", "Dilan");
     await expectPageShown(host, greetingHeading("Alex"));
-    await goToPage(host, "Einstellungen");
+    await openSettings(host, "Konto und Haushalt");
     const tile = host.locator('section[aria-labelledby="haushalt"]');
     await tile.getByRole("button", { name: HOUSEHOLD_TEXTS.createInvite }).click();
     const link = await host.getByLabel(HOUSEHOLD_TEXTS.secondPersonLinkField).inputValue();

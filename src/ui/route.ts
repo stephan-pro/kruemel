@@ -1,6 +1,8 @@
 // The pages and their addresses (hash router: "#/woche" …). Pure functions; the page itself
 // listens to `hashchange`.
 
+import { SETTINGS_GROUP_TITLES } from "./settingsTexts";
+
 /** The pages in the navigation (the plus for a new task is a link to a form, not a page). */
 export type MainRoute = "today" | "week" | "statistics" | "settings";
 
@@ -10,8 +12,16 @@ export type SubRoute = "tasks" | "done";
 /** Pages that open without signing in (E2-5c): Impressum and Datenschutzerklärung. */
 export type LegalRoute = "imprint" | "privacy";
 
+/** The pages below "Einstellungen" (UX-a): one per group of the overview. */
+export type SettingsRoute =
+  | "settingsAccount"
+  | "settingsNotifications"
+  | "settingsAppearance"
+  | "settingsData"
+  | "settingsLegal";
+
 /** Every page with a list entry in `ROUTES`. */
-export type ListedRoute = MainRoute | SubRoute | LegalRoute;
+export type ListedRoute = MainRoute | SubRoute | LegalRoute | SettingsRoute;
 
 /** The listed pages plus the two task forms, which belong to "Aufgaben". */
 export type Route = ListedRoute | "taskNew" | "taskEdit";
@@ -26,6 +36,11 @@ interface RouteInfo<R extends ListedRoute = ListedRoute> {
   readonly title: string;
 }
 
+/** A group page of the settings: its address is below "#/einstellungen/", its name the title. */
+function groupInfo(route: SettingsRoute, path: string, title: string): RouteInfo {
+  return { route, path: `einstellungen/${path}`, label: title, title };
+}
+
 export const ROUTES: readonly RouteInfo[] = [
   { route: "today", path: "heute", label: "Heute", title: "Heute" },
   { route: "week", path: "woche", label: "Woche", title: "Wochenübersicht" },
@@ -33,6 +48,11 @@ export const ROUTES: readonly RouteInfo[] = [
   { route: "done", path: "erledigt", label: "Erledigt", title: "Erledigt" },
   { route: "statistics", path: "statistik", label: "Statistik", title: "Statistik" },
   { route: "settings", path: "einstellungen", label: "Einstellungen", title: "Einstellungen" },
+  groupInfo("settingsAccount", "konto", SETTINGS_GROUP_TITLES.account),
+  groupInfo("settingsNotifications", "benachrichtigungen", SETTINGS_GROUP_TITLES.notifications),
+  groupInfo("settingsAppearance", "darstellung", SETTINGS_GROUP_TITLES.appearance),
+  groupInfo("settingsData", "daten", SETTINGS_GROUP_TITLES.data),
+  groupInfo("settingsLegal", "rechtliches", SETTINGS_GROUP_TITLES.legal),
   { route: "imprint", path: "impressum", label: "Impressum", title: "Impressum" },
   { route: "privacy", path: "datenschutz", label: "Datenschutz", title: "Datenschutzerklärung" },
 ];
@@ -40,6 +60,19 @@ export const ROUTES: readonly RouteInfo[] = [
 /** Whether the page shows without signing in and before anything else (E2-5c). */
 export function isLegalRoute(route: Route): route is LegalRoute {
   return route === "imprint" || route === "privacy";
+}
+
+/** The group pages of the settings, in the order of the overview. */
+export const SETTINGS_GROUPS: readonly SettingsRoute[] = [
+  "settingsAccount",
+  "settingsNotifications",
+  "settingsAppearance",
+  "settingsData",
+  "settingsLegal",
+];
+
+export function isSettingsGroup(route: Route): route is SettingsRoute {
+  return (SETTINGS_GROUPS as readonly Route[]).includes(route);
 }
 
 /** The entries of the navigation, in this order (the plus for a new task sits after "Woche"). */
@@ -73,10 +106,10 @@ export function routeLabel(route: MainRoute): string {
 
 /**
  * The navigation entry a page belongs to; the list pages and task forms belong to "Woche", the
- * legal pages to "Einstellungen".
+ * legal pages and the groups of the settings to "Einstellungen".
  */
 export function navigationRoute(route: Route): MainRoute {
-  if (isLegalRoute(route)) {
+  if (isLegalRoute(route) || isSettingsGroup(route)) {
     return "settings";
   }
   return route === "tasks" || route === "done" || route === "taskNew" || route === "taskEdit"

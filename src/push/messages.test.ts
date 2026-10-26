@@ -70,12 +70,12 @@ describe("NT-a Meldungen des Service Workers", () => {
     ]);
   });
 
-  it("NT-d Beitritt: mit Namen aus dem Haushalt oder ohne; Tippen öffnet die Einstellungen", () => {
+  it("NT-d Beitritt: mit Namen aus dem Haushalt oder ohne; Tippen öffnet „Konto und Haushalt“", () => {
     expect(notificationFor({ v: 1, k: "joined", name: "Robin" })).toEqual({
       title: "Krümel",
       body: "Robin ist jetzt im Haushalt dabei.",
       tag: "joined",
-      open: "#/einstellungen",
+      open: "#/einstellungen/konto",
     });
     expect(notificationFor({ v: 1, k: "joined" }).body).toBe(
       "Jemand ist jetzt in deinem Haushalt dabei.",
@@ -184,6 +184,9 @@ describe("NT-a Meldungen des Service Workers", () => {
     ]);
 
     expect(openPageOf({ open: "#/woche" })).toBe("#/woche");
+    // UX-a: messages shown before keep their page, the new group page is allowed too.
+    expect(openPageOf({ open: "#/einstellungen" })).toBe("#/einstellungen");
+    expect(openPageOf({ open: "#/einstellungen/konto" })).toBe("#/einstellungen/konto");
     expect([openPageOf({ open: "https://example.org" }), openPageOf(null)]).toEqual([
       "#/heute",
       "#/heute",

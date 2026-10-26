@@ -9,6 +9,7 @@ import {
   goToPage,
   localData,
   notice,
+  openSettings,
   startLocal,
   store,
   textFile,
@@ -168,7 +169,7 @@ test.describe("N3 Farbe der Leiste je Farbschema", () => {
     page,
   }) => {
     await startLocal(page);
-    await goToPage(page, "Einstellungen");
+    await openSettings(page, "Darstellung");
 
     await page.getByRole("radio", { name: "Dunkel" }).check();
     expect(await themeColors(page)).toEqual([
@@ -273,7 +274,7 @@ test.describe("N3 Service Worker und Nutzung ohne Internet", () => {
     await startInstalled(page);
     await context.setOffline(true);
     await page.reload();
-    await goToPage(page, "Einstellungen");
+    await openSettings(page, "Daten");
 
     const [download] = await Promise.all([
       page.waitForEvent("download"),
@@ -312,7 +313,7 @@ test.describe("N3 Service Worker und Nutzung ohne Internet", () => {
     await startInstalled(page);
     await context.setOffline(true);
     await page.reload();
-    await goToPage(page, "Einstellungen");
+    await openSettings(page, "Konto und Haushalt");
 
     await page.getByRole("button", { name: "QR-Code zeigen" }).click();
 
@@ -367,7 +368,7 @@ test.describe("N3 Service Worker und Nutzung ohne Internet", () => {
     await startInstalled(page);
 
     // Ein Download ist eine blob:-Adresse der Seite; sie darf nie im Speicher des Service Workers landen.
-    await goToPage(page, "Einstellungen");
+    await openSettings(page, "Daten");
     await Promise.all([
       page.waitForEvent("download"),
       page.getByRole("button", { name: "Sicherung herunterladen", exact: true }).click(),
@@ -422,7 +423,7 @@ test.describe("S6 Content Security Policy", () => {
     });
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 
-    await goToPage(page, "Einstellungen");
+    await openSettings(page, "Konto und Haushalt");
     await page.getByRole("button", { name: "QR-Code zeigen" }).click();
     await expect(page.getByRole("img", { name: /^QR-Code mit der Adresse / })).toBeVisible();
     await goToPage(page, "Aufgaben");

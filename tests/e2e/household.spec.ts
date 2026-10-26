@@ -4,7 +4,7 @@ import { ACCOUNT_TEXTS } from "../../src/ui/accountTexts";
 import { HOUSEHOLD_TEXTS, INVITE_FAILURE_TITLES } from "../../src/ui/householdTexts";
 import { createHousehold, newAddress, signInWithCode } from "./account";
 import { expectNoAccessibilityViolations } from "./axe";
-import { expectPageShown, goToPage, greetingHeading } from "./helpers";
+import { expectPageShown, goToPage, greetingHeading, openSettings } from "./helpers";
 import { E2E_APP, FAKE_SERVER } from "./shared";
 
 // Package E2-2d: the household and the invite against the fake server. Each person uses a
@@ -37,7 +37,7 @@ async function founder(browser: Browser, own = "Alex", other = "Dilan"): Promise
 /** In the settings of `page`: a new invite link. */
 async function inviteLink(page: Page): Promise<string> {
   if (!(await householdTile(page).isVisible())) {
-    await goToPage(page, "Einstellungen");
+    await openSettings(page, "Konto und Haushalt");
   }
   const button = householdTile(page).getByRole("button", {
     name: new RegExp(`${HOUSEHOLD_TEXTS.createInvite}|${HOUSEHOLD_TEXTS.newInvite}`),
@@ -75,7 +75,7 @@ test.describe("E2-2d Haushalt und Einladung", () => {
 
     // Ein neues Gerät übernimmt die Namen des Haushalts: keine Ersteinrichtung.
     await expectPageShown(alex, greetingHeading("Alex"));
-    await goToPage(alex, "Einstellungen");
+    await openSettings(alex, "Konto und Haushalt");
     const tile = householdTile(alex);
     await expect(tile.locator('[data-person="personA"]')).toHaveText(/Alex \(du\)\s*dabei/);
     await expect(tile.locator('[data-person="personB"]')).toHaveText(/Dilan\s*noch nicht dabei/);
@@ -106,7 +106,7 @@ test.describe("E2-2d Haushalt und Einladung", () => {
 
     await expectPageShown(dilan, greetingHeading("Dilan"));
     await expect(dilan.getByText(ACCOUNT_TEXTS.signedInAs)).toContainText("Dilan");
-    await goToPage(dilan, "Einstellungen");
+    await openSettings(dilan, "Konto und Haushalt");
     await expect(householdTile(dilan).locator('[data-person="personB"]')).toHaveText(
       /Dilan \(du\)\s*dabei/,
     );
@@ -115,7 +115,7 @@ test.describe("E2-2d Haushalt und Einladung", () => {
 
     // Beim nächsten Öffnen der Einstellungen sieht Alex, dass Dilan dabei ist.
     await goToPage(alex, "Heute", greetingHeading("Alex"));
-    await goToPage(alex, "Einstellungen");
+    await openSettings(alex, "Konto und Haushalt");
     await expect(householdTile(alex)).toContainText(HOUSEHOLD_TEXTS.bothJoined);
   });
 
@@ -289,7 +289,7 @@ test.describe("E2-3g Namen ändern", () => {
     await expectNoAccessibilityViolations(alex);
 
     // Dilan sieht beides in den Einstellungen und ändert den eigenen Namen.
-    await goToPage(dilan.page, "Einstellungen");
+    await openSettings(dilan.page, "Konto und Haushalt");
     await expect(householdNameField(dilan.page)).toHaveValue("WG Sonnenweg");
     await expect(householdTile(dilan.page).locator('[data-person="personA"]')).toHaveText(
       /Alexa\s*dabei/,
@@ -307,7 +307,7 @@ test.describe("E2-3g Namen ändern", () => {
     browser,
   }) => {
     const alex = await founder(browser);
-    await goToPage(alex, "Einstellungen");
+    await openSettings(alex, "Konto und Haushalt");
 
     await ownNameField(alex).fill(" ");
     await saveNamesButton(alex).click();
@@ -346,7 +346,7 @@ test.describe("E2-3g Namen ändern", () => {
     await expect(namesStatus(alex)).toHaveText(HOUSEHOLD_TEXTS.namesSaved);
     await expect(alert).toHaveCount(0);
     await alex.reload();
-    await expect(alex.getByRole("heading", { level: 1, name: "Einstellungen" })).toBeVisible();
+    await expect(alex.getByRole("heading", { level: 1, name: "Konto und Haushalt" })).toBeVisible();
     await expect(householdNameField(alex)).toHaveValue("Zuhause");
     await expect(ownNameField(alex)).toHaveValue("Alexa");
   });
@@ -362,7 +362,7 @@ test.describe("E2-4c Haushaltsname anzeigen", () => {
   }) => {
     const alex = await founder(browser);
     await expect(headerHousehold(alex)).toHaveCount(0);
-    await goToPage(alex, "Einstellungen");
+    await openSettings(alex, "Konto und Haushalt");
     await expect(tileTitle(alex)).toHaveText(HOUSEHOLD_TEXTS.tileTitle);
   });
 
@@ -385,7 +385,7 @@ test.describe("E2-4c Haushaltsname anzeigen", () => {
     // Dilan sieht ihn nach dem nächsten Abgleich (hier: beim Zurückkehren in die App).
     await dilan.page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
     await expect(headerHousehold(dilan.page)).toHaveText("WG Sonnenweg");
-    await goToPage(dilan.page, "Einstellungen");
+    await openSettings(dilan.page, "Konto und Haushalt");
     await expect(tileTitle(dilan.page)).toHaveText("WG Sonnenweg");
 
     // Dilan ändert ihn nur; Alex sieht den neuen Namen, ohne neu zu laden.
@@ -409,7 +409,7 @@ test.describe("E2-4c Haushaltsname anzeigen", () => {
     browser,
   }) => {
     const alex = await founder(browser);
-    await goToPage(alex, "Einstellungen");
+    await openSettings(alex, "Konto und Haushalt");
     const long = "Wohngemeinschaft Sonnenweg 12";
     await householdNameField(alex).fill(long);
     await saveNamesButton(alex).click();

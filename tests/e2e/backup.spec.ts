@@ -5,7 +5,14 @@ import { ACCOUNT_TEXTS } from "../../src/ui/accountTexts";
 import { SHARED_TEXTS } from "../../src/ui/householdTexts";
 import { pushAs } from "./account";
 import { expectNoAccessibilityViolations } from "./axe";
-import { FROZEN_TODAY, goToPage, openWeek, storedData, textFile } from "./helpers";
+import {
+  FROZEN_TODAY,
+  goToPage,
+  openSettings as openSettingsGroup,
+  openWeek,
+  storedData,
+  textFile,
+} from "./helpers";
 
 // Package 11: "Sicherung" in the settings (F7): all data as a file, and back from such a file after
 // a question and with an automatic copy of the current data first. The clock stands on Wednesday
@@ -38,7 +45,7 @@ function version1(data: AppData): string {
 
 async function openSettings(page: Page, data: AppData = demo()) {
   const member = await openWeek(page, data);
-  await goToPage(page, "Einstellungen");
+  await openSettingsGroup(page, "Daten");
   return member;
 }
 
@@ -128,7 +135,12 @@ test.describe("F7 Export", () => {
     page,
   }) => {
     await openSettings(page);
+    // "Darstellung" and "Sicherung" are different groups: choose dark, then come back.
+    await page.getByRole("link", { name: "Zurück zu Einstellungen" }).click();
+    await page.getByRole("link", { name: /^Darstellung\b/ }).click();
     await page.getByRole("radio", { name: "Dunkel" }).check();
+    await page.getByRole("link", { name: "Zurück zu Einstellungen" }).click();
+    await page.getByRole("link", { name: /^Daten\b/ }).click();
 
     const [download] = await Promise.all([
       page.waitForEvent("download"),

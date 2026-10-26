@@ -14,7 +14,7 @@ import {
   sharedCopyKeys,
 } from "./account";
 import { expectNoAccessibilityViolations } from "./axe";
-import { dataKey, expectPageShown, goToPage, textFile, today } from "./helpers";
+import { dataKey, expectPageShown, goToPage, openSettings, textFile, today } from "./helpers";
 import { FAKE_SERVER } from "./shared";
 
 // Package E2-3b: the household's shared data in the app (mode `e2e` = fake server). Two members
@@ -210,7 +210,7 @@ test.describe("E2-3b Gemeinsame Daten im Haushalt", () => {
 
     await a.context().setOffline(true);
     await tick(a, "Bad putzen");
-    await goToPage(a, "Einstellungen");
+    await openSettings(a, "Konto und Haushalt");
     await a.getByRole("button", { name: ACCOUNT_TEXTS.signOut }).click();
     const dialog = a.getByRole("dialog", { name: ACCOUNT_TEXTS.signOutQuestion });
     await expect(dialog).toContainText(SHARED_TEXTS.signOutPending(1));
@@ -251,7 +251,7 @@ test.describe("E2-3b Gemeinsame Daten im Haushalt", () => {
       downloads++;
     });
 
-    await goToPage(a, "Einstellungen");
+    await openSettings(a, "Konto und Haushalt");
     await a.getByRole("button", { name: ACCOUNT_TEXTS.signOut }).click();
     const dialog = a.getByRole("dialog", { name: ACCOUNT_TEXTS.signOutQuestion });
     await expect(dialog).toContainText(SHARED_TEXTS.signOutExplained);
@@ -272,10 +272,10 @@ test.describe("E2-3b Gemeinsame Daten im Haushalt", () => {
     request,
   }) => {
     const { alex, robin } = await householdOfTwo(request, seed());
-    const a = await openMember(browser, alex, "#/einstellungen");
+    const a = await openMember(browser, alex, "#/einstellungen/daten");
     const b = await openMember(browser, robin);
     await expect(article(b, "Bad putzen")).toBeVisible();
-    await heading(a, "Einstellungen");
+    await heading(a, "Daten");
 
     await a.context().setOffline(true);
     const [backup] = await Promise.all([
