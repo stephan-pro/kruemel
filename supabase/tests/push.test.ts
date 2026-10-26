@@ -17,9 +17,11 @@ import {
   call,
   couple,
   pushDevice as device,
+  literal,
   type Person,
   randomKey,
   signedIn,
+  sql,
   withHousehold,
 } from "./setup";
 
@@ -115,8 +117,13 @@ describe("NT-a Geräte für Benachrichtigungen (Datenbank)", () => {
     expect(await language()).toBe("de");
 
     // The table refuses any other value, also for the owner of the database.
-    const direct = await admin.from("push_devices").update({ locale: "fr" }).eq("user_id", alex.id);
-    expect(direct.error?.message).toMatch(/push_devices_locale/);
+    expect(
+      await failure(
+        Promise.resolve().then(() =>
+          sql(`update public.push_devices set locale = 'fr' where user_id = ${literal(alex.id)}`),
+        ),
+      ),
+    ).toContain("push_devices_locale");
     // A person reads the language of their own devices, and cannot write it directly.
     const own = await alex.client.from("push_devices").select("locale");
     expect(own.data).toEqual([{ locale: "de" }]);
