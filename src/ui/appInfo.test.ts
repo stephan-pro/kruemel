@@ -14,6 +14,16 @@ describe("Version und Adresse der App", () => {
     );
   });
 
+  it("EN-b Auf Englisch steht Datum und Uhrzeit nach englischer Art, ohne „Uhr“", () => {
+    const time = "2026-10-20T12:32:00Z";
+    expect(formatBuild({ time, commit: "a1b2c3d" }, "Europe/Berlin", "en")).toBe(
+      "20 Oct 2026, 14:32 (a1b2c3d)",
+    );
+    expect(formatBuild({ time, commit: null }, "Europe/Berlin", "en")).toBe(
+      "20 Oct 2026, 14:32 (built locally)",
+    );
+  });
+
   it("Der Build trägt seine Zeit (vite.config.ts)", () => {
     expect(Number.isNaN(Date.parse(APP_BUILD.time))).toBe(false);
   });

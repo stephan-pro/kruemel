@@ -11,19 +11,28 @@ export interface PersonNameInput {
   readonly personB: string;
 }
 
-/** One message per field that is wrong; fields that are fine are missing. */
-export type PersonNameErrors = Partial<Record<Person, string>>;
+/**
+ * What is wrong with a name, as a code the page puts into words in the language set when it shows
+ * them: `limit` is the longest length of `nameTooLong`.
+ */
+export interface PersonNameError {
+  readonly code: "nameEmpty" | "nameTooLong" | "namesEqual";
+  readonly limit?: number;
+}
+
+/** One error per field that is wrong; fields that are fine are missing. */
+export type PersonNameErrors = Partial<Record<Person, PersonNameError>>;
 
 export type PersonNamesResult =
   | { readonly ok: true; readonly names: PersonNameInput }
   | { readonly ok: false; readonly errors: PersonNameErrors };
 
-function nameError(name: string): string | undefined {
+function nameError(name: string): PersonNameError | undefined {
   if (name === "") {
-    return "Bitte einen Namen eingeben.";
+    return { code: "nameEmpty" };
   }
   if (name.length > MAX_NAME_LENGTH) {
-    return `Der Name darf höchstens ${MAX_NAME_LENGTH} Zeichen lang sein.`;
+    return { code: "nameTooLong", limit: MAX_NAME_LENGTH };
   }
   return undefined;
 }
@@ -31,7 +40,7 @@ function nameError(name: string): string | undefined {
 /** Trims both names and checks that each is filled and that the two can be told apart. */
 export function checkPersonNames(input: PersonNameInput): PersonNamesResult {
   const names = { personA: input.personA.trim(), personB: input.personB.trim() };
-  const errors: { personA?: string; personB?: string } = {};
+  const errors: { personA?: PersonNameError; personB?: PersonNameError } = {};
   const errorA = nameError(names.personA);
   const errorB = nameError(names.personB);
   if (errorA !== undefined) {
@@ -45,7 +54,7 @@ export function checkPersonNames(input: PersonNameInput): PersonNamesResult {
     errorB === undefined &&
     names.personA.toLocaleLowerCase("de") === names.personB.toLocaleLowerCase("de")
   ) {
-    errors.personB = "Die beiden Namen müssen sich unterscheiden.";
+    errors.personB = { code: "namesEqual" };
   }
   return Object.keys(errors).length > 0 ? { ok: false, errors } : { ok: true, names };
 }

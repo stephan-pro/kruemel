@@ -1,4 +1,5 @@
 import { useEffect, useState } from "preact/hooks";
+import { t } from "../../i18n";
 import type { QrPicture } from "../qrCode";
 import { ErrorAlert } from "./Alert";
 
@@ -58,8 +59,8 @@ export function QrCode({ content, label }: QrCodeProps) {
         </svg>
       )}
       {failed && (
-        <ErrorAlert title="QR-Code nicht geladen">
-          Mit Internet unter „Version“ auf „Neu laden“ tippen und es noch einmal versuchen.
+        <ErrorAlert title={t().otherDevice.codeFailedTitle}>
+          {t().otherDevice.codeFailed}
         </ErrorAlert>
       )}
     </>

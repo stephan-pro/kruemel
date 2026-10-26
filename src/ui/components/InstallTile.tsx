@@ -1,5 +1,6 @@
 import { Smartphone } from "lucide-preact";
 import { useRef } from "preact/hooks";
+import { t } from "../../i18n";
 import type { InstallWay } from "../install";
 import { InstallSteps } from "./InstallSteps";
 
@@ -24,21 +25,18 @@ export function InstallTile({ way, onInstall, shared = false }: InstallTileProps
   return (
     <section class="tile tile--narrow form" aria-labelledby="installieren">
       <h2 class="tile__title" id="installieren" tabIndex={-1} ref={heading}>
-        Als App installieren
+        {t().install.tileTitle}
       </h2>
       {way === "installed" ? (
-        <p>Krümel ist auf diesem Gerät als App installiert.</p>
+        <p>{t().install.installed}</p>
       ) : (
         <>
-          <p class="muted">
-            Vom Home-Bildschirm startet Krümel wie eine App: ohne Adressleiste und auch ohne
-            Internet.
-          </p>
+          <p class="muted">{t().install.hintText}</p>
           {way === "prompt" ? (
             <div class="button-row">
               <button class="btn btn--primary" type="button" onClick={() => void install()}>
                 <Smartphone size={20} />
-                App installieren
+                {t().install.install}
               </button>
             </div>
           ) : (

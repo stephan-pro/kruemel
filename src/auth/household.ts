@@ -6,7 +6,10 @@
 // people, an invite works once for 7 days) are enforced by the database, not by the app (S5).
 
 import type { Person } from "../domain/task";
+import { t } from "../i18n";
+import { liveTexts } from "../i18n/live";
 import type { PersonNames } from "../storage/appData";
+import { NAME_MAX } from "./limits";
 
 export interface HouseholdInfo {
   readonly id: string;
@@ -27,59 +30,47 @@ export interface Invite {
   readonly expiresAt: string;
 }
 
-/** At most this many open friend invites per person (E2-5b, database and fake). */
-export const FRIEND_INVITES_OPEN = 5;
+// The numbers live in `limits.ts` (the texts speak of them): at most `FRIEND_INVITES_OPEN` open
+// friend invites per person and `FRIEND_INVITES_PER_DAY` new ones in 24 hours, withdrawn ones
+// included (E2-5b, database and fake); an invite works `INVITE_DAYS` days; names have `NAME_MAX`.
+export { FRIEND_INVITES_OPEN, FRIEND_INVITES_PER_DAY, INVITE_DAYS, NAME_MAX } from "./limits";
 
-/** At most this many new friend invites per person in 24 hours, withdrawn ones included. */
-export const FRIEND_INVITES_PER_DAY = 10;
+/**
+ * Why a step failed; `HOUSEHOLD_MESSAGES` says it to the person. `alreadyMember`: this person
+ * already belongs to a household (creating, or accepting an invite); `noHousehold`: none yet
+ * (inviting); `householdFull`: two people belong to the household already; `invalidMember`:
+ * removing oneself, or a place that does not exist (E2-5a; leaving is `leave`);
+ * `friendInvitesOpen` / `friendInvitesToday`: already `FRIEND_INVITES_OPEN` open friend invites,
+ * or `FRIEND_INVITES_PER_DAY` in the last 24 hours (E2-5b).
+ */
+export const HOUSEHOLD_FAILURES = [
+  "notSignedIn",
+  "alreadyMember",
+  "noHousehold",
+  "inviteUnknown",
+  "inviteUsed",
+  "inviteExpired",
+  "householdFull",
+  "invalidNames",
+  "invalidHouseholdName",
+  "invalidMember",
+  "friendInvitesOpen",
+  "friendInvitesToday",
+  "offline",
+  "unknown",
+] as const;
 
-/** Why a step failed; `HOUSEHOLD_MESSAGES` says it to the person. */
-export type HouseholdFailure =
-  | "notSignedIn"
-  /** This person already belongs to a household (creating, or accepting an invite). */
-  | "alreadyMember"
-  /** This person has no household yet (inviting). */
-  | "noHousehold"
-  | "inviteUnknown"
-  | "inviteUsed"
-  | "inviteExpired"
-  /** Two people belong to the household already. */
-  | "householdFull"
-  | "invalidNames"
-  | "invalidHouseholdName"
-  /** Removing oneself, or a place that does not exist (E2-5a; leaving is `leave`). */
-  | "invalidMember"
-  /** Already `FRIEND_INVITES_OPEN` open friend invites (E2-5b). */
-  | "friendInvitesOpen"
-  /** Already `FRIEND_INVITES_PER_DAY` friend invites in the last 24 hours (E2-5b). */
-  | "friendInvitesToday"
-  | "offline"
-  | "unknown";
+export type HouseholdFailure = (typeof HOUSEHOLD_FAILURES)[number];
 
-export const HOUSEHOLD_MESSAGES: Readonly<Record<HouseholdFailure, string>> = {
-  notSignedIn: "Bitte zuerst anmelden.",
-  alreadyMember:
-    "Du gehörst schon zu einem Haushalt. Willst du wechseln, verlass zuerst deinen Haushalt (Einstellungen → Haushalt) und öffne den Link dann noch einmal.",
-  noHousehold: "Du hast noch keinen Haushalt.",
-  inviteUnknown: "Diese Einladung gibt es nicht. Bitte nach einem neuen Link fragen.",
-  inviteUsed: "Diese Einladung wurde schon benutzt. Bitte nach einem neuen Link fragen.",
-  inviteExpired: "Diese Einladung ist abgelaufen. Bitte nach einem neuen Link fragen.",
-  householdFull:
-    "In diesem Haushalt sind schon zwei Personen. Frag nach, ob jemand Platz macht, und lass dir dann einen neuen Link schicken.",
-  invalidNames: "Bitte beide Namen eingeben (höchstens 30 Zeichen).",
-  invalidHouseholdName: "Der Name des Haushalts darf höchstens 30 Zeichen lang sein.",
-  invalidMember: "Dich selbst kannst du nicht entfernen. Nimm dafür „Haushalt verlassen“.",
-  friendInvitesOpen: `Du hast schon ${FRIEND_INVITES_OPEN} offene Links. Zieh einen zurück oder warte, bis jemand einen benutzt.`,
-  friendInvitesToday: `Du hast in den letzten 24 Stunden schon ${FRIEND_INVITES_PER_DAY} Links erzeugt. Bitte versuch es morgen wieder.`,
-  offline: "Keine Verbindung zu Krümel. Prüf dein Internet und versuch es noch einmal.",
-  unknown: "Das hat nicht geklappt. Versuch es später noch einmal.",
-};
-
-/** How long an invite works (the same in the database and the fake). */
-export const INVITE_DAYS = 7;
-
-/** The longest name, as in the database. */
-export const NAME_MAX = 30;
+/**
+ * What a failure says to the person, in the language set when it is read (the texts are in
+ * `src/i18n/`). Read it when showing the message, not when the failure happens, so a switch of
+ * the language changes a message that is on the screen.
+ */
+export const HOUSEHOLD_MESSAGES: Readonly<Record<HouseholdFailure, string>> = liveTexts(
+  HOUSEHOLD_FAILURES,
+  (failure) => t().errors.household[failure],
+);
 
 export class HouseholdError extends Error {
   readonly failure: HouseholdFailure;

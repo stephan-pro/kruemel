@@ -247,6 +247,24 @@ export async function storedData(page: Page): Promise<AppData> {
   return (state === null ? null : viewOf(state.base, state.outbox)) as AppData;
 }
 
+/** Texts or boxes that stick out of their box or the page: what a longer text would break. */
+export async function overflowing(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const found: string[] = [];
+    if (document.documentElement.scrollWidth > document.documentElement.clientWidth) {
+      found.push("page scrolls sideways");
+    }
+    const selector =
+      ".btn, .main-nav__link, .segmented__option, .settings-row, h1, h2, .tile__title, .entry__title";
+    for (const element of document.querySelectorAll<HTMLElement>(selector)) {
+      if (element.offsetParent !== null && element.scrollWidth > element.clientWidth + 1) {
+        found.push(`${element.className}: ${element.textContent?.trim().slice(0, 40)}`);
+      }
+    }
+    return found;
+  });
+}
+
 /** Mode `local`: what the app has stored right now, as the app would read it back. */
 export async function localData(page: Page): Promise<AppData> {
   const text = await page.evaluate((key) => localStorage.getItem(key), dataKey);

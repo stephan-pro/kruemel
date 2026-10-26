@@ -1,8 +1,9 @@
 import { Plus, Trash2 } from "lucide-preact";
 import { useState } from "preact/hooks";
 import { addChecklistItem, type ChecklistItem, removeChecklistItem } from "../../domain/checklist";
-import { checklistItemError } from "../../domain/taskForm";
+import { checklistItemError, type TaskFormError } from "../../domain/taskForm";
 import { t } from "../../i18n";
+import { taskFormErrorText } from "../formErrors";
 import { ErrorMessage, errorId } from "./fields";
 
 interface ChecklistEditorProps {
@@ -14,8 +15,8 @@ interface ChecklistEditorProps {
   readonly draft: string;
   readonly onDraft: (text: string) => void;
   /** What is wrong with the draft, if anything; shown at the field. */
-  readonly draftError: string | undefined;
-  readonly onDraftError: (message: string | undefined) => void;
+  readonly draftError: TaskFormError | undefined;
+  readonly onDraftError: (error: TaskFormError | undefined) => void;
   /** A message about the checklist as a whole (too many items), shown at the group. */
   readonly error?: string | undefined;
 }
@@ -39,9 +40,9 @@ export function ChecklistEditor({
   const groupErrorId = errorId(`${id}-gruppe`);
 
   function add() {
-    const message = checklistItemError(draft);
-    if (message !== undefined) {
-      onDraftError(message);
+    const problem = checklistItemError(draft);
+    if (problem !== undefined) {
+      onDraftError(problem);
       document.getElementById(id)?.focus();
       return;
     }
@@ -85,7 +86,7 @@ export function ChecklistEditor({
         <label class="field__label" for={id}>
           {t().checklist.newItem}
         </label>
-        {draftError && <ErrorMessage id={errorId(id)} message={draftError} />}
+        {draftError && <ErrorMessage id={errorId(id)} message={taskFormErrorText(draftError)} />}
         <div class="checklist-editor__add">
           <input
             class="input"

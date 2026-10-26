@@ -1,5 +1,8 @@
 import { useEffect, useState } from "preact/hooks";
-import { DELETE_ACCOUNT_TEXTS, DELETE_WORD } from "../accountTexts";
+import { t } from "../../i18n";
+import { LOCALES } from "../../i18n/intl";
+import { getLanguage } from "../../i18n/language";
+import { DELETE_ACCOUNT_TEXTS } from "../accountTexts";
 import { LEAVE_TEXTS } from "../householdTexts";
 import { TextField, useFieldErrorFocus } from "./fields";
 import { BackupOffer } from "./HouseholdLeave";
@@ -20,8 +23,9 @@ interface DeleteAccountDialogProps {
 
 /**
  * "Konto endgültig löschen?" (E2-5a): what goes, what stays, that it cannot be undone and that
- * there is no way back in by oneself. The account is only deleted once "löschen" is typed (upper or
- * lower case does not matter); a wrong word gets a message at the field. The focus starts on the
+ * there is no way back in by oneself. The account is only deleted once the word of the language
+ * ("löschen" / "delete") is typed (upper or lower case does not matter); a wrong word gets a
+ * message at the field. The focus starts on the
  * title, so the explanation is read before the field.
  */
 export function DeleteAccountDialog({
@@ -33,21 +37,22 @@ export function DeleteAccountDialog({
   onCancel,
 }: DeleteAccountDialogProps) {
   const [word, setWord] = useState("");
-  const [error, setError] = useState<string>();
+  /** The word typed is wrong; the sentence is read when drawing (language switch). */
+  const [wrong, setWrong] = useState(false);
   const { report, status } = useFieldErrorFocus();
 
   // Every question starts with an empty field.
   useEffect(() => {
     if (open) {
       setWord("");
-      setError(undefined);
+      setWrong(false);
     }
   }, [open]);
 
   function submit(event: Event) {
     event.preventDefault();
-    if (word.trim().toLocaleLowerCase("de-DE") !== DELETE_WORD) {
-      setError(DELETE_ACCOUNT_TEXTS.wordMissing);
+    if (word.trim().toLocaleLowerCase(LOCALES[getLanguage()]) !== DELETE_ACCOUNT_TEXTS.word) {
+      setWrong(true);
       report(WORD_FIELD, DELETE_ACCOUNT_TEXTS.wordMissing);
       return;
     }
@@ -73,16 +78,16 @@ export function DeleteAccountDialog({
             id={WORD_FIELD}
             label={DELETE_ACCOUNT_TEXTS.wordLabel}
             value={word}
-            error={error}
+            error={wrong ? DELETE_ACCOUNT_TEXTS.wordMissing : undefined}
             onInput={(value) => {
               setWord(value);
-              setError(undefined);
+              setWrong(false);
             }}
           />
         </div>
         <div class="button-row">
           <button class="btn btn--secondary" type="button" onClick={onCancel}>
-            Abbrechen
+            {t().common.cancel}
           </button>
           <button class="btn btn--warn" type="submit">
             {DELETE_ACCOUNT_TEXTS.confirm}

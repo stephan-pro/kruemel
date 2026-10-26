@@ -1,5 +1,6 @@
 import { Smartphone, X } from "lucide-preact";
 import { useEffect, useId, useRef, useState } from "preact/hooks";
+import { t } from "../../i18n";
 import type { InstallWay } from "../install";
 import { InstallSteps } from "./InstallSteps";
 import { Modal } from "./Modal";
@@ -45,15 +46,13 @@ export function InstallHint({ way, onInstall, onDismiss, shared = false }: Insta
       </span>
       <div class="install-hint__body">
         <h2 class="install-hint__title" id={titleId}>
-          Krümel als App
+          {t().install.hintTitle}
         </h2>
-        <p>
-          Vom Home-Bildschirm startet Krümel wie eine App: ohne Adressleiste und auch ohne Internet.
-        </p>
+        <p>{t().install.hintText}</p>
         <div class="button-row">
           {way === "prompt" ? (
             <button class="btn btn--primary btn--small" type="button" onClick={onInstall}>
-              App installieren
+              {t().install.install}
             </button>
           ) : (
             <button
@@ -65,7 +64,7 @@ export function InstallHint({ way, onInstall, onDismiss, shared = false }: Insta
                 setGuideOpen(true);
               }}
             >
-              Anleitung zeigen
+              {t().install.showGuide}
             </button>
           )}
         </div>
@@ -73,19 +72,19 @@ export function InstallHint({ way, onInstall, onDismiss, shared = false }: Insta
       <button
         class="icon-btn install-hint__close"
         type="button"
-        aria-label="Hinweis schließen"
+        aria-label={t().install.dismiss}
         onClick={onDismiss}
       >
         <X size={22} />
       </button>
       {(way === "ios" || way === "firefoxAndroid") && (
-        <Modal open={guideOpen} title="Krümel installieren" onCancel={closeGuide} focusTitle>
+        <Modal open={guideOpen} title={t().install.guideTitle} onCancel={closeGuide} focusTitle>
           <div class="dialog__body">
             <InstallSteps way={way} shared={shared} />
           </div>
           <div class="button-row">
             <button class="btn btn--secondary" type="button" onClick={closeGuide}>
-              Schließen
+              {t().common.close}
             </button>
           </div>
         </Modal>

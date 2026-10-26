@@ -6,7 +6,7 @@ import {
 } from "../../../supabase/functions/push/rules";
 import type { Notifications } from "../../push/notifications";
 import { PushError } from "../../push/pushApi";
-import { UNEXPECTED_ERROR } from "../errorText";
+import { unexpectedErrorText } from "../errorText";
 import {
   PUSH_FAILURE_TEXTS,
   NOTIFICATION_SETTINGS_TEXTS as TEXTS,
@@ -37,7 +37,7 @@ const FIELD_OF: Readonly<Record<PushSettingsProblem, string>> = {
 const sameSettings = (a: PushSettings, b: PushSettings) => JSON.stringify(a) === JSON.stringify(b);
 
 function failureText(error: unknown): string {
-  return error instanceof PushError ? PUSH_FAILURE_TEXTS[error.failure] : UNEXPECTED_ERROR;
+  return error instanceof PushError ? PUSH_FAILURE_TEXTS[error.failure] : unexpectedErrorText();
 }
 
 function Switch({

@@ -32,6 +32,7 @@ import {
   DEFAULT_COLOR_SCHEME,
   type DeviceSettings,
   StorageError,
+  type StorageFailure,
   StorageUnavailableError,
   type StorageUpdate,
   type SyncStatus,
@@ -157,10 +158,23 @@ type LoadState =
   | { readonly status: "unavailable" }
   | {
       readonly status: "problem";
-      readonly message: string;
+      /** What went wrong; the sentence is read when drawing (language switch). */
+      readonly reason: StorageFailure | "loadFailed";
       readonly details: readonly string[];
       readonly rawData: string | undefined;
     };
+
+/** What "Haushalt anlegen" says after leaving or being removed, in the language set now. */
+function householdNoticeText(notice: "left" | "removed" | "removedSaved"): string {
+  switch (notice) {
+    case "left":
+      return LEAVE_TEXTS.youLeft;
+    case "removed":
+      return LEAVE_TEXTS.notMember;
+    case "removedSaved":
+      return `${LEAVE_TEXTS.notMember} ${LEAVE_TEXTS.pendingSaved}`;
+  }
+}
 
 /** Reads everything the app needs; unreadable data becomes a state, never an empty app. */
 async function loadState(storage: AppStorage): Promise<LoadState> {
@@ -179,13 +193,8 @@ async function loadState(storage: AppStorage): Promise<LoadState> {
       rawData = undefined;
     }
     return error instanceof StorageError
-      ? { status: "problem", message: error.message, details: error.details, rawData }
-      : {
-          status: "problem",
-          message: "Beim Laden ist ein unerwarteter Fehler aufgetreten.",
-          details: [String(error)],
-          rawData,
-        };
+      ? { status: "problem", reason: error.failure, details: error.details, rawData }
+      : { status: "problem", reason: "loadFailed", details: [String(error)], rawData };
   }
 }
 
@@ -278,10 +287,13 @@ export function App({
     takeFriendInvite(householdApi !== undefined),
   );
   const household = useHousehold(householdApi, session?.userId, () => void lostHousehold());
-  /** What "Haushalt anlegen" says after leaving or being removed (E2-5a). */
-  const [householdNotice, setHouseholdNotice] = useState<string>();
-  /** What "Anmelden" says after the account was deleted (E2-5a). */
-  const [signInNotice, setSignInNotice] = useState<string>();
+  /**
+   * What "Haushalt anlegen" says after leaving or being removed (E2-5a). Kept as a kind, the
+   * sentence is read when drawing, so a switch of the language changes it.
+   */
+  const [householdNotice, setHouseholdNotice] = useState<"left" | "removed" | "removedSaved">();
+  /** Whether "Anmelden" says that the account was deleted (E2-5a). */
+  const [accountDeleted, setAccountDeleted] = useState(false);
   /** Set while this device leaves or deletes the account: the household is gone on purpose then. */
   const going = useRef(false);
   const joined = household.state.status === "ready" ? household.state.household : null;
@@ -348,7 +360,7 @@ export function App({
   /** The storage of the data shown now; only called once the app shows them. */
   function activeStorage(): AppStorage {
     if (storage === undefined) {
-      throw new Error("Die App ist noch nicht bereit.");
+      throw new Error(t().errors.notReady);
     }
     return storage;
   }
@@ -544,7 +556,7 @@ export function App({
     const state = latest.current;
     const completedBy = state.status === "ready" ? person : undefined;
     if (state.status !== "ready" || completedBy === undefined) {
-      throw new Error("Die App ist noch nicht bereit.");
+      throw new Error(t().errors.notReady);
     }
     const result = completeInData(state.data, taskId, {
       completionId: crypto.randomUUID(),
@@ -560,7 +572,7 @@ export function App({
   async function undoCompletion(completionId: string): Promise<Task> {
     const state = latest.current;
     if (state.status !== "ready") {
-      throw new Error("Die App ist noch nicht bereit.");
+      throw new Error(t().errors.notReady);
     }
     const result = undoInData(state.data, completionId);
     await saveData(result.data);
@@ -571,7 +583,7 @@ export function App({
   async function takeOverTask(taskId: string, mode: TakeOverMode): Promise<Task> {
     const state = latest.current;
     if (state.status !== "ready" || person === undefined) {
-      throw new Error("Die App ist noch nicht bereit.");
+      throw new Error(t().errors.notReady);
     }
     const result = takeOverInData(state.data, taskId, person, mode);
     await saveData(result.data);
@@ -582,7 +594,7 @@ export function App({
   async function setChecklistItem(taskId: string, itemId: string, checked: boolean): Promise<Task> {
     const state = latest.current;
     if (state.status !== "ready") {
-      throw new Error("Die App ist noch nicht bereit.");
+      throw new Error(t().errors.notReady);
     }
     const result = setChecklistItemInData(state.data, taskId, itemId, checked);
     await saveData(result.data);
@@ -729,7 +741,7 @@ export function App({
       saveBeforeGoing(joined.members.length < 2);
       await householdApi.leave();
       await sharedStorage?.close();
-      setHouseholdNotice(LEAVE_TEXTS.youLeft);
+      setHouseholdNotice("left");
       household.show(null);
     } finally {
       going.current = false;
@@ -754,7 +766,7 @@ export function App({
       await notifications?.forget();
       await auth?.signOut();
       household.forget();
-      setSignInNotice(DELETE_ACCOUNT_TEXTS.deleted);
+      setAccountDeleted(true);
       setSession(null);
     } finally {
       going.current = false;
@@ -771,9 +783,7 @@ export function App({
     }
     const saved = saveBeforeGoing(false);
     await sharedStorage?.close();
-    setHouseholdNotice(
-      saved ? `${LEAVE_TEXTS.notMember} ${LEAVE_TEXTS.pendingSaved}` : LEAVE_TEXTS.notMember,
-    );
+    setHouseholdNotice(saved ? "removedSaved" : "removed");
     household.show(null);
   }
 
@@ -785,7 +795,7 @@ export function App({
   }, [joined !== null]);
   useEffect(() => {
     if (session != null) {
-      setSignInNotice(undefined);
+      setAccountDeleted(false);
     }
   }, [session != null]);
   // A friend invite only opens the door to an account: once signed in it is done (used up by the
@@ -932,11 +942,10 @@ export function App({
       </header>
       <div class="app-content">
         {demo && (
-          <aside class="demo-hint" aria-label="Hinweis zum Demo-Modus">
+          <aside class="demo-hint" aria-label={t().demo.label}>
             <p>
-              Demo-Modus: {demo.taskCount} Beispielaufgaben und {demo.completionCount} Erledigungen
-              liegen im Demo-Speicher dieses Browsers. Echte Daten bleiben unberührt.{" "}
-              <a href="?demo=neu">Beispieldaten neu laden</a>
+              {t().demo.text(demo.taskCount, demo.completionCount)}{" "}
+              <a href="?demo=neu">{t().demo.reload}</a>
             </p>
           </aside>
         )}
@@ -982,7 +991,7 @@ export function App({
             <SignInPage
               auth={auth}
               onSignedIn={setSession}
-              notice={signInNotice}
+              notice={accountDeleted ? DELETE_ACCOUNT_TEXTS.deleted : undefined}
               invite={
                 invite !== undefined
                   ? { key: invite, kind: "household" }
@@ -1008,7 +1017,7 @@ export function App({
             <HouseholdPage
               onCreate={createHousehold}
               onInvite={openInvite}
-              notice={householdNotice}
+              notice={householdNotice && householdNoticeText(householdNotice)}
             />
           )}
           {gate === "open" && state.status === "unavailable" && (
@@ -1019,7 +1028,7 @@ export function App({
           )}
           {gate === "open" && state.status === "problem" && (
             <StorageProblemPage
-              message={state.message}
+              reason={state.reason}
               details={state.details}
               rawData={state.rawData}
               shared={sharedStorage !== undefined}

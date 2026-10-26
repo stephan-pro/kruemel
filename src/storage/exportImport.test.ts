@@ -7,7 +7,7 @@ import {
   exportData,
   exportFileName,
   importData,
-  importSizeError,
+  importTooBig,
   leaveBackupFileName,
   MAX_IMPORT_BYTES,
   rawDataFileName,
@@ -88,14 +88,12 @@ describe("F7 Export", () => {
 
 describe("F7 Größe der Datei", () => {
   it("F7 Eine Datei bis 5 MB kommt als Sicherung in Frage", () => {
-    expect(importSizeError(0)).toBeUndefined();
-    expect(importSizeError(MAX_IMPORT_BYTES)).toBeUndefined();
+    expect(importTooBig(0)).toBe(false);
+    expect(importTooBig(MAX_IMPORT_BYTES)).toBe(false);
   });
 
-  it("F7 Eine größere Datei wird nicht gelesen und mit klarer Meldung abgelehnt", () => {
-    expect(importSizeError(MAX_IMPORT_BYTES + 1)).toBe(
-      "Die Datei ist zu groß für eine Sicherung (höchstens 5 MB).",
-    );
+  it("F7 Eine größere Datei wird nicht gelesen und abgelehnt (die Seite sagt es klar)", () => {
+    expect(importTooBig(MAX_IMPORT_BYTES + 1)).toBe(true);
   });
 });
 

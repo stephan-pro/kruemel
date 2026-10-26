@@ -6,7 +6,7 @@ import {
   notificationWay,
 } from "../../push/notifications";
 import { PushError } from "../../push/pushApi";
-import { UNEXPECTED_ERROR } from "../errorText";
+import { unexpectedErrorText } from "../errorText";
 import {
   BLOCKED_STEPS,
   NOTIFICATION_STATUS_TEXTS,
@@ -29,7 +29,7 @@ interface NotificationTileProps {
 type Shown = NotificationStatus | "checking" | "unavailable";
 
 function failureText(error: unknown): string {
-  return error instanceof PushError ? PUSH_FAILURE_TEXTS[error.failure] : UNEXPECTED_ERROR;
+  return error instanceof PushError ? PUSH_FAILURE_TEXTS[error.failure] : unexpectedErrorText();
 }
 
 /**

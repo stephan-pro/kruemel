@@ -358,9 +358,7 @@ export function createSyncedStorage(options: SyncedStorageOptions): SyncedStorag
         await sync();
         state = await inState(() => states.read());
         if (state === null) {
-          throw new StorageUnavailableError(
-            "Die gemeinsamen Daten sind auf diesem Gerät noch nicht da, und Krümel ist gerade nicht erreichbar.",
-          );
+          throw new StorageUnavailableError();
         }
       } else {
         syncInBackground();
@@ -420,18 +418,14 @@ export function createSyncedStorage(options: SyncedStorageOptions): SyncedStorag
     async replaceAll(data: AppData): Promise<void> {
       await sync();
       if (pending() > 0 || connection !== "ok") {
-        throw new StorageError(
-          "Einspielen geht erst, wenn alle Änderungen übertragen sind. Prüf dein Internet und versuch es gleich noch einmal.",
-        );
+        throw new StorageError("replaceNotSynced");
       }
       const result = await attempt(() => remote.push({ type: "replaceAll", data, id: newId() }));
       if (result === undefined) {
-        throw new StorageError("Das Einspielen einer Sicherung geht nur mit Internet.");
+        throw new StorageError("replaceOffline");
       }
       if (result.status === "rejected") {
-        throw new StorageError(
-          "Eure Daten stammen aus einer neueren Version der App. Lade die App neu und versuche es dann noch einmal.",
-        );
+        throw new StorageError("replaceNewer");
       }
       await sync();
     },

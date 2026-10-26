@@ -3,6 +3,7 @@
 // (Named `AppStorage` so it does not hide the browser's own `Storage` type.)
 
 import type { Person } from "../domain/task";
+import { t } from "../i18n";
 import type { AppData } from "./appData";
 
 /** "Darstellung" (N8): light, dark, or following the device ("auto"). */
@@ -106,13 +107,47 @@ export interface AppStorage {
   syncStatus(): SyncStatus;
 }
 
+/**
+ * What went wrong with the storage, as a code; `storageErrorText` (and `errorText`) say it to the
+ * person in the language set at that moment.
+ * - `unavailable` / `full` / `blocked`: the browser's storage cannot be read, is full or locked,
+ *   or does not let anything be deleted.
+ * - `damaged` / `incomplete`: the stored data cannot be read, or lack something.
+ * - `copyDamaged` / `copyIncomplete` / `queueDamaged` / `rejectedDamaged`: the same for the device's
+ *   copy of the shared data, the changes waiting to be sent and those the server refused.
+ * - `replaceNotSynced` / `replaceOffline` / `replaceNewer`: putting a backup in place into the
+ *   shared data is not possible now.
+ * - `sharedNotLoaded`: the shared data have not reached this device yet and the server cannot be
+ *   reached (`StorageUnavailableError`).
+ */
+export const STORAGE_FAILURES = [
+  "unavailable",
+  "full",
+  "blocked",
+  "damaged",
+  "incomplete",
+  "copyDamaged",
+  "copyIncomplete",
+  "queueDamaged",
+  "rejectedDamaged",
+  "replaceNotSynced",
+  "replaceOffline",
+  "replaceNewer",
+  "sharedNotLoaded",
+] as const;
+
+export type StorageFailure = (typeof STORAGE_FAILURES)[number];
+
 /** Something went wrong while reading or writing; `details` lists what exactly, if known. */
 export class StorageError extends Error {
+  readonly failure: StorageFailure;
   readonly details: readonly string[];
 
-  constructor(message: string, details: readonly string[] = []) {
-    super(message);
+  /** The `message` is in the language set now; to show it later, use `failure` (`errorText`). */
+  constructor(failure: StorageFailure, details: readonly string[] = []) {
+    super(t().errors.storage[failure]);
     this.name = "StorageError";
+    this.failure = failure;
     this.details = details;
   }
 }
@@ -122,8 +157,8 @@ export class StorageError extends Error {
  * server cannot be reached now. Nothing is broken; it works once the device has a connection.
  */
 export class StorageUnavailableError extends StorageError {
-  constructor(message: string) {
-    super(message);
+  constructor() {
+    super("sharedNotLoaded");
     this.name = "StorageUnavailableError";
   }
 }

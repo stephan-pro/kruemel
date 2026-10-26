@@ -107,6 +107,48 @@ describe("EN-a Sprachdateien", () => {
   });
 });
 
+describe("EN-b Mehrzahl und Zahlen in Konto-, Haushalts- und Abgleichstexten", () => {
+  it("Wartende Änderungen: Einzahl und Mehrzahl in beiden Sprachen", () => {
+    expect(de.sync.waitingOffline(1)).toBe("Kein Internet – 1 Änderung wartet auf Verbindung.");
+    expect(de.sync.waitingOffline(3)).toBe("Kein Internet – 3 Änderungen warten auf Verbindung.");
+    expect(en.sync.waitingOffline(1)).toBe("No internet – 1 change is waiting for a connection.");
+    expect(en.sync.waitingOffline(3)).toBe("No internet – 3 changes are waiting for a connection.");
+    expect(en.sync.waitingUnreachable(2)).toBe(
+      "Krümel cannot be reached right now – 2 changes are waiting.",
+    );
+    expect(de.shared.signOutPending(1)).toMatch(/^1 Änderung ist noch nicht übertragen/);
+    expect(de.leave.pending(2)).toMatch(/^2 Änderungen sind noch nicht übertragen/);
+    expect(en.shared.signOutPending(1)).toMatch(/^1 change is not sent yet/);
+    expect(en.leave.pending(1500)).toMatch(/^1,500 changes are not sent yet/);
+  });
+
+  it("Abgelehnte Änderungen: Einzahl, Mehrzahl, Frage vor dem Verwerfen", () => {
+    expect(de.sync.rejected(1)).toMatch(/^1 Änderung konnte nicht gespeichert werden/);
+    expect(de.sync.rejected(4)).toMatch(/^4 Änderungen konnten nicht gespeichert werden/);
+    expect(en.sync.rejected(1)).toMatch(/^1 change could not be saved/);
+    expect(en.sync.rejected(4)).toMatch(/^4 changes could not be saved/);
+    expect(de.sync.discardQuestion(1)).toBe("Änderung verwerfen?");
+    expect(de.sync.discardQuestion(2)).toBe("2 Änderungen verwerfen?");
+    expect(en.sync.discardQuestion(1)).toBe("Discard change?");
+    expect(en.sync.discardQuestion(2)).toBe("Discard 2 changes?");
+  });
+
+  it("Texte mit Namen und fehlendem Titel sind ganze Sätze", () => {
+    expect(de.sync.taskGone("Bad putzen")).toMatch(/^„Bad putzen“ wurde inzwischen gelöscht/);
+    expect(de.sync.taskGone(undefined)).toMatch(/^Eine Aufgabe wurde inzwischen gelöscht/);
+    expect(en.sync.taskGone("Clean bath")).toMatch(/^“Clean bath” has been deleted/);
+    expect(en.sync.taskGone(undefined)).toMatch(/^A task has been deleted/);
+    expect(en.sync.alreadyDone("Clean bath", "Robin")).toBe(
+      "“Clean bath” had already been marked as done by Robin.",
+    );
+    expect(en.household.shareText(null)).toBe(
+      "Join our household on Krümel. Open the link and sign in:",
+    );
+    expect(en.household.shareText("Sunny Lane")).toContain("“Sunny Lane”");
+    expect(en.leave.leaveDialog("Robin")).toContain("for Robin");
+  });
+});
+
 describe("EN-a Sprache wählen und merken", () => {
   it("Standard: die Browsersprache; de und en zählen, alles andere ist Deutsch", () => {
     expect(languageFromBrowser(["de-DE"])).toBe("de");

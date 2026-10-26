@@ -3,10 +3,17 @@
 // numbers or names are functions that return a whole sentence, so every language can put the
 // parts where its own word order wants them; counts go through `plural`.
 //
-// Not here yet (EN-b/EN-c): account, household, invites, notifications, legal texts, the form
-// errors of the domain, storage and sign-in messages, the loading picture, the server's messages
-// and the e-mails. They stay German in both languages until then.
+// Not here yet (EN-c): notifications, legal texts, the loading picture, the web app manifest, the
+// e-mail template and the demo data. They stay German in both languages until then.
 
+import {
+  CODE_DIGITS,
+  CODE_MINUTES,
+  FRIEND_INVITES_OPEN,
+  FRIEND_INVITES_PER_DAY,
+  INVITE_DAYS,
+  NAME_MAX,
+} from "../auth/limits";
 import { formatNumber, plural } from "./intl";
 
 /** The sentence under the greeting in three parts, so the count can be set in bold. */
@@ -34,7 +41,7 @@ export const de = {
     settingsAppearance: { label: "Darstellung", title: "Darstellung" },
     settingsData: { label: "Daten", title: "Daten" },
     settingsLegal: { label: "Rechtliches", title: "Rechtliches" },
-    // The legal pages keep their German names until their texts are translated (EN-b).
+    // The legal pages keep their German names until their texts are translated (EN-c).
     imprint: { label: "Impressum", title: "Impressum" },
     privacy: { label: "Datenschutz", title: "Datenschutzerklärung" },
     taskNew: { label: "Neue Aufgabe", title: "Neue Aufgabe" },
@@ -50,6 +57,7 @@ export const de = {
     cancel: "Abbrechen",
     close: "Schließen",
     save: "Speichern",
+    saved: "Gespeichert.",
     notSaved: "Nicht gespeichert",
     notDeleted: "Nicht gelöscht",
     notice: "Hinweis",
@@ -432,6 +440,517 @@ export const de = {
     logoMotionLabel: "Krümel bewegt sich",
     logoMotionHint:
       "Der kleine Krümel oben winkt und blinzelt. Mach das aus, wenn dich Bewegung stört.",
+  },
+
+  /** Signing in and out (stage 2). */
+  account: {
+    /** Header next to the app name: who is signed in, or whom this device belongs to. */
+    signedInAs: "Angemeldet als",
+    thisDevice: "Dieses Gerät:",
+
+    signInTitle: "Anmelden",
+    signInIntro:
+      "Melde dich mit deiner E-Mail-Adresse an. Wir schicken dir einen Code, ein Passwort brauchst du nicht.",
+    /** Above the form when an invite link was opened (E2-5b). */
+    invitedFriend:
+      "Du bist zu Krümel eingeladen. Nach der Anmeldung legst du deinen eigenen Haushalt an.",
+    invitedHousehold:
+      "Du bist zu einem Haushalt bei Krümel eingeladen. Nach der Anmeldung trittst du dem Haushalt bei.",
+    emailLabel: "E-Mail-Adresse",
+    sendCode: "Code schicken",
+
+    codeTitle: "Code eingeben",
+    codeIntro: (email: string) =>
+      `Wir haben dir einen Code an ${email} geschickt. Er gilt ${CODE_MINUTES} Minuten.`,
+    codeLabel: "Code aus der E-Mail",
+    codeHint: `${CODE_DIGITS} Ziffern`,
+    codeFormat: `Bitte gib die ${CODE_DIGITS} Ziffern aus der E-Mail ein.`,
+    verifyCode: "Anmelden",
+    resendWait:
+      "Kein Code da? Schau auch im Spam-Ordner nach. In einer Minute kannst du einen neuen anfordern.",
+    resendReady: "Du kannst jetzt einen neuen Code anfordern.",
+    resendCode: "Code erneut senden",
+    codeResent: "Wir haben dir einen neuen Code geschickt.",
+    otherEmail: "Andere E-Mail-Adresse",
+    busy: "Einen Moment …",
+
+    accountTile: "Konto",
+    accountSignedIn: (email: string) => `Du bist angemeldet als ${email}.`,
+    signOut: "Abmelden",
+    signOutQuestion: "Abmelden?",
+    signOutExplained:
+      "Deine Aufgaben bleiben auf diesem Gerät. Zum Weitermachen meldest du dich wieder mit einem Code an.",
+    signOutFailed: "Abmelden hat nicht geklappt",
+  },
+
+  /** Deleting one's account (E2-5a): what goes, what stays, no way back by oneself. */
+  deleteAccount: {
+    /** The word to type before the account is deleted (upper or lower case does not matter). */
+    word: "löschen",
+    open: "Konto löschen …",
+    intro: "Löscht dein Konto bei Krümel endgültig. Das geht nur mit Internet.",
+    question: "Konto endgültig löschen?",
+    goes: "Das wird gelöscht: dein Konto mit deiner E-Mail-Adresse, deine Mitgliedschaft im Haushalt und die Daten von Krümel auf diesem Gerät.",
+    stays: (other: string) =>
+      `Das bleibt: alle Aufgaben und Erledigungen im Haushalt, auch deine. ${other} kann weitermachen und jemanden neu einladen.`,
+    staysNothing:
+      "Du bist die letzte Person im Haushalt. Deshalb wird auch der Haushalt mit allen Aufgaben und Erledigungen gelöscht. Die App lädt vorher automatisch eine Sicherung herunter.",
+    noUndo: "Das lässt sich nicht rückgängig machen.",
+    wayBack:
+      "Ein neues Konto bekommst du danach nur mit einer neuen Einladung. Willst du später wieder mitmachen, bitte jemanden, der Krümel nutzt, um einen Einladungslink.",
+    wordLabel: "Zum Bestätigen „löschen“ eintippen",
+    wordMissing: "Bitte tippe „löschen“ ein, wenn du dein Konto wirklich löschen willst.",
+    confirm: "Konto endgültig löschen",
+    failed: "Konto nicht gelöscht",
+    /** On the sign-in page afterwards. */
+    deleted: "Dein Konto ist gelöscht. Die Daten von Krümel auf diesem Gerät sind entfernt.",
+  },
+
+  /** The household and the invite (stage 2). */
+  household: {
+    createTitle: "Haushalt anlegen",
+    createIntro: "Lege euren Haushalt an. Danach lädst du die zweite Person mit einem Link ein.",
+    ownNameLabel: "Dein Name",
+    otherNameLabel: "Name der zweiten Person",
+    create: "Haushalt anlegen",
+    createFailed: "Haushalt nicht angelegt",
+
+    haveInviteTitle: "Du hast eine Einladung?",
+    haveInviteIntro: "Tippe auf den Link in der Nachricht. Oder kopiere ihn und füge ihn hier ein.",
+    inviteLinkField: "Einladungslink",
+    openInvite: "Einladung öffnen",
+    notAnInvite: "Das ist kein Einladungslink. Bitte kopiere den ganzen Link aus der Nachricht.",
+    friendLinkHere:
+      "Das ist ein Link für Freunde, nicht für einen Haushalt. Öffne ihn direkt im Browser, dann kannst du dich anmelden.",
+
+    unavailableTitle: "Keine Verbindung",
+    unavailableAlert: "Der Haushalt konnte nicht geladen werden",
+    retry: "Erneut versuchen",
+
+    acceptTitle: "Einladung annehmen",
+    acceptIntro: "Du bist zu einem Haushalt bei Krümel eingeladen.",
+    acceptAs: (email: string) =>
+      `Du trittst mit ${email} bei. Ist das nicht deine Adresse, melde dich mit einer anderen an.`,
+    accept: "Haushalt beitreten",
+    notNow: "Nicht jetzt",
+    acceptFailed: "Beitreten hat nicht geklappt",
+    goOn: "Weiter",
+    /** The heading of the page shown when an invite cannot be accepted. */
+    failureTitles: {
+      inviteUnknown: "Einladung nicht gefunden",
+      inviteUsed: "Einladung schon benutzt",
+      inviteExpired: "Einladung abgelaufen",
+      householdFull: "Haushalt ist voll",
+      alreadyMember: "Du hast schon einen Haushalt",
+    },
+
+    tileTitle: "Haushalt",
+    you: "(du)",
+    joined: "dabei",
+    notJoined: "noch nicht dabei",
+    bothJoined: "Ihr seid beide dabei.",
+    namesTitle: "Namen",
+    householdNameLabel: "Name des Haushalts",
+    householdNameHint:
+      "Zum Beispiel „WG Sonnenweg“. Darf leer bleiben. Ändern geht nur mit Internet.",
+    ownNameHint: "So sehen dich alle im Haushalt.",
+    saveNames: "Namen speichern",
+    namesSaved: "Gespeichert.",
+    householdNameFailed: "Name des Haushalts nicht gespeichert",
+    ownNameFailed: "Nicht gespeichert",
+    inviteIntro: `Schick der zweiten Person einen Einladungslink, zum Beispiel per Messenger. Er gilt ${INVITE_DAYS} Tage und nur einmal.`,
+    createInvite: "Link für die zweite Person erzeugen",
+    /** The field with the new link; "Einladungslink" alone would read like the one for friends. */
+    secondPersonLinkField: "Einladungslink für die zweite Person",
+    newInvite: "Neuen Link erzeugen",
+    newInviteHint: "Ein neuer Link macht den alten ungültig.",
+    inviteFailed: "Kein Link erzeugt",
+    validUntil: (end: string) => `Gültig bis ${end}.`,
+    copy: "Kopieren",
+    copied: "Kopiert.",
+    copyFailed: "Kopieren ging nicht. Markiere den Link im Feld und kopiere ihn von Hand.",
+    share: "Teilen",
+    shareTitle: "Einladung zu Krümel",
+    shareText: (householdName: string | null) =>
+      `Komm in unseren Haushalt${householdName === null ? "" : ` „${householdName}“`} bei Krümel. Öffne den Link und melde dich an:`,
+    showQr: "QR-Code zeigen",
+    hideQr: "QR-Code ausblenden",
+    qrLabel: "QR-Code mit dem Einladungslink",
+  },
+
+  /** "Freunde einladen" in the settings (E2-5b): a link for an account and a household of one's own. */
+  friends: {
+    tileTitle: "Freunde einladen",
+    intro: `Kennst du jemanden, der Krümel auch nutzen möchte? Mit einem Einladungslink legt die Person ein eigenes Konto und einen eigenen Haushalt an. Eure Aufgaben bleiben getrennt. Der Link gilt ${INVITE_DAYS} Tage und nur einmal.`,
+    limits: `Du kannst bis zu ${FRIEND_INVITES_OPEN} offene Links haben und ${FRIEND_INVITES_PER_DAY} in 24 Stunden erzeugen.`,
+    create: "Link für Freunde erzeugen",
+    createAnother: "Noch einen Link erzeugen",
+    failed: "Kein Link erzeugt",
+    linkField: "Einladungslink für Freunde",
+    shareTitle: "Einladung zu Krümel",
+    shareText:
+      "Ich nutze Krümel für unseren Haushalt. Probier es aus und leg deinen eigenen Haushalt an. Öffne den Link und melde dich an:",
+    qrLabel: "QR-Code mit dem Einladungslink für Freunde",
+    openTitle: "Offene Links",
+    openEntry: (end: string) => `Gültig bis ${end}`,
+    show: "Zeigen",
+    cancel: "Zurückziehen",
+    /** Completes the button names for screen readers: "Zeigen: Link gültig bis …". */
+    entryName: (end: string) => `: Link gültig bis ${end}`,
+    cancelled: "Link zurückgezogen. Er funktioniert nicht mehr.",
+    cancelFailed: "Nicht zurückgezogen",
+    listFailed: "Die offenen Links lassen sich gerade nicht laden. Bitte Internet prüfen.",
+  },
+
+  /** The shared data of the household in the app (E2-3b). */
+  shared: {
+    notLoadedYet:
+      "Eure gemeinsamen Daten sind auf diesem Gerät noch nicht geladen. Dafür braucht die App einmal Internet, danach geht alles auch offline.",
+
+    newVersionLabel: "Neue Version",
+    newVersion:
+      "Es gibt eine neue Version von Krümel. Lade die App neu, damit deine Änderungen übertragen werden und du alles siehst.",
+    reload: "Neu laden",
+    /** A new build of the app is installed while this page still runs the old one. */
+    appUpdated: "Es gibt eine neue Version von Krümel. Lade die App neu, um sie zu nutzen.",
+
+    signOutExplained:
+      "Eure gemeinsamen Daten werden von diesem Gerät gelöscht, im Haushalt bleiben sie erhalten. Zum Weitermachen meldest du dich wieder mit einem Code an.",
+    signOutPending: (count: number) =>
+      `${plural("de", count, { one: "{n} Änderung ist", other: "{n} Änderungen sind" })} noch nicht übertragen. Beim Abmelden gehen sie auf diesem Gerät verloren. Deshalb lädt die App sie vorher als Datei herunter.`,
+    signOutWithBackup: "Sicherung laden und abmelden",
+
+    backupIntro:
+      "Alle Aufgaben, Erledigungen und die Namen eures Haushalts als Datei, zum Aufbewahren. Herunterladen geht auch ohne Internet.",
+    importIntro:
+      "Ersetzt die Daten für euch beide durch die aus einer Sicherungsdatei. Das geht nur mit Internet. Vorher lädt die App automatisch eine Sicherung der jetzigen Daten herunter.",
+    importOffline: "Das Einspielen einer Sicherung geht nur mit Internet.",
+    importReplaces: (contents: string) =>
+      `In eurem Haushalt sind jetzt ${contents}. Sie werden für euch beide ersetzt; das lässt sich nicht rückgängig machen.`,
+    unchanged: "Eure gemeinsamen Daten sind unverändert.",
+
+    problemIntro:
+      "Die Krümel-App hat nichts verändert. Sichere die Kopie zuerst als Datei, denn darin stehen auch Änderungen, die noch nicht übertragen waren. Danach holst du die Daten neu aus eurem Haushalt.",
+    fromServerTitle: "2. Neu aus dem Haushalt laden",
+    fromServerText:
+      "Dabei wird die Kopie auf diesem Gerät gelöscht und neu aus eurem Haushalt geholt. Was noch nicht übertragen war, steht dann nur noch in der heruntergeladenen Datei.",
+    fromServer: "Neu aus dem Haushalt laden …",
+    fromServerQuestion: "Daten neu aus dem Haushalt laden?",
+    fromServerConfirm: "Ja, neu laden",
+    fromServerDialog:
+      "Die Kopie auf diesem Gerät wird gelöscht. Im Haushalt bleiben eure Daten erhalten, die heruntergeladene Datei auch.",
+  },
+
+  /** Removing the other person and leaving the household (E2-5a). */
+  leave: {
+    needsInternet: "Das geht nur mit Internet.",
+
+    remove: (name: string) => `${name} entfernen …`,
+    removeQuestion: (name: string) => `${name} aus dem Haushalt entfernen?`,
+    removeDialog: (name: string) =>
+      `${name} sieht eure Aufgaben danach nicht mehr. Alle Aufgaben und Erledigungen bleiben im Haushalt, auch die von ${name}. Danach kannst du jemanden neu einladen.`,
+    removeConfirm: "Ja, entfernen",
+    removed: (name: string) => `${name} gehört nicht mehr zum Haushalt.`,
+    removeFailed: "Nicht entfernt",
+
+    leave: "Haushalt verlassen …",
+    leaveQuestion: "Haushalt verlassen?",
+    leaveDialog: (other: string) =>
+      `Du siehst die Aufgaben danach nicht mehr. Alle Aufgaben und Erledigungen bleiben für ${other} im Haushalt, auch deine. Die Daten auf diesem Gerät werden gelöscht. Zurück kommst du nur mit einer neuen Einladung.`,
+    leaveLastDialog:
+      "Du bist die letzte Person im Haushalt. Wenn du gehst, wird der Haushalt mit allen Aufgaben und Erledigungen gelöscht. Das lässt sich nicht rückgängig machen. Die App lädt vorher automatisch eine Sicherung herunter.",
+    leaveConfirm: "Haushalt verlassen",
+    leaveLastConfirm: "Haushalt löschen und gehen",
+    leaveFailed: "Haushalt nicht verlassen",
+
+    pending: (count: number) =>
+      `${plural("de", count, { one: "{n} Änderung ist", other: "{n} Änderungen sind" })} noch nicht übertragen. Die App lädt sie vorher als Datei herunter.`,
+    backupOffer: "Willst du die Daten selbst behalten? Dann lade vorher eine Sicherung herunter.",
+    backup: "Sicherung herunterladen",
+    backupDone: "Sicherung heruntergeladen.",
+
+    /** On "Haushalt anlegen" afterwards. */
+    noticeLabel: "Hinweis",
+    youLeft:
+      "Du hast den Haushalt verlassen. Du kannst einen neuen anlegen oder einer neuen Einladung folgen.",
+    notMember:
+      "Du gehörst nicht mehr zu diesem Haushalt: Die andere Person hat dich entfernt, oder du bist auf einem anderen Gerät gegangen. Du kannst einen neuen Haushalt anlegen oder einer neuen Einladung folgen.",
+    pendingSaved: "Deine noch nicht übertragenen Änderungen hat die App als Datei heruntergeladen.",
+  },
+
+  /** Where the transfer stands and what went wrong (E2-3c). */
+  sync: {
+    waitingLabel: "Übertragung",
+    waitingOffline: (count: number) =>
+      `Kein Internet – ${plural("de", count, { one: "{n} Änderung wartet", other: "{n} Änderungen warten" })} auf Verbindung.`,
+    waitingUnreachable: (count: number) =>
+      `Krümel ist gerade nicht erreichbar – ${plural("de", count, { one: "{n} Änderung wartet", other: "{n} Änderungen warten" })}.`,
+    /** Read out once the waiting changes are through. */
+    allSent: "Alles übertragen.",
+
+    tileTitle: "Übertragung",
+    tileIntro:
+      "Deine Änderungen werden mit dem Haushalt abgeglichen, sobald das Gerät Internet hat.",
+    sending: "Wird übertragen …",
+    offline: "Kein Internet. Deine Änderungen werden übertragen, sobald du wieder verbunden bist.",
+    unreachable: "Krümel ist gerade nicht erreichbar. Die App versucht es später noch einmal.",
+
+    rejectedLabel: "Nicht gespeichert",
+    rejected: (count: number) =>
+      count === 1
+        ? "1 Änderung konnte nicht gespeichert werden. Sie ist beiseitegelegt, alles andere wird weiter übertragen."
+        : `${n(count)} Änderungen konnten nicht gespeichert werden. Sie sind beiseitegelegt, alles andere wird weiter übertragen.`,
+    rejectedHint: "Lade sie als Datei herunter, wenn du nachsehen willst, was es war.",
+    rejectedTile: (count: number) =>
+      count === 1
+        ? "1 Änderung konnte nicht gespeichert werden (Hinweis oben)."
+        : `${n(count)} Änderungen konnten nicht gespeichert werden (Hinweis oben).`,
+    download: "Als Datei herunterladen",
+    downloaded: "Datei heruntergeladen.",
+    discard: "Verwerfen …",
+    discardQuestion: (count: number) =>
+      count === 1 ? "Änderung verwerfen?" : `${n(count)} Änderungen verwerfen?`,
+    discardDialog:
+      "Sie werden von diesem Gerät gelöscht und nicht gespeichert. Das lässt sich nicht rückgängig machen.",
+    discardConfirm: "Ja, verwerfen",
+
+    conflictLabel: "Hinweise zu deinen Änderungen",
+    close: "Hinweis schließen",
+    /** `title` is missing when the task is not known any more. */
+    alreadyDone: (title: string | undefined, by: string) =>
+      `${title === undefined ? "Die Aufgabe" : `„${title}“`} hatte ${by} schon abgehakt.`,
+    alreadyDoneByMe: (title: string | undefined) =>
+      `${title === undefined ? "Die Aufgabe" : `„${title}“`} hattest du schon auf einem anderen Gerät abgehakt.`,
+    taskGone: (title: string | undefined) =>
+      `${title === undefined ? "Eine Aufgabe" : `„${title}“`} wurde inzwischen gelöscht. Deine Änderung daran entfällt.`,
+    undoGone: (title: string | undefined) =>
+      `${title === undefined ? "" : `„${title}“: `}Rückgängig ging nicht mehr, weil sich die Aufgabe inzwischen geändert hat.`,
+  },
+
+  /** Messages for failures: what the person is told (the code of a failure is kept, see `errorText`). */
+  errors: {
+    /** Said when something failed for a reason the app has no words of its own for. */
+    unexpected:
+      "Das hat nicht geklappt. Versuch es noch einmal. Hilft das nicht, lade die App neu.",
+    loadFailed: "Beim Laden ist ein unerwarteter Fehler aufgetreten.",
+    notReady: "Die App ist noch nicht bereit.",
+    /** The folded list of places in a file or the storage that are wrong. */
+    details: "Details für die Fehlersuche",
+    storage: {
+      unavailable: "Der Browser-Speicher ist nicht verfügbar.",
+      full: "Speichern nicht möglich: Der Browser-Speicher ist voll oder gesperrt. Bitte jetzt eine Sicherung herunterladen.",
+      blocked: "Löschen nicht möglich: Der Browser-Speicher ist gesperrt.",
+      damaged: "Die gespeicherten Daten sind beschädigt.",
+      incomplete: "Die gespeicherten Daten sind unvollständig oder beschädigt.",
+      copyDamaged: "Die lokale Kopie der gemeinsamen Daten ist beschädigt.",
+      copyIncomplete: "Die lokale Kopie der gemeinsamen Daten ist unvollständig oder beschädigt.",
+      queueDamaged: "Die wartenden Änderungen sind beschädigt.",
+      rejectedDamaged: "Die nicht gespeicherten Änderungen sind beschädigt.",
+      replaceNotSynced:
+        "Einspielen geht erst, wenn alle Änderungen übertragen sind. Prüf dein Internet und versuch es gleich noch einmal.",
+      replaceOffline: "Das Einspielen einer Sicherung geht nur mit Internet.",
+      replaceNewer:
+        "Eure Daten stammen aus einer neueren Version der App. Lade die App neu und versuche es dann noch einmal.",
+      sharedNotLoaded:
+        "Die gemeinsamen Daten sind auf diesem Gerät noch nicht da, und Krümel ist gerade nicht erreichbar.",
+    },
+    auth: {
+      invalidEmail: "Bitte eine gültige E-Mail-Adresse eingeben.",
+      wrongCode: "Der Code stimmt nicht. Bitte prüfen und erneut eingeben.",
+      expiredCode: "Der Code ist abgelaufen. Bitte einen neuen anfordern.",
+      tooManyTries: "Zu viele Versuche. Bitte kurz warten und dann einen neuen Code anfordern.",
+      offline: "Keine Verbindung zum Anmeldedienst. Bitte Internet prüfen und erneut versuchen.",
+      notAllowed:
+        "Krümel ist gerade nur mit Einladung nutzbar. Frag jemanden, der Krümel schon nutzt, nach einem Einladungslink. Hast du schon ein Konto? Dann prüf deine Adresse.",
+      inviteInvalid:
+        "Dein Einladungslink gilt nicht mehr: Er ist abgelaufen, schon benutzt oder zurückgezogen. Frag nach einem neuen Link. Hast du schon ein Konto? Dann prüf deine Adresse.",
+      unknown: "Die Anmeldung hat nicht geklappt. Bitte später erneut versuchen.",
+    },
+    household: {
+      notSignedIn: "Bitte zuerst anmelden.",
+      alreadyMember:
+        "Du gehörst schon zu einem Haushalt. Willst du wechseln, verlass zuerst deinen Haushalt (Einstellungen → Haushalt) und öffne den Link dann noch einmal.",
+      noHousehold: "Du hast noch keinen Haushalt.",
+      inviteUnknown: "Diese Einladung gibt es nicht. Bitte nach einem neuen Link fragen.",
+      inviteUsed: "Diese Einladung wurde schon benutzt. Bitte nach einem neuen Link fragen.",
+      inviteExpired: "Diese Einladung ist abgelaufen. Bitte nach einem neuen Link fragen.",
+      householdFull:
+        "In diesem Haushalt sind schon zwei Personen. Frag nach, ob jemand Platz macht, und lass dir dann einen neuen Link schicken.",
+      invalidNames: `Bitte beide Namen eingeben (höchstens ${NAME_MAX} Zeichen).`,
+      invalidHouseholdName: `Der Name des Haushalts darf höchstens ${NAME_MAX} Zeichen lang sein.`,
+      invalidMember: "Dich selbst kannst du nicht entfernen. Nimm dafür „Haushalt verlassen“.",
+      friendInvitesOpen: `Du hast schon ${FRIEND_INVITES_OPEN} offene Links. Zieh einen zurück oder warte, bis jemand einen benutzt.`,
+      friendInvitesToday: `Du hast in den letzten 24 Stunden schon ${FRIEND_INVITES_PER_DAY} Links erzeugt. Bitte versuch es morgen wieder.`,
+      offline: "Keine Verbindung zu Krümel. Prüf dein Internet und versuch es noch einmal.",
+      unknown: "Das hat nicht geklappt. Versuch es später noch einmal.",
+    },
+  },
+
+  /** What is wrong in a form field; `limit` is the number the sentence speaks of. */
+  formErrors: {
+    titleEmpty: "Bitte einen Titel eingeben.",
+    titleTooLong: (limit: number) => `Der Titel darf höchstens ${limit} Zeichen lang sein.`,
+    dateEmpty: "Bitte ein Datum angeben.",
+    dateInvalid: "Bitte ein gültiges Datum angeben.",
+    dateOutOfRange: (from: string, to: string) =>
+      `Bitte ein Datum zwischen ${from} und ${to} wählen.`,
+    symbolMissing: "Bitte ein Symbol auswählen.",
+    assigneeMissing: "Bitte auswählen, wer zuständig ist.",
+    noteTooLong: (limit: number) => `Die Notiz darf höchstens ${limit} Zeichen lang sein.`,
+    checklistTooMany: (limit: number) => `Eine Checkliste darf höchstens ${limit} Einträge haben.`,
+    checklistItemInvalid: (limit: number) =>
+      `Jeder Eintrag braucht einen Text mit höchstens ${limit} Zeichen.`,
+    checklistTextEmpty: "Bitte einen Text für den Eintrag eingeben.",
+    checklistTextTooLong: (limit: number) =>
+      `Ein Eintrag darf höchstens ${limit} Zeichen lang sein.`,
+    intervalEmpty: "Bitte eine Zahl eingeben.",
+    intervalInvalid: "Bitte eine ganze Zahl ab 1 eingeben.",
+    intervalTooBig: (limit: number) => `Bitte höchstens ${limit} eingeben.`,
+    unitMissing: "Bitte Tage, Wochen oder Monate auswählen.",
+    nameEmpty: "Bitte einen Namen eingeben.",
+    nameTooLong: (limit: number) => `Der Name darf höchstens ${limit} Zeichen lang sein.`,
+    namesEqual: "Die beiden Namen müssen sich unterscheiden.",
+    personMissing: "Bitte auswählen, wer dieses Gerät benutzt.",
+  },
+
+  /** The names of the two people, "Ich bin", first setup (F5). */
+  names: {
+    firstPerson: "Erste Person",
+    secondPerson: "Zweite Person",
+    firstName: "Name der ersten Person",
+    secondName: "Name der zweiten Person",
+    iAm: "Ich bin",
+    setupTitle: "Ersteinrichtung",
+    setupIntro:
+      "Willkommen bei Krümel. Trag die Namen der beiden Personen ein, die den Haushalt gemeinsam organisieren, und wähle, wer dieses Gerät benutzt. Beides kannst du später in den Einstellungen ändern.",
+    setupSubmit: "Los geht’s",
+    whoTitle: "Wer benutzt dieses Gerät?",
+    whoSubmit: "Weiter",
+    settingsTile: "Namen und „Ich bin“",
+  },
+
+  /** "Sicherung" (F7) in the settings. */
+  backup: {
+    title: "Sicherung",
+    intro:
+      "Alle Aufgaben, Erledigungen und die Namen als Datei, zum Aufbewahren oder zum Übertragen.",
+    deviceNote: "„Ich bin“ und die Darstellung gehören zum Gerät und stehen nicht darin.",
+    downloadTitle: "Herunterladen",
+    nowOnDevice: (contents: string) => `Jetzt auf diesem Gerät: ${contents}.`,
+    download: "Sicherung herunterladen",
+    importTitle: "Einspielen",
+    importIntro:
+      "Ersetzt alle Daten auf diesem Gerät durch die aus einer Sicherungsdatei. Vorher lädt die App automatisch eine Sicherung der jetzigen Daten herunter.",
+    importButton: "Sicherung einspielen …",
+    unchanged: "Deine Daten auf diesem Gerät sind unverändert.",
+    downloadFailed: "Sicherung nicht heruntergeladen",
+    importFailed: "Sicherung nicht eingespielt",
+    tooBig: "Die Datei ist zu groß für eine Sicherung (höchstens 5 MB).",
+    unreadable: "Die Datei lässt sich nicht lesen.",
+    notABackup: "Die Datei ist keine brauchbare Sicherung.",
+    question: "Sicherung einspielen?",
+    confirm: "Ja, Daten ersetzen",
+    fileContains: (fileName: string, contents: string) =>
+      `Die Datei „${fileName}“ enthält ${contents}.`,
+    replaces: (contents: string) =>
+      `Auf diesem Gerät sind jetzt ${contents}. Sie werden alle ersetzt; das lässt sich nicht rückgängig machen.`,
+    autoCopy: (fileName: string) =>
+      `Vorher lädt die App automatisch eine Sicherung der jetzigen Daten als „${fileName}“ herunter.`,
+    /** What the settings say after a backup was downloaded (F7). */
+    exported: (fileName: string) =>
+      `Die Sicherung „${fileName}“ wurde heruntergeladen. Bewahre die Datei sicher auf.`,
+    /** What the settings say after a backup was put in place (F7): what it holds and where the old data is. */
+    imported: (contents: string, autoBackupName: string) =>
+      `Sicherung eingespielt: ${contents}. Die bisherigen Daten wurden vorher als „${autoBackupName}“ heruntergeladen.`,
+  },
+
+  /**
+   * Installing the app, the QR code and the version (P12, P13). In the steps, `**x**` is set in
+   * bold (see `Rich`).
+   */
+  install: {
+    hintTitle: "Krümel als App",
+    hintText:
+      "Vom Home-Bildschirm startet Krümel wie eine App: ohne Adressleiste und auch ohne Internet.",
+    install: "App installieren",
+    showGuide: "Anleitung zeigen",
+    dismiss: "Hinweis schließen",
+    guideTitle: "Krümel installieren",
+    tileTitle: "Als App installieren",
+    installed: "Krümel ist auf diesem Gerät als App installiert.",
+    iosShare:
+      "In Safari auf **Teilen** tippen (Quadrat mit Pfeil nach oben, unten in der Leiste oder neben der Adresse). Steht dort nur **•••**, erst darauf tippen.",
+    iosAdd:
+      "In der Liste **Zum Home-Bildschirm** wählen (eventuell weiter nach unten wischen oder auf **Mehr** tippen).",
+    iosConfirmWord: "Hinzufügen",
+    iosConfirm:
+      "Oben rechts auf **Hinzufügen** tippen. Krümel liegt jetzt auf dem Home-Bildschirm.",
+    iosNoteShared:
+      "**Wichtig:** Die App vom Home-Bildschirm ist von Safari getrennt. Melde dich dort einmal mit deiner E-Mail-Adresse an, dann sind eure Daten da.",
+    iosNote:
+      "**Wichtig:** Die App vom Home-Bildschirm hat eigene Daten, getrennt von Safari. Was du schon in Safari eingetragen hast, nimmst du über „Sicherung“ mit: hier herunterladen, in der App einspielen.",
+    firefoxMenu: "In Firefox das **Menü ⋮** öffnen (neben der Adresse).",
+    firefoxAdd:
+      "**Zum Startbildschirm hinzufügen** wählen (heißt je nach Version auch **App installieren**) und mit **Hinzufügen** bestätigen.",
+    other:
+      "Bietet dein Browser es an, steht im Browsermenü **App installieren** oder **Zum Startbildschirm hinzufügen**. Am einfachsten geht es auf dem iPhone in Safari und auf Android-Handys in Chrome oder Firefox; Firefox am PC kann keine Apps installieren.",
+    /** On Xiaomi phones nothing happens without this permission (seen in the device test). */
+    xiaomi: (firefox: boolean) =>
+      `**Passiert beim Hinzufügen nichts?** Auf Handys von Xiaomi, Redmi und POCO braucht ${firefox ? "Firefox" : "der Browser"} dafür eine Erlaubnis: in den Einstellungen des Handys **Apps → Apps verwalten → ${firefox ? "Firefox" : "Name des Browsers"} → Weitere Berechtigungen → Startbildschirm-Verknüpfungen** erlauben, dann noch einmal versuchen.`,
+  },
+
+  otherDevice: {
+    title: "Auf anderem Gerät öffnen",
+    shared:
+      "Den QR-Code mit der Kamera eines Handys scannen, um Krümel dort zu öffnen. Melde dich dort mit derselben E-Mail-Adresse an, dann sind eure Daten da.",
+    plain:
+      "Den QR-Code mit der Kamera eines Handys scannen, um Krümel dort zu öffnen. Die Daten kommen nicht mit: Jedes Gerät hat seine eigenen. Übertragen lassen sie sich mit „Sicherung“.",
+    show: "QR-Code zeigen",
+    hide: "QR-Code ausblenden",
+    codeLabel: (address: string) => `QR-Code mit der Adresse ${address}`,
+    codeFailedTitle: "QR-Code nicht geladen",
+    codeFailed: "Mit Internet unter „Version“ auf „Neu laden“ tippen und es noch einmal versuchen.",
+  },
+
+  version: {
+    title: "Version",
+    build: "Stand:",
+    /** "20.10.2026, 14:32 Uhr (a1b2c3d)" */
+    builtAt: (date: string, clock: string, commit: string) => `${date}, ${clock} Uhr (${commit})`,
+    builtLocally: "lokal gebaut",
+    hint: "Neue Versionen kommen von selbst, wenn Krümel mit Internet geöffnet wird. Lief die App im Hintergrund weiter, bleibt sie bei der alten Version, bis du sie neu lädst oder ganz schließt und wieder öffnest.",
+    reload: "Neu laden",
+  },
+
+  /** Shown instead of the app when the stored data cannot be used. */
+  storageProblem: {
+    titleRescue: "Gespeicherte Daten nicht lesbar",
+    titleNone: "Speicher nicht verfügbar",
+    alertTitle: "Die Daten werden nicht angezeigt",
+    intro:
+      "Die Krümel-App hat nichts verändert und überschreibt die Daten nicht von selbst. Sichere sie zuerst als Datei, damit sich der Fehler später reparieren lässt. Danach kannst du neu beginnen.",
+    step1: "1. Rohdaten herunterladen",
+    downloadRaw: "Rohdaten herunterladen",
+    rawDownloaded: "Die Rohdaten wurden als Datei heruntergeladen. Bewahre die Datei auf.",
+    step2: "2. Neu beginnen",
+    step2Text:
+      "Dabei werden die gespeicherten Daten in diesem Browser gelöscht. Aufgaben und Erledigtes sind dann nur noch in der heruntergeladenen Datei vorhanden.",
+    startOver: "Neu beginnen …",
+    cannotRead:
+      "Der Browser-Speicher lässt sich gerade nicht lesen. Prüfe, ob das Speichern von Website-Daten erlaubt ist (z. B. nicht im privaten Fenster), und versuche es dann erneut.",
+    retry: "Erneut versuchen",
+    question: "Wirklich neu beginnen?",
+    confirm: "Ja, Daten löschen",
+    dialog:
+      "Die gespeicherten Daten in diesem Browser werden gelöscht. Das lässt sich nicht rückgängig machen. Die heruntergeladene Datei bleibt erhalten.",
+  },
+
+  /** The hint of the demo mode (`npm run demo`). */
+  demo: {
+    label: "Hinweis zum Demo-Modus",
+    text: (tasks: number, completions: number) =>
+      `Demo-Modus: ${n(tasks)} Beispielaufgaben und ${n(completions)} Erledigungen liegen im Demo-Speicher dieses Browsers. Echte Daten bleiben unberührt.`,
+    reload: "Beispieldaten neu laden",
   },
 
   language: {

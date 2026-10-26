@@ -71,8 +71,33 @@ export const TASK_FORM_FIELD_ORDER: readonly TaskFormField[] = [
   "checklist",
 ];
 
-/** One message per field that is wrong; fields that are fine are missing. */
-export type TaskFormErrors = Partial<Record<TaskFormField, string>>;
+/**
+ * What is wrong with a field, as a code the page puts into words (in the language set when it
+ * shows them): `limit` is the number the message speaks of (a longest length, a highest number).
+ */
+export interface TaskFormError {
+  readonly code:
+    | "titleEmpty"
+    | "titleTooLong"
+    | "dateEmpty"
+    | "dateInvalid"
+    | "dateOutOfRange"
+    | "symbolMissing"
+    | "assigneeMissing"
+    | "noteTooLong"
+    | "checklistTooMany"
+    | "checklistItemInvalid"
+    | "checklistTextEmpty"
+    | "checklistTextTooLong"
+    | "intervalEmpty"
+    | "intervalInvalid"
+    | "intervalTooBig"
+    | "unitMissing";
+  readonly limit?: number;
+}
+
+/** One error per field that is wrong; fields that are fine are missing. */
+export type TaskFormErrors = Partial<Record<TaskFormField, TaskFormError>>;
 
 /** The checked and cleaned-up values. */
 export interface TaskFormValues {
@@ -95,59 +120,59 @@ function isUnit(value: string): value is RecurrenceUnit {
   return value === "day" || value === "week" || value === "month";
 }
 
-function titleError(title: string): string | undefined {
+function titleError(title: string): TaskFormError | undefined {
   if (title === "") {
-    return "Bitte einen Titel eingeben.";
+    return { code: "titleEmpty" };
   }
   if (title.length > MAX_TITLE_LENGTH) {
-    return `Der Titel darf höchstens ${MAX_TITLE_LENGTH} Zeichen lang sein.`;
+    return { code: "titleTooLong", limit: MAX_TITLE_LENGTH };
   }
   return undefined;
 }
 
-function dueDateError(dueDate: string): string | undefined {
+function dueDateError(dueDate: string): TaskFormError | undefined {
   if (dueDate === "") {
-    return "Bitte ein Datum angeben.";
+    return { code: "dateEmpty" };
   }
   if (!isCalendarDay(dueDate)) {
-    return "Bitte ein gültiges Datum angeben.";
+    return { code: "dateInvalid" };
   }
   if (dueDate < MIN_DUE_DATE || dueDate > MAX_DUE_DATE) {
-    return `Bitte ein Datum zwischen ${MIN_DUE_DATE.slice(0, 4)} und ${MAX_DUE_DATE.slice(0, 4)} wählen.`;
+    return { code: "dateOutOfRange" };
   }
   return undefined;
 }
 
 /** What is wrong with the text of a new checklist item, if anything. The text is trimmed first. */
-export function checklistItemError(text: string): string | undefined {
+export function checklistItemError(text: string): TaskFormError | undefined {
   const trimmed = text.trim();
   if (trimmed === "") {
-    return "Bitte einen Text für den Eintrag eingeben.";
+    return { code: "checklistTextEmpty" };
   }
   if (trimmed.length > MAX_CHECKLIST_ITEM_LENGTH) {
-    return `Ein Eintrag darf höchstens ${MAX_CHECKLIST_ITEM_LENGTH} Zeichen lang sein.`;
+    return { code: "checklistTextTooLong", limit: MAX_CHECKLIST_ITEM_LENGTH };
   }
   return undefined;
 }
 
-function checklistError(items: readonly ChecklistItem[]): string | undefined {
+function checklistError(items: readonly ChecklistItem[]): TaskFormError | undefined {
   if (items.length > MAX_CHECKLIST_ITEMS) {
-    return `Eine Checkliste darf höchstens ${MAX_CHECKLIST_ITEMS} Einträge haben.`;
+    return { code: "checklistTooMany", limit: MAX_CHECKLIST_ITEMS };
   }
   return items.some((item) => checklistItemError(item.text) !== undefined)
-    ? `Jeder Eintrag braucht einen Text mit höchstens ${MAX_CHECKLIST_ITEM_LENGTH} Zeichen.`
+    ? { code: "checklistItemInvalid", limit: MAX_CHECKLIST_ITEM_LENGTH }
     : undefined;
 }
 
-function intervalError(interval: string): string | undefined {
+function intervalError(interval: string): TaskFormError | undefined {
   if (interval === "") {
-    return "Bitte eine Zahl eingeben.";
+    return { code: "intervalEmpty" };
   }
   if (!/^\d+$/.test(interval) || Number(interval) < 1) {
-    return "Bitte eine ganze Zahl ab 1 eingeben.";
+    return { code: "intervalInvalid" };
   }
   if (Number(interval) > MAX_RECURRENCE_INTERVAL) {
-    return `Bitte höchstens ${MAX_RECURRENCE_INTERVAL} eingeben.`;
+    return { code: "intervalTooBig", limit: MAX_RECURRENCE_INTERVAL };
   }
   return undefined;
 }
@@ -163,23 +188,21 @@ export function checkTaskForm(kind: TaskKind, input: TaskFormInput): TaskFormRes
   const note = input.note.trim();
   const errors: TaskFormErrors = {};
 
-  const found: [TaskFormField, string | undefined][] = [
+  const found: [TaskFormField, TaskFormError | undefined][] = [
     ["title", titleError(title)],
-    ["symbol", isTaskSymbolId(input.symbol) ? undefined : "Bitte ein Symbol auswählen."],
+    ["symbol", isTaskSymbolId(input.symbol) ? undefined : { code: "symbolMissing" }],
     ["dueDate", dueDateError(dueDate)],
-    ["assignee", isAssignee(input.assignee) ? undefined : "Bitte auswählen, wer zuständig ist."],
+    ["assignee", isAssignee(input.assignee) ? undefined : { code: "assigneeMissing" }],
     [
       "note",
-      note.length > MAX_NOTE_LENGTH
-        ? `Die Notiz darf höchstens ${MAX_NOTE_LENGTH} Zeichen lang sein.`
-        : undefined,
+      note.length > MAX_NOTE_LENGTH ? { code: "noteTooLong", limit: MAX_NOTE_LENGTH } : undefined,
     ],
     ["checklist", input.checklist === undefined ? undefined : checklistError(input.checklist)],
   ];
   if (kind === "recurring") {
     found.push(
       ["interval", intervalError(interval)],
-      ["unit", isUnit(input.unit) ? undefined : "Bitte Tage, Wochen oder Monate auswählen."],
+      ["unit", isUnit(input.unit) ? undefined : { code: "unitMissing" }],
     );
   }
   for (const [field, message] of found) {

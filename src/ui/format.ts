@@ -314,12 +314,12 @@ export function undoNotice(title: string, dueDate: CalendarDay): string {
 
 /** What the settings say after the backup file was downloaded (F7). */
 export function exportNotice(fileName: string): string {
-  return `Die Sicherung „${fileName}“ wurde heruntergeladen. Bewahre die Datei sicher auf.`;
+  return t().backup.exported(fileName);
 }
 
 /** What the settings say after a backup was put in place (F7): what it holds and where the old data is. */
 export function importNotice(contents: string, autoBackupName: string): string {
-  return `Sicherung eingespielt: ${contents}. Die bisherigen Daten wurden vorher als „${autoBackupName}“ heruntergeladen.`;
+  return t().backup.imported(contents, autoBackupName);
 }
 
 /**

@@ -136,7 +136,8 @@ export function SettingsPage({
   notifications,
   notificationsTestOnly = false,
 }: SettingsPageProps) {
-  const [schemeError, setSchemeError] = useState<string>();
+  /** What failed when saving the appearance; the sentence is read when drawing (language switch). */
+  const [schemeFailure, setSchemeFailure] = useState<{ readonly error: unknown }>();
   /** Counts the imported backups; the names form starts over after each one. */
   const [importCount, setImportCount] = useState(0);
 
@@ -147,19 +148,19 @@ export function SettingsPage({
 
   async function chooseLogoMotion(moving: boolean) {
     try {
-      setSchemeError(undefined);
+      setSchemeFailure(undefined);
       await onLogoMotion(moving);
     } catch (error) {
-      setSchemeError(errorText(error));
+      setSchemeFailure({ error });
     }
   }
 
   async function chooseScheme(scheme: ColorScheme) {
     try {
-      setSchemeError(undefined);
+      setSchemeFailure(undefined);
       await onColorScheme(scheme);
     } catch (error) {
-      setSchemeError(errorText(error));
+      setSchemeFailure({ error });
     }
   }
 
@@ -197,15 +198,15 @@ export function SettingsPage({
         {!household && (
           <section class="tile tile--narrow" aria-labelledby="namen">
             <h2 class="tile__title" id="namen">
-              Namen und „Ich bin“
+              {t().names.settingsTile}
             </h2>
             {/* The form keeps what is typed; a new key shows the names of an imported backup. */}
             <NamesForm
               key={importCount}
               initialNames={names}
               initialPerson={currentPerson}
-              submitLabel="Speichern"
-              savedMessage="Gespeichert."
+              submitLabel={t().common.save}
+              savedMessage={t().common.saved}
               onSubmit={onSubmit}
             />
           </section>
@@ -277,7 +278,9 @@ export function SettingsPage({
             value={colorScheme}
             onChange={chooseScheme}
           />
-          {schemeError && <ErrorAlert title={t().common.notSaved}>{schemeError}</ErrorAlert>}
+          {schemeFailure && (
+            <ErrorAlert title={t().common.notSaved}>{errorText(schemeFailure.error)}</ErrorAlert>
+          )}
           <div class="choice">
             <input
               class="choice__input choice__input--switch"

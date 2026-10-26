@@ -59,11 +59,9 @@ export function rawDataFileName(today: CalendarDay): string {
  */
 export const MAX_IMPORT_BYTES = 5 * 1024 * 1024;
 
-/** The reason a file of this size cannot be a backup, or `undefined` if the size is fine. */
-export function importSizeError(bytes: number): string | undefined {
-  return bytes > MAX_IMPORT_BYTES
-    ? "Die Datei ist zu groß für eine Sicherung (höchstens 5 MB)."
-    : undefined;
+/** Whether a file of this size is too big to be a backup (the page says so in its own words). */
+export function importTooBig(bytes: number): boolean {
+  return bytes > MAX_IMPORT_BYTES;
 }
 
 /**

@@ -11,7 +11,6 @@ import { LanguageSwitch } from "../components/LanguageSwitch";
 import { LegalLinks } from "../components/LegalLinks";
 import { PageTitle } from "../components/PageTitle";
 import { HOUSEHOLD_TEXTS, INVITE_FAILURE_TITLES } from "../householdTexts";
-import { householdMessage } from "./HouseholdPage";
 
 interface InvitePageProps {
   /** The address the person is signed in with: joining with the wrong one cannot be undone. */
@@ -42,7 +41,8 @@ export function InvitePage({
   const [refused, setRefused] = useState<HouseholdFailure | undefined>(
     hasHousehold ? "alreadyMember" : undefined,
   );
-  const [failed, setFailed] = useState<string>();
+  /** Why joining failed this time; the sentence is read when drawing (language switch). */
+  const [failed, setFailed] = useState<HouseholdFailure>();
   const [busy, setBusy] = useState(false);
 
   async function accept() {
@@ -58,7 +58,7 @@ export function InvitePage({
       if (failure !== undefined && INVITE_FAILURE_TITLES[failure] !== undefined) {
         setRefused(failure);
       } else {
-        setFailed(householdMessage(error));
+        setFailed(failure ?? "unknown");
       }
     } finally {
       setBusy(false);
@@ -90,7 +90,9 @@ export function InvitePage({
       <div class="tile tile--narrow form">
         <p class="intro">{HOUSEHOLD_TEXTS.acceptIntro}</p>
         <p class="account-email">{HOUSEHOLD_TEXTS.acceptAs(email)}</p>
-        {failed && <ErrorAlert title={HOUSEHOLD_TEXTS.acceptFailed}>{failed}</ErrorAlert>}
+        {failed && (
+          <ErrorAlert title={HOUSEHOLD_TEXTS.acceptFailed}>{HOUSEHOLD_MESSAGES[failed]}</ErrorAlert>
+        )}
         <div class="button-row">
           <button class="btn btn--primary" type="button" onClick={() => void accept()}>
             {busy ? ACCOUNT_TEXTS.busy : HOUSEHOLD_TEXTS.accept}

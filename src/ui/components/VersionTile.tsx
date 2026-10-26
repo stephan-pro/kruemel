@@ -1,4 +1,5 @@
 import { RefreshCw } from "lucide-preact";
+import { t } from "../../i18n";
 import { APP_BUILD, formatBuild } from "../appInfo";
 
 /**
@@ -6,23 +7,20 @@ import { APP_BUILD, formatBuild } from "../appInfo";
  * page; an installed app has no reload of its own, and the page always asks the server first.
  */
 export function VersionTile() {
+  const words = t().version;
   return (
     <section class="tile tile--narrow form" aria-labelledby="version">
       <h2 class="tile__title" id="version">
-        Version
+        {words.title}
       </h2>
       <p>
-        Stand: <span data-build>{formatBuild(APP_BUILD)}</span>
+        {words.build} <span data-build>{formatBuild(APP_BUILD)}</span>
       </p>
-      <p class="muted">
-        Neue Versionen kommen von selbst, wenn Krümel mit Internet geöffnet wird. Lief die App im
-        Hintergrund weiter, bleibt sie bei der alten Version, bis du sie neu lädst oder ganz
-        schließt und wieder öffnest.
-      </p>
+      <p class="muted">{words.hint}</p>
       <div class="button-row">
         <button class="btn btn--secondary" type="button" onClick={() => location.reload()}>
           <RefreshCw size={20} />
-          Neu laden
+          {words.reload}
         </button>
       </div>
     </section>

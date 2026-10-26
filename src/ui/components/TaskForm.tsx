@@ -9,6 +9,7 @@ import {
   firstTaskFormError,
   MAX_DUE_DATE,
   MIN_DUE_DATE,
+  type TaskFormError,
   type TaskFormErrors,
   type TaskFormField,
   type TaskFormInput,
@@ -19,6 +20,7 @@ import { DEFAULT_TASK_SYMBOL } from "../../domain/taskSymbols";
 import { t } from "../../i18n";
 import type { PersonNames } from "../../storage/appData";
 import { errorText } from "../errorText";
+import { taskFormErrorText } from "../formErrors";
 import { routeHash } from "../route";
 import { ErrorAlert } from "./Alert";
 import { ChecklistEditor } from "./ChecklistEditor";
@@ -115,7 +117,7 @@ export function TaskForm({ task, names, today, currentPerson, onSubmit, onDelete
   const [checklist, setChecklist] = useState<readonly ChecklistItem[]>(task?.checklist ?? []);
   /** The text in the field for a new item; saving the form adds it, so it is never lost. */
   const [draft, setDraft] = useState("");
-  const [draftError, setDraftError] = useState<string>();
+  const [draftError, setDraftError] = useState<TaskFormError>();
   const [errors, setErrors] = useState<TaskFormErrors>({});
   const { report, status } = useFieldErrorFocus();
   const [saveError, setSaveError] = useState<string>();
@@ -157,8 +159,9 @@ export function TaskForm({ task, names, today, currentPerson, onSubmit, onDelete
       // A draft that cannot be added is a problem of the checklist field, the last of the form.
       const all = pendingError === undefined ? found : { ...found, checklist: pendingError };
       const first = firstTaskFormError(all);
-      if (first !== undefined) {
-        report(FOCUS_TARGET[first], all[first] ?? "");
+      const firstError = first === undefined ? undefined : all[first];
+      if (first !== undefined && firstError !== undefined) {
+        report(FOCUS_TARGET[first], taskFormErrorText(firstError));
       }
       return;
     }
@@ -177,6 +180,11 @@ export function TaskForm({ task, names, today, currentPerson, onSubmit, onDelete
   }
 
   const words = t().taskForm;
+  /** The message of a field, in the language set now. */
+  const message = (field: TaskFormField) => {
+    const error = errors[field];
+    return error === undefined ? undefined : taskFormErrorText(error);
+  };
   const dateLabel = recurring ? (creating ? words.firstDate : words.nextDate) : words.dueOn;
   const people: readonly Choice<string>[] = [
     { value: "personA", label: names.personA },
@@ -206,14 +214,14 @@ export function TaskForm({ task, names, today, currentPerson, onSubmit, onDelete
         id="task-title"
         label={words.title}
         value={input.title}
-        error={errors.title}
+        error={message("title")}
         onInput={(title) => change("title", title)}
       />
 
       <SymbolField
         name="task-symbol"
         value={input.symbol}
-        error={errors.symbol}
+        error={message("symbol")}
         onChange={(symbol) => change("symbol", symbol)}
       />
 
@@ -226,7 +234,7 @@ export function TaskForm({ task, names, today, currentPerson, onSubmit, onDelete
             value={input.interval}
             inputMode="numeric"
             narrow
-            error={errors.interval}
+            error={message("interval")}
             onInput={(interval) => change("interval", interval)}
           />
           <SelectField
@@ -234,7 +242,7 @@ export function TaskForm({ task, names, today, currentPerson, onSubmit, onDelete
             label={words.unit}
             value={input.unit}
             choices={units()}
-            error={errors.unit}
+            error={message("unit")}
             onChange={(unit) => change("unit", unit)}
           />
         </FieldGroup>
@@ -248,7 +256,7 @@ export function TaskForm({ task, names, today, currentPerson, onSubmit, onDelete
         min={MIN_DUE_DATE}
         max={MAX_DUE_DATE}
         value={input.dueDate}
-        error={errors.dueDate}
+        error={message("dueDate")}
         onInput={(dueDate) => change("dueDate", dueDate)}
       />
 
@@ -257,7 +265,7 @@ export function TaskForm({ task, names, today, currentPerson, onSubmit, onDelete
         legend={words.assignee}
         choices={people}
         value={input.assignee === "" ? undefined : input.assignee}
-        error={errors.assignee}
+        error={message("assignee")}
         onChange={(assignee) => change("assignee", assignee)}
       />
 
@@ -265,7 +273,7 @@ export function TaskForm({ task, names, today, currentPerson, onSubmit, onDelete
         id="task-note"
         label={words.note}
         value={input.note}
-        error={errors.note}
+        error={message("note")}
         onInput={(note) => change("note", note)}
       />
 
@@ -283,7 +291,7 @@ export function TaskForm({ task, names, today, currentPerson, onSubmit, onDelete
         }}
         draftError={draftError}
         onDraftError={setDraftError}
-        error={errors.checklist}
+        error={message("checklist")}
       />
 
       {saveError && <ErrorAlert title={t().common.notSaved}>{saveError}</ErrorAlert>}

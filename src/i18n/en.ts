@@ -2,6 +2,14 @@
 // with other parameters, is a type error. Short and plain; English has no "du", so the texts speak
 // of "you" only where the German does too.
 
+import {
+  CODE_DIGITS,
+  CODE_MINUTES,
+  FRIEND_INVITES_OPEN,
+  FRIEND_INVITES_PER_DAY,
+  INVITE_DAYS,
+  NAME_MAX,
+} from "../auth/limits";
 import type { Messages, SummaryParts } from "./de";
 import { formatNumber, plural } from "./intl";
 
@@ -25,7 +33,7 @@ export const en: Messages = {
     settingsAppearance: { label: "Appearance", title: "Appearance" },
     settingsData: { label: "Data", title: "Data" },
     settingsLegal: { label: "Legal", title: "Legal" },
-    // Still German: the legal pages are translated in EN-b.
+    // Still German: the legal pages are translated in EN-c.
     imprint: { label: "Impressum", title: "Impressum" },
     privacy: { label: "Datenschutz", title: "Datenschutzerklärung" },
     taskNew: { label: "New task", title: "New task" },
@@ -41,6 +49,7 @@ export const en: Messages = {
     cancel: "Cancel",
     close: "Close",
     save: "Save",
+    saved: "Saved.",
     notSaved: "Not saved",
     notDeleted: "Not deleted",
     notice: "Notice",
@@ -377,6 +386,467 @@ export const en: Messages = {
     logoMotionLabel: "Krümel moves",
     logoMotionHint:
       "The little Krümel at the top waves and blinks. Turn this off if movement bothers you.",
+  },
+
+  account: {
+    signedInAs: "Signed in as",
+    thisDevice: "This device:",
+
+    signInTitle: "Sign in",
+    signInIntro: "Sign in with your email address. A code is sent to you; no password is needed.",
+    invitedFriend:
+      "You have been invited to Krümel. After signing in, you set up your own household.",
+    invitedHousehold:
+      "You have been invited to a household on Krümel. After signing in, you join that household.",
+    emailLabel: "Email address",
+    sendCode: "Send code",
+
+    codeTitle: "Enter code",
+    codeIntro: (email) =>
+      `A code has been sent to ${email}. It is valid for ${CODE_MINUTES} minutes.`,
+    codeLabel: "Code from the email",
+    codeHint: `${CODE_DIGITS} digits`,
+    codeFormat: `Please enter the ${CODE_DIGITS} digits from the email.`,
+    verifyCode: "Sign in",
+    resendWait: "No code yet? Check the spam folder too. You can ask for a new one in a minute.",
+    resendReady: "You can ask for a new code now.",
+    resendCode: "Resend code",
+    codeResent: "A new code has been sent.",
+    otherEmail: "Use another email address",
+    busy: "One moment …",
+
+    accountTile: "Account",
+    accountSignedIn: (email) => `Signed in as ${email}.`,
+    signOut: "Sign out",
+    signOutQuestion: "Sign out?",
+    signOutExplained: "Your tasks stay on this device. To carry on, sign in again with a code.",
+    signOutFailed: "Signing out did not work",
+  },
+
+  deleteAccount: {
+    word: "delete",
+    open: "Delete account …",
+    intro: "Permanently deletes your Krümel account. This only works with internet.",
+    question: "Delete account permanently?",
+    goes: "This will be deleted: your account with your email address, your membership of the household and the Krümel data on this device.",
+    stays: (other) =>
+      `This stays: all tasks and completions in the household, yours too. ${other} can carry on and invite someone new.`,
+    staysNothing:
+      "You are the last person in the household, so the household with all its tasks and completions is deleted too. The app downloads a backup first.",
+    noUndo: "This cannot be undone.",
+    wayBack:
+      "You can only get a new account with a new invite. To join again later, ask someone who uses Krümel for an invite link.",
+    wordLabel: "Type “delete” to confirm",
+    wordMissing: "Please type “delete” if you really want to delete your account.",
+    confirm: "Delete account permanently",
+    failed: "Account not deleted",
+    deleted: "Your account has been deleted. The Krümel data on this device has been removed.",
+  },
+
+  household: {
+    createTitle: "Create household",
+    createIntro: "Set up your household. Then invite the second person with a link.",
+    ownNameLabel: "Your name",
+    otherNameLabel: "Name of the second person",
+    create: "Create household",
+    createFailed: "Household not created",
+
+    haveInviteTitle: "Got an invite?",
+    haveInviteIntro: "Tap the link in the message. Or copy it and paste it here.",
+    inviteLinkField: "Invite link",
+    openInvite: "Open invite",
+    notAnInvite: "That is not an invite link. Please copy the whole link from the message.",
+    friendLinkHere:
+      "That is a link for friends, not for a household. Open it directly in the browser, then you can sign in.",
+
+    unavailableTitle: "No connection",
+    unavailableAlert: "The household could not be loaded",
+    retry: "Try again",
+
+    acceptTitle: "Accept invite",
+    acceptIntro: "You have been invited to a household on Krümel.",
+    acceptAs: (email) =>
+      `You join with ${email}. If that is not your address, sign in with another one.`,
+    accept: "Join household",
+    notNow: "Not now",
+    acceptFailed: "Joining did not work",
+    goOn: "Continue",
+    failureTitles: {
+      inviteUnknown: "Invite not found",
+      inviteUsed: "Invite already used",
+      inviteExpired: "Invite expired",
+      householdFull: "Household is full",
+      alreadyMember: "You already have a household",
+    },
+
+    tileTitle: "Household",
+    you: "(you)",
+    joined: "joined",
+    notJoined: "not joined yet",
+    bothJoined: "You are both in.",
+    namesTitle: "Names",
+    householdNameLabel: "Household name",
+    householdNameHint: "For example “Sunny Lane flat”. Can stay empty. Changing it needs internet.",
+    ownNameHint: "This is how everyone in the household sees you.",
+    saveNames: "Save names",
+    namesSaved: "Saved.",
+    householdNameFailed: "Household name not saved",
+    ownNameFailed: "Not saved",
+    inviteIntro: `Send the second person an invite link, for example by messenger. It works for ${INVITE_DAYS} days and only once.`,
+    createInvite: "Create link for the second person",
+    secondPersonLinkField: "Invite link for the second person",
+    newInvite: "Create new link",
+    newInviteHint: "A new link makes the old one invalid.",
+    inviteFailed: "No link created",
+    validUntil: (end) => `Valid until ${end}.`,
+    copy: "Copy",
+    copied: "Copied.",
+    copyFailed: "Copying did not work. Select the link in the field and copy it by hand.",
+    share: "Share",
+    shareTitle: "Invitation to Krümel",
+    shareText: (householdName) =>
+      `Join our household${householdName === null ? "" : ` “${householdName}”`} on Krümel. Open the link and sign in:`,
+    showQr: "Show QR code",
+    hideQr: "Hide QR code",
+    qrLabel: "QR code with the invite link",
+  },
+
+  friends: {
+    tileTitle: "Invite friends",
+    intro: `Know someone who would like to use Krümel too? With an invite link they create their own account and their own household. Your tasks stay separate. The link works for ${INVITE_DAYS} days and only once.`,
+    limits: `You can have up to ${FRIEND_INVITES_OPEN} open links and create ${FRIEND_INVITES_PER_DAY} in 24 hours.`,
+    create: "Create link for friends",
+    createAnother: "Create another link",
+    failed: "No link created",
+    linkField: "Invite link for friends",
+    shareTitle: "Invitation to Krümel",
+    shareText:
+      "I use Krümel for our household. Try it out and set up your own household. Open the link and sign in:",
+    qrLabel: "QR code with the invite link for friends",
+    openTitle: "Open links",
+    openEntry: (end) => `Valid until ${end}`,
+    show: "Show",
+    cancel: "Withdraw",
+    entryName: (end) => `: link valid until ${end}`,
+    cancelled: "Link withdrawn. It no longer works.",
+    cancelFailed: "Not withdrawn",
+    listFailed: "The open links cannot be loaded right now. Please check your internet.",
+  },
+
+  shared: {
+    notLoadedYet:
+      "Your shared data is not on this device yet. The app needs internet once for this; after that everything also works offline.",
+
+    newVersionLabel: "New version",
+    newVersion:
+      "There is a new version of Krümel. Reload the app so your changes are sent and you see everything.",
+    reload: "Reload",
+    appUpdated: "There is a new version of Krümel. Reload the app to use it.",
+
+    signOutExplained:
+      "Your shared data is deleted from this device but stays in the household. To carry on, sign in again with a code.",
+    signOutPending: (count) =>
+      `${plural("en", count, { one: "{n} change is", other: "{n} changes are" })} not sent yet. They would be lost on this device when you sign out, so the app downloads them as a file first.`,
+    signOutWithBackup: "Download backup and sign out",
+
+    backupIntro:
+      "All tasks, completions and the names of your household as a file, to keep. Downloading also works without internet.",
+    importIntro:
+      "Replaces the data for both of you with the data from a backup file. This only works with internet. Before that, the app automatically downloads a backup of the current data.",
+    importOffline: "Restoring a backup only works with internet.",
+    importReplaces: (contents) =>
+      `Your household currently has ${contents}. They will be replaced for both of you; this cannot be undone.`,
+    unchanged: "Your shared data is unchanged.",
+
+    problemIntro:
+      "The Krümel app has changed nothing. First save the copy as a file, because it also holds changes that had not been sent yet. Then fetch the data anew from your household.",
+    fromServerTitle: "2. Load anew from the household",
+    fromServerText:
+      "This deletes the copy on this device and fetches it anew from your household. Anything not sent yet will then only exist in the downloaded file.",
+    fromServer: "Load anew from the household …",
+    fromServerQuestion: "Load data anew from the household?",
+    fromServerConfirm: "Yes, reload",
+    fromServerDialog:
+      "The copy on this device will be deleted. Your data stays in the household, and so does the downloaded file.",
+  },
+
+  leave: {
+    needsInternet: "This only works with internet.",
+
+    remove: (name) => `Remove ${name} …`,
+    removeQuestion: (name) => `Remove ${name} from the household?`,
+    removeDialog: (name) =>
+      `${name} will no longer see your tasks. All tasks and completions stay in the household, including those of ${name}. After that you can invite someone new.`,
+    removeConfirm: "Yes, remove",
+    removed: (name) => `${name} is no longer part of the household.`,
+    removeFailed: "Not removed",
+
+    leave: "Leave household …",
+    leaveQuestion: "Leave household?",
+    leaveDialog: (other) =>
+      `You will no longer see the tasks. All tasks and completions stay in the household for ${other}, yours too. The data on this device is deleted. You can only come back with a new invite.`,
+    leaveLastDialog:
+      "You are the last person in the household. If you leave, the household with all its tasks and completions is deleted. This cannot be undone. The app downloads a backup first.",
+    leaveConfirm: "Leave household",
+    leaveLastConfirm: "Delete household and leave",
+    leaveFailed: "Household not left",
+
+    pending: (count) =>
+      `${plural("en", count, { one: "{n} change is", other: "{n} changes are" })} not sent yet. The app downloads them as a file first.`,
+    backupOffer: "Want to keep the data yourself? Then download a backup first.",
+    backup: "Download backup",
+    backupDone: "Backup downloaded.",
+
+    noticeLabel: "Notice",
+    youLeft: "You have left the household. You can create a new one or follow a new invite.",
+    notMember:
+      "You are no longer part of this household: the other person removed you, or you left on another device. You can create a new household or follow a new invite.",
+    pendingSaved: "The app downloaded your changes that had not been sent yet as a file.",
+  },
+
+  sync: {
+    waitingLabel: "Transfer",
+    waitingOffline: (count) =>
+      `No internet – ${plural("en", count, { one: "{n} change is waiting", other: "{n} changes are waiting" })} for a connection.`,
+    waitingUnreachable: (count) =>
+      `Krümel cannot be reached right now – ${plural("en", count, { one: "{n} change is waiting", other: "{n} changes are waiting" })}.`,
+    allSent: "All sent.",
+
+    tileTitle: "Transfer",
+    tileIntro: "Your changes are synced with the household as soon as the device has internet.",
+    sending: "Sending …",
+    offline: "No internet. Your changes will be sent as soon as you are connected again.",
+    unreachable: "Krümel cannot be reached right now. The app will try again later.",
+
+    rejectedLabel: "Not saved",
+    rejected: (count) =>
+      count === 1
+        ? "1 change could not be saved. It has been set aside; everything else is still being sent."
+        : `${n(count)} changes could not be saved. They have been set aside; everything else is still being sent.`,
+    rejectedHint: "Download them as a file if you want to see what they were.",
+    rejectedTile: (count) =>
+      count === 1
+        ? "1 change could not be saved (see notice above)."
+        : `${n(count)} changes could not be saved (see notice above).`,
+    download: "Download as file",
+    downloaded: "File downloaded.",
+    discard: "Discard …",
+    discardQuestion: (count) => (count === 1 ? "Discard change?" : `Discard ${n(count)} changes?`),
+    discardDialog: "They will be deleted from this device and not saved. This cannot be undone.",
+    discardConfirm: "Yes, discard",
+
+    conflictLabel: "Notices about your changes",
+    close: "Close notice",
+    alreadyDone: (title, by) =>
+      `${title === undefined ? "The task" : `“${title}”`} had already been marked as done by ${by}.`,
+    alreadyDoneByMe: (title) =>
+      `${title === undefined ? "The task" : `“${title}”`} had already been marked as done by you on another device.`,
+    taskGone: (title) =>
+      `${title === undefined ? "A task" : `“${title}”`} has been deleted in the meantime. Your change to it is dropped.`,
+    undoGone: (title) =>
+      `${title === undefined ? "" : `“${title}”: `}Undo was no longer possible because the task has changed in the meantime.`,
+  },
+
+  errors: {
+    unexpected: "That did not work. Try again. If that does not help, reload the app.",
+    loadFailed: "An unexpected error occurred while loading.",
+    notReady: "The app is not ready yet.",
+    details: "Details for troubleshooting",
+    storage: {
+      unavailable: "The browser storage is not available.",
+      full: "Saving is not possible: the browser storage is full or locked. Please download a backup now.",
+      blocked: "Deleting is not possible: the browser storage is locked.",
+      damaged: "The stored data is damaged.",
+      incomplete: "The stored data is incomplete or damaged.",
+      copyDamaged: "The local copy of the shared data is damaged.",
+      copyIncomplete: "The local copy of the shared data is incomplete or damaged.",
+      queueDamaged: "The waiting changes are damaged.",
+      rejectedDamaged: "The changes that were not saved are damaged.",
+      replaceNotSynced:
+        "Restoring only works once all changes have been sent. Check your internet and try again in a moment.",
+      replaceOffline: "Restoring a backup only works with internet.",
+      replaceNewer:
+        "Your data comes from a newer version of the app. Reload the app and try again.",
+      sharedNotLoaded:
+        "The shared data is not on this device yet, and Krümel cannot be reached right now.",
+    },
+    auth: {
+      invalidEmail: "Please enter a valid email address.",
+      wrongCode: "The code is wrong. Please check it and try again.",
+      expiredCode: "The code has expired. Please request a new one.",
+      tooManyTries: "Too many attempts. Please wait a moment, then request a new code.",
+      offline: "No connection to the sign-in service. Please check your internet and try again.",
+      notAllowed:
+        "Krümel can only be used by invitation at the moment. Ask someone who already uses Krümel for an invite link. Already have an account? Then check your address.",
+      inviteInvalid:
+        "Your invite link is no longer valid: it has expired, been used or been withdrawn. Ask for a new link. Already have an account? Then check your address.",
+      unknown: "Signing in did not work. Please try again later.",
+    },
+    household: {
+      notSignedIn: "Please sign in first.",
+      alreadyMember:
+        "You already belong to a household. To switch, first leave your household (Settings → Account and household) and then open the link again.",
+      noHousehold: "You do not have a household yet.",
+      inviteUnknown: "This invite does not exist. Please ask for a new link.",
+      inviteUsed: "This invite has already been used. Please ask for a new link.",
+      inviteExpired: "This invite has expired. Please ask for a new link.",
+      householdFull:
+        "This household already has two people. Ask whether someone can make room, then have a new link sent to you.",
+      invalidNames: `Please enter both names (at most ${NAME_MAX} characters).`,
+      invalidHouseholdName: `The household name can have at most ${NAME_MAX} characters.`,
+      invalidMember: "You cannot remove yourself. Use “Leave household” instead.",
+      friendInvitesOpen: `You already have ${FRIEND_INVITES_OPEN} open links. Withdraw one or wait until someone uses one.`,
+      friendInvitesToday: `You have already created ${FRIEND_INVITES_PER_DAY} links in the last 24 hours. Please try again tomorrow.`,
+      offline: "No connection to Krümel. Check your internet and try again.",
+      unknown: "That did not work. Please try again later.",
+    },
+  },
+
+  formErrors: {
+    titleEmpty: "Please enter a title.",
+    titleTooLong: (limit) => `The title can have at most ${limit} characters.`,
+    dateEmpty: "Please enter a date.",
+    dateInvalid: "Please enter a valid date.",
+    dateOutOfRange: (from, to) => `Please choose a date between ${from} and ${to}.`,
+    symbolMissing: "Please choose a symbol.",
+    assigneeMissing: "Please choose who is responsible.",
+    noteTooLong: (limit) => `The note can have at most ${limit} characters.`,
+    checklistTooMany: (limit) => `A checklist can have at most ${limit} items.`,
+    checklistItemInvalid: (limit) => `Every item needs text of at most ${limit} characters.`,
+    checklistTextEmpty: "Please enter text for the item.",
+    checklistTextTooLong: (limit) => `An item can have at most ${limit} characters.`,
+    intervalEmpty: "Please enter a number.",
+    intervalInvalid: "Please enter a whole number from 1.",
+    intervalTooBig: (limit) => `Please enter ${limit} at most.`,
+    unitMissing: "Please choose days, weeks or months.",
+    nameEmpty: "Please enter a name.",
+    nameTooLong: (limit) => `The name can have at most ${limit} characters.`,
+    namesEqual: "The two names must differ.",
+    personMissing: "Please choose who uses this device.",
+  },
+
+  names: {
+    firstPerson: "First person",
+    secondPerson: "Second person",
+    firstName: "Name of the first person",
+    secondName: "Name of the second person",
+    iAm: "I am",
+    setupTitle: "First-time setup",
+    setupIntro:
+      "Welcome to Krümel. Enter the names of the two people who organise the household together, and choose who uses this device. You can change both later in the settings.",
+    setupSubmit: "Let’s go",
+    whoTitle: "Who uses this device?",
+    whoSubmit: "Continue",
+    settingsTile: "Names and “I am”",
+  },
+
+  backup: {
+    title: "Backup",
+    intro: "All tasks, completions and the names as a file, to keep or to transfer.",
+    deviceNote: "“I am” and the appearance belong to the device and are not included.",
+    downloadTitle: "Download",
+    nowOnDevice: (contents) => `Right now on this device: ${contents}.`,
+    download: "Download backup",
+    importTitle: "Restore",
+    importIntro:
+      "Replaces all data on this device with the data from a backup file. Before that, the app automatically downloads a backup of the current data.",
+    importButton: "Restore backup …",
+    unchanged: "Your data on this device is unchanged.",
+    downloadFailed: "Backup not downloaded",
+    importFailed: "Backup not restored",
+    tooBig: "The file is too big for a backup (5 MB at most).",
+    unreadable: "The file cannot be read.",
+    notABackup: "The file is not a usable backup.",
+    question: "Restore backup?",
+    confirm: "Yes, replace data",
+    fileContains: (fileName, contents) => `The file “${fileName}” contains ${contents}.`,
+    replaces: (contents) =>
+      `This device currently has ${contents}. All of it will be replaced; this cannot be undone.`,
+    autoCopy: (fileName) =>
+      `Before that, the app automatically downloads a backup of the current data as “${fileName}”.`,
+    exported: (fileName) => `The backup “${fileName}” has been downloaded. Keep the file safe.`,
+    imported: (contents, autoBackupName) =>
+      `Backup restored: ${contents}. The previous data was downloaded as “${autoBackupName}” first.`,
+  },
+
+  install: {
+    hintTitle: "Krümel as an app",
+    hintText:
+      "From the home screen, Krümel starts like an app: without an address bar and even without internet.",
+    install: "Install app",
+    showGuide: "Show instructions",
+    dismiss: "Close notice",
+    guideTitle: "Install Krümel",
+    tileTitle: "Install as an app",
+    installed: "Krümel is installed on this device as an app.",
+    iosShare:
+      "In Safari, tap **Share** (a square with an arrow pointing up, at the bottom of the bar or next to the address). If you only see **•••**, tap that first.",
+    iosAdd:
+      "In the list, choose **Add to Home Screen** (you may need to scroll down or tap **More**).",
+    iosConfirmWord: "Add",
+    iosConfirm: "Tap **Add** at the top right. Krümel is now on the home screen.",
+    iosNoteShared:
+      "**Important:** The app on the home screen is separate from Safari. Sign in there once with your email address, then your data is there.",
+    iosNote:
+      "**Important:** The app on the home screen has its own data, separate from Safari. To take along what you have already entered in Safari, use “Backup”: download it here, restore it in the app.",
+    firefoxMenu: "In Firefox, open the **menu ⋮** (next to the address).",
+    firefoxAdd:
+      "Choose **Add to Home screen** (depending on the version also called **Install app**) and confirm with **Add**.",
+    other:
+      "If your browser offers it, the browser menu has **Install app** or **Add to Home screen**. It is easiest on the iPhone in Safari and on Android phones in Chrome or Firefox; Firefox on a PC cannot install apps.",
+    xiaomi: (firefox) =>
+      `**Nothing happens when you add it?** On Xiaomi, Redmi and POCO phones ${firefox ? "Firefox" : "the browser"} needs a permission for this: in the phone settings, allow **Apps → Manage apps → ${firefox ? "Firefox" : "name of the browser"} → Other permissions → Home screen shortcuts**, then try again.`,
+  },
+
+  otherDevice: {
+    title: "Open on another device",
+    shared:
+      "Scan the QR code with a phone's camera to open Krümel there. Sign in there with the same email address, then your data is there.",
+    plain:
+      "Scan the QR code with a phone's camera to open Krümel there. The data does not come along: every device has its own. It can be transferred with “Backup”.",
+    show: "Show QR code",
+    hide: "Hide QR code",
+    codeLabel: (address) => `QR code with the address ${address}`,
+    codeFailedTitle: "QR code not loaded",
+    codeFailed: "With internet, tap “Reload” under “Version” and try again.",
+  },
+
+  version: {
+    title: "Version",
+    build: "Build:",
+    builtAt: (date, clock, commit) => `${date}, ${clock} (${commit})`,
+    builtLocally: "built locally",
+    hint: "New versions arrive by themselves when Krümel is opened with internet. If the app kept running in the background, it stays on the old version until you reload it or close it completely and open it again.",
+    reload: "Reload",
+  },
+
+  storageProblem: {
+    titleRescue: "Stored data cannot be read",
+    titleNone: "Storage not available",
+    alertTitle: "The data is not shown",
+    intro:
+      "The Krümel app has changed nothing and does not overwrite the data by itself. First save it as a file so the problem can be repaired later. Then you can start over.",
+    step1: "1. Download raw data",
+    downloadRaw: "Download raw data",
+    rawDownloaded: "The raw data has been downloaded as a file. Keep the file.",
+    step2: "2. Start over",
+    step2Text:
+      "This deletes the stored data in this browser. Tasks and completed items will then only exist in the downloaded file.",
+    startOver: "Start over …",
+    cannotRead:
+      "The browser storage cannot be read right now. Check whether saving website data is allowed (for example, not in a private window), then try again.",
+    retry: "Try again",
+    question: "Really start over?",
+    confirm: "Yes, delete data",
+    dialog:
+      "The stored data in this browser will be deleted. This cannot be undone. The downloaded file stays.",
+  },
+
+  demo: {
+    label: "Demo mode notice",
+    text: (tasks, completions) =>
+      `Demo mode: ${n(tasks)} sample tasks and ${n(completions)} completions are in this browser's demo storage. Real data stays untouched.`,
+    reload: "Reload sample data",
   },
 
   language: {

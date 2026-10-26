@@ -1,7 +1,14 @@
 import { expect, type Page, test } from "@playwright/test";
 import { demoData } from "../../src/demo/demoData";
 import { expectNoAccessibilityViolations } from "./axe";
-import { expectPageShown, FROZEN_TODAY, freezeClock, goToPage, startShared } from "./helpers";
+import {
+  expectPageShown,
+  FROZEN_TODAY,
+  freezeClock,
+  goToPage,
+  overflowing,
+  startShared,
+} from "./helpers";
 import { E2E_APP } from "./shared";
 
 // EN-a: German and English, the switch, and that it is kept on the device. The other tests run in
@@ -20,24 +27,6 @@ const english = (page: Page) => page.getByRole("button", { name: "English" });
 async function openApp(page: Page, hash: string) {
   await freezeClock(page);
   await startShared(page, demoData(FROZEN_TODAY), hash);
-}
-
-/** Texts or boxes that stick out of their box or the page: what a longer text would break. */
-async function overflowing(page: Page): Promise<string[]> {
-  return page.evaluate(() => {
-    const found: string[] = [];
-    if (document.documentElement.scrollWidth > document.documentElement.clientWidth) {
-      found.push("page scrolls sideways");
-    }
-    const selector =
-      ".btn, .main-nav__link, .segmented__option, .settings-row, h1, h2, .tile__title, .entry__title";
-    for (const element of document.querySelectorAll<HTMLElement>(selector)) {
-      if (element.offsetParent !== null && element.scrollWidth > element.clientWidth + 1) {
-        found.push(`${element.className}: ${element.textContent?.trim().slice(0, 40)}`);
-      }
-    }
-    return found;
-  });
 }
 
 test.describe("EN-a Sprachumschalter auf der Anmeldeseite", () => {
@@ -76,7 +65,8 @@ test.describe("EN-a Sprachumschalter auf der Anmeldeseite", () => {
   }) => {
     await page.goto(SIGN_IN_FRIEND);
     await expect(switchGroup(page)).toBeVisible();
-    const field = page.getByLabel(/E-Mail/);
+    // By id: the label changes with the language.
+    const field = page.locator("#anmelden-email");
     await field.fill("alex@example.org");
     await english(page).click();
     await expect(english(page)).toHaveAttribute("aria-pressed", "true");

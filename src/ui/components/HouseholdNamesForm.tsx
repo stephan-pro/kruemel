@@ -1,9 +1,10 @@
 import { useEffect, useState } from "preact/hooks";
 import { HOUSEHOLD_MESSAGES, NAME_MAX } from "../../auth/household";
-import { checkPersonNames } from "../../domain/personNames";
+import { checkPersonNames, type PersonNameError } from "../../domain/personNames";
 import type { Person } from "../../domain/task";
 import type { PersonNames } from "../../storage/appData";
 import { errorText } from "../errorText";
+import { personNameErrorText } from "../formErrors";
 import { HOUSEHOLD_TEXTS } from "../householdTexts";
 import { householdMessage } from "../pages/HouseholdPage";
 import { ErrorAlert } from "./Alert";
@@ -25,8 +26,9 @@ const HOUSEHOLD_FIELD = "haushalt-name";
 const OWN_FIELD = "eigener-name";
 
 interface Errors {
-  household?: string | undefined;
-  own?: string | undefined;
+  /** The household's name is too long. */
+  household?: boolean | undefined;
+  own?: PersonNameError | undefined;
 }
 
 /**
@@ -74,7 +76,7 @@ export function HouseholdNamesForm({
     const checked = checkPersonNames({ ...names, [me]: own });
     const found: Errors = {};
     if (household.trim().length > NAME_MAX) {
-      found.household = HOUSEHOLD_MESSAGES.invalidHouseholdName;
+      found.household = true;
     }
     if (!checked.ok) {
       // The other name is valid; a message there means the two are the same.
@@ -83,12 +85,12 @@ export function HouseholdNamesForm({
     setErrors(found);
     setSaveError(undefined);
     setSaved(false);
-    if (found.household !== undefined) {
-      report(HOUSEHOLD_FIELD, found.household);
+    if (found.household) {
+      report(HOUSEHOLD_FIELD, HOUSEHOLD_MESSAGES.invalidHouseholdName);
       return;
     }
     if (found.own !== undefined) {
-      report(OWN_FIELD, found.own);
+      report(OWN_FIELD, personNameErrorText(found.own));
       return;
     }
     setSaving(true);
@@ -133,7 +135,7 @@ export function HouseholdNamesForm({
           label={HOUSEHOLD_TEXTS.householdNameLabel}
           hint={HOUSEHOLD_TEXTS.householdNameHint}
           value={household}
-          error={errors.household}
+          error={errors.household ? HOUSEHOLD_MESSAGES.invalidHouseholdName : undefined}
           onInput={(value) => edit(() => setHousehold(value))}
         />
         <TextField
@@ -141,7 +143,7 @@ export function HouseholdNamesForm({
           label={HOUSEHOLD_TEXTS.ownNameLabel}
           hint={HOUSEHOLD_TEXTS.ownNameHint}
           value={own}
-          error={errors.own}
+          error={errors.own && personNameErrorText(errors.own)}
           onInput={(value) => edit(() => setOwn(value))}
         />
         {saveError && <ErrorAlert title={saveError.title}>{saveError.message}</ErrorAlert>}

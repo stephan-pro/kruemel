@@ -25,6 +25,9 @@ const valid: TaskFormInput = {
   unit: "week",
 };
 
+/** Any error: `firstTaskFormError` only looks at which fields have one. */
+const wrong = { code: "titleEmpty" } as const;
+
 function errorsOf(kind: "recurring" | "oneOff", input: Partial<TaskFormInput>) {
   const result = checkTaskForm(kind, { ...valid, ...input });
   return result.ok ? undefined : result.errors;
@@ -74,9 +77,7 @@ describe("F1 Wiederkehrende Aufgaben: Formular prüfen", () => {
   });
 
   it("F1 Ein leerer Titel wird beim Titel gemeldet", () => {
-    expect(errorsOf("recurring", { title: "   " })).toEqual({
-      title: "Bitte einen Titel eingeben.",
-    });
+    expect(errorsOf("recurring", { title: "   " })).toEqual({ title: { code: "titleEmpty" } });
   });
 
   it("F1 Ein zu langer Titel wird abgelehnt, die Höchstlänge selbst ist erlaubt", () => {
@@ -84,7 +85,7 @@ describe("F1 Wiederkehrende Aufgaben: Formular prüfen", () => {
 
     expect(checkTaskForm("recurring", { ...valid, title: longest }).ok).toBe(true);
     expect(errorsOf("recurring", { title: `${longest}x` })).toEqual({
-      title: `Der Titel darf höchstens ${MAX_TITLE_LENGTH} Zeichen lang sein.`,
+      title: { code: "titleTooLong", limit: MAX_TITLE_LENGTH },
     });
   });
 
@@ -93,26 +94,26 @@ describe("F1 Wiederkehrende Aufgaben: Formular prüfen", () => {
 
     expect(checkTaskForm("recurring", { ...valid, note: longest }).ok).toBe(true);
     expect(errorsOf("recurring", { note: `${longest}x` })).toEqual({
-      note: `Die Notiz darf höchstens ${MAX_NOTE_LENGTH} Zeichen lang sein.`,
+      note: { code: "noteTooLong", limit: MAX_NOTE_LENGTH },
     });
   });
 
   it("F1 Ohne Zuständigkeit wird beim Feld „assignee“ gemeldet", () => {
     expect(errorsOf("recurring", { assignee: "" })).toEqual({
-      assignee: "Bitte auswählen, wer zuständig ist.",
+      assignee: { code: "assigneeMissing" },
     });
     expect(errorsOf("recurring", { assignee: "niemand" })).toEqual({
-      assignee: "Bitte auswählen, wer zuständig ist.",
+      assignee: { code: "assigneeMissing" },
     });
   });
 
   it("F1 Der Rhythmus braucht eine ganze Zahl ab 1", () => {
     expect(errorsOf("recurring", { interval: "" })).toEqual({
-      interval: "Bitte eine Zahl eingeben.",
+      interval: { code: "intervalEmpty" },
     });
     for (const interval of ["0", "-1", "1,5", "1.5", "zwei", "2 Wochen"]) {
       expect(errorsOf("recurring", { interval })).toEqual({
-        interval: "Bitte eine ganze Zahl ab 1 eingeben.",
+        interval: { code: "intervalInvalid" },
       });
     }
   });
@@ -122,7 +123,7 @@ describe("F1 Wiederkehrende Aufgaben: Formular prüfen", () => {
       checkTaskForm("recurring", { ...valid, interval: String(MAX_RECURRENCE_INTERVAL) }).ok,
     ).toBe(true);
     expect(errorsOf("recurring", { interval: String(MAX_RECURRENCE_INTERVAL + 1) })).toEqual({
-      interval: `Bitte höchstens ${MAX_RECURRENCE_INTERVAL} eingeben.`,
+      interval: { code: "intervalTooBig", limit: MAX_RECURRENCE_INTERVAL },
     });
   });
 
@@ -131,16 +132,14 @@ describe("F1 Wiederkehrende Aufgaben: Formular prüfen", () => {
       const result = checkTaskForm("recurring", { ...valid, unit, interval: "4" });
       expect(result.ok && result.values.recurrence).toEqual({ unit, interval: 4 });
     }
-    expect(errorsOf("recurring", { unit: "year" })).toEqual({
-      unit: "Bitte Tage, Wochen oder Monate auswählen.",
-    });
+    expect(errorsOf("recurring", { unit: "year" })).toEqual({ unit: { code: "unitMissing" } });
   });
 
   it("F1 Das Datum des ersten Termins muss angegeben und echt sein", () => {
-    expect(errorsOf("recurring", { dueDate: "" })).toEqual({ dueDate: "Bitte ein Datum angeben." });
+    expect(errorsOf("recurring", { dueDate: "" })).toEqual({ dueDate: { code: "dateEmpty" } });
     for (const dueDate of ["2026-02-30", "19.10.2026", "morgen", "275760-09-13"]) {
       expect(errorsOf("recurring", { dueDate })).toEqual({
-        dueDate: "Bitte ein gültiges Datum angeben.",
+        dueDate: { code: "dateInvalid" },
       });
     }
   });
@@ -150,17 +149,17 @@ describe("F1 Wiederkehrende Aufgaben: Formular prüfen", () => {
     expect(checkTaskForm("recurring", { ...valid, dueDate: "2100-12-31" }).ok).toBe(true);
     for (const dueDate of ["1999-12-31", "2101-01-01"]) {
       expect(errorsOf("recurring", { dueDate })).toEqual({
-        dueDate: "Bitte ein Datum zwischen 2000 und 2100 wählen.",
+        dueDate: { code: "dateOutOfRange" },
       });
     }
   });
 
   it("F1 Fehlt mehr als ein Feld, werden alle gemeldet, jeweils bei ihrem Feld", () => {
     expect(errorsOf("recurring", { title: "", interval: "", dueDate: "", assignee: "" })).toEqual({
-      title: "Bitte einen Titel eingeben.",
-      interval: "Bitte eine Zahl eingeben.",
-      dueDate: "Bitte ein Datum angeben.",
-      assignee: "Bitte auswählen, wer zuständig ist.",
+      title: { code: "titleEmpty" },
+      interval: { code: "intervalEmpty" },
+      dueDate: { code: "dateEmpty" },
+      assignee: { code: "assigneeMissing" },
     });
   });
 });
@@ -182,7 +181,7 @@ describe("F3 Einmalige Aufgaben: Formular prüfen", () => {
   });
 
   it("F3 Das Fälligkeitsdatum ist Pflicht", () => {
-    expect(errorsOf("oneOff", { dueDate: "" })).toEqual({ dueDate: "Bitte ein Datum angeben." });
+    expect(errorsOf("oneOff", { dueDate: "" })).toEqual({ dueDate: { code: "dateEmpty" } });
   });
 });
 
@@ -196,9 +195,7 @@ describe("F8 Symbol im Formular", () => {
 
   it("F8 Ein unbekanntes oder fehlendes Symbol wird beim Feld „symbol“ gemeldet", () => {
     for (const symbol of ["", "rocket"]) {
-      expect(errorsOf("recurring", { symbol })).toEqual({
-        symbol: "Bitte ein Symbol auswählen.",
-      });
+      expect(errorsOf("recurring", { symbol })).toEqual({ symbol: { code: "symbolMissing" } });
     }
   });
 });
@@ -233,18 +230,19 @@ describe("F4 Checkliste im Formular", () => {
 
   it("F4 Ein Eintrag braucht einen Text, höchstens so lang wie erlaubt", () => {
     expect(checklistItemError("Milch")).toBeUndefined();
-    expect(checklistItemError("   ")).toBe("Bitte einen Text für den Eintrag eingeben.");
+    expect(checklistItemError("   ")).toEqual({ code: "checklistTextEmpty" });
     expect(checklistItemError("x".repeat(MAX_CHECKLIST_ITEM_LENGTH))).toBeUndefined();
     expect(checklistItemError(` ${"x".repeat(MAX_CHECKLIST_ITEM_LENGTH)} `)).toBeUndefined();
-    expect(checklistItemError("x".repeat(MAX_CHECKLIST_ITEM_LENGTH + 1))).toBe(
-      `Ein Eintrag darf höchstens ${MAX_CHECKLIST_ITEM_LENGTH} Zeichen lang sein.`,
-    );
+    expect(checklistItemError("x".repeat(MAX_CHECKLIST_ITEM_LENGTH + 1))).toEqual({
+      code: "checklistTextTooLong",
+      limit: MAX_CHECKLIST_ITEM_LENGTH,
+    });
   });
 
   it("F4 Ein leerer oder zu langer Eintrag in der Checkliste wird beim Feld „checklist“ gemeldet", () => {
     for (const text of ["  ", "x".repeat(MAX_CHECKLIST_ITEM_LENGTH + 1)]) {
       expect(errorsOf("recurring", { checklist: [{ id: "i-1", text, checked: false }] })).toEqual({
-        checklist: `Jeder Eintrag braucht einen Text mit höchstens ${MAX_CHECKLIST_ITEM_LENGTH} Zeichen.`,
+        checklist: { code: "checklistItemInvalid", limit: MAX_CHECKLIST_ITEM_LENGTH },
       });
     }
   });
@@ -257,24 +255,24 @@ describe("F4 Checkliste im Formular", () => {
     }));
 
     expect(errorsOf("oneOff", { checklist: many })).toEqual({
-      checklist: `Eine Checkliste darf höchstens ${MAX_CHECKLIST_ITEMS} Einträge haben.`,
+      checklist: { code: "checklistTooMany", limit: MAX_CHECKLIST_ITEMS },
     });
     expect(errorsOf("oneOff", { checklist: many.slice(1) })).toBeUndefined();
   });
 
   it("F4 Das Feld „checklist“ kommt als letztes an die Reihe, wenn der Fokus gesetzt wird", () => {
-    expect(firstTaskFormError({ checklist: "x", note: "x" })).toBe("note");
-    expect(firstTaskFormError({ checklist: "x" })).toBe("checklist");
+    expect(firstTaskFormError({ checklist: wrong, note: wrong })).toBe("note");
+    expect(firstTaskFormError({ checklist: wrong })).toBe("checklist");
   });
 });
 
 describe("Formular: Fokus auf das erste fehlerhafte Feld", () => {
   it("Der Fokus gehört dem Feld, das im Formular zuerst kommt", () => {
-    expect(firstTaskFormError({ note: "x", assignee: "x", interval: "x" })).toBe("interval");
-    expect(firstTaskFormError({ dueDate: "x", assignee: "x" })).toBe("dueDate");
-    expect(firstTaskFormError({ assignee: "x", title: "x" })).toBe("title");
-    expect(firstTaskFormError({ note: "x" })).toBe("note");
-    expect(firstTaskFormError({ interval: "x", symbol: "x" })).toBe("symbol");
+    expect(firstTaskFormError({ note: wrong, assignee: wrong, interval: wrong })).toBe("interval");
+    expect(firstTaskFormError({ dueDate: wrong, assignee: wrong })).toBe("dueDate");
+    expect(firstTaskFormError({ assignee: wrong, title: wrong })).toBe("title");
+    expect(firstTaskFormError({ note: wrong })).toBe("note");
+    expect(firstTaskFormError({ interval: wrong, symbol: wrong })).toBe("symbol");
   });
 
   it("Ohne Fehler gibt es kein Feld, das den Fokus bekommt", () => {

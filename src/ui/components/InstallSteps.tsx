@@ -1,6 +1,8 @@
 import { EllipsisVertical, Share, SquarePlus } from "lucide-preact";
 import type { ComponentChildren } from "preact";
+import { t } from "../../i18n";
 import type { InstallWay } from "../install";
+import { Rich } from "./Rich";
 
 interface InstallStepsProps {
   /** `ios`, `firefoxAndroid` or `other`; the browser's own question needs no steps. */
@@ -14,35 +16,24 @@ interface InstallStepsProps {
  * to tap, drawn like the browser shows it (decoration: the text says the same).
  */
 export function InstallSteps({ way, shared = false }: InstallStepsProps) {
+  const words = t().install;
   if (way === "ios") {
     return (
       <>
         <ol class="install-steps">
           <Step picture={<Share size={24} />}>
-            In Safari auf <strong>Teilen</strong> tippen (Quadrat mit Pfeil nach oben, unten in der
-            Leiste oder neben der Adresse). Steht dort nur <strong>•••</strong>, erst darauf tippen.
+            <Rich text={words.iosShare} />
           </Step>
           <Step picture={<SquarePlus size={24} />}>
-            In der Liste <strong>Zum Home-Bildschirm</strong> wählen (eventuell weiter nach unten
-            wischen oder auf <strong>Mehr</strong> tippen).
+            <Rich text={words.iosAdd} />
           </Step>
-          <Step picture={<span class="install-steps__word">Hinzufügen</span>}>
-            Oben rechts auf <strong>Hinzufügen</strong> tippen. Krümel liegt jetzt auf dem
-            Home-Bildschirm.
+          <Step picture={<span class="install-steps__word">{words.iosConfirmWord}</span>}>
+            <Rich text={words.iosConfirm} />
           </Step>
         </ol>
-        {shared ? (
-          <p class="install-note">
-            <strong>Wichtig:</strong> Die App vom Home-Bildschirm ist von Safari getrennt. Melde
-            dich dort einmal mit deiner E-Mail-Adresse an, dann sind eure Daten da.
-          </p>
-        ) : (
-          <p class="install-note">
-            <strong>Wichtig:</strong> Die App vom Home-Bildschirm hat eigene Daten, getrennt von
-            Safari. Was du schon in Safari eingetragen hast, nimmst du über „Sicherung“ mit: hier
-            herunterladen, in der App einspielen.
-          </p>
-        )}
+        <p class="install-note">
+          <Rich text={shared ? words.iosNoteShared : words.iosNote} />
+        </p>
       </>
     );
   }
@@ -51,26 +42,22 @@ export function InstallSteps({ way, shared = false }: InstallStepsProps) {
       <>
         <ol class="install-steps">
           <Step picture={<EllipsisVertical size={24} />}>
-            In Firefox das <strong>Menü ⋮</strong> öffnen (neben der Adresse).
+            <Rich text={words.firefoxMenu} />
           </Step>
           <Step picture={<SquarePlus size={24} />}>
-            <strong>Zum Startbildschirm hinzufügen</strong> wählen (heißt je nach Version auch{" "}
-            <strong>App installieren</strong>) und mit <strong>Hinzufügen</strong> bestätigen.
+            <Rich text={words.firefoxAdd} />
           </Step>
         </ol>
-        <XiaomiNote browser="Firefox" />
+        <XiaomiNote firefox />
       </>
     );
   }
   return (
     <>
       <p>
-        Bietet dein Browser es an, steht im Browsermenü <strong>App installieren</strong> oder{" "}
-        <strong>Zum Startbildschirm hinzufügen</strong>. Am einfachsten geht es auf dem iPhone in
-        Safari und auf Android-Handys in Chrome oder Firefox; Firefox am PC kann keine Apps
-        installieren.
+        <Rich text={words.other} />
       </p>
-      {/Android/.test(navigator.userAgent) && <XiaomiNote browser="der Browser" />}
+      {/Android/.test(navigator.userAgent) && <XiaomiNote firefox={false} />}
     </>
   );
 }
@@ -93,16 +80,10 @@ function Step({
 }
 
 /** Seen in the device test: on Xiaomi phones nothing happens without this permission, no message. */
-function XiaomiNote({ browser }: { readonly browser: string }) {
+function XiaomiNote({ firefox }: { readonly firefox: boolean }) {
   return (
     <p class="install-note">
-      <strong>Passiert beim Hinzufügen nichts?</strong> Auf Handys von Xiaomi, Redmi und POCO
-      braucht {browser} dafür eine Erlaubnis: in den Einstellungen des Handys{" "}
-      <strong>
-        Apps → Apps verwalten → {browser === "Firefox" ? "Firefox" : "Name des Browsers"} → Weitere
-        Berechtigungen → Startbildschirm-Verknüpfungen
-      </strong>{" "}
-      erlauben, dann noch einmal versuchen.
+      <Rich text={t().install.xiaomi(firefox)} />
     </p>
   );
 }

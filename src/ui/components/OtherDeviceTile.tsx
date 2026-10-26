@@ -1,5 +1,6 @@
 import { QrCode as QrCodeIcon } from "lucide-preact";
 import { useId, useState } from "preact/hooks";
+import { t } from "../../i18n";
 import { QrCode } from "./QrCode";
 
 interface OtherDeviceTileProps {
@@ -16,24 +17,14 @@ interface OtherDeviceTileProps {
 export function OtherDeviceTile({ address, shared = false }: OtherDeviceTileProps) {
   const [shown, setShown] = useState(false);
   const codeId = useId();
+  const words = t().otherDevice;
 
   return (
     <section class="tile tile--narrow form" aria-labelledby="anderes-geraet">
       <h2 class="tile__title" id="anderes-geraet">
-        Auf anderem Gerät öffnen
+        {words.title}
       </h2>
-      {shared ? (
-        <p class="muted">
-          Den QR-Code mit der Kamera eines Handys scannen, um Krümel dort zu öffnen. Melde dich dort
-          mit derselben E-Mail-Adresse an, dann sind eure Daten da.
-        </p>
-      ) : (
-        <p class="muted">
-          Den QR-Code mit der Kamera eines Handys scannen, um Krümel dort zu öffnen. Die Daten
-          kommen nicht mit: Jedes Gerät hat seine eigenen. Übertragen lassen sie sich mit
-          „Sicherung“.
-        </p>
-      )}
+      <p class="muted">{shared ? words.shared : words.plain}</p>
       <div class="button-row">
         <button
           class="btn btn--secondary"
@@ -43,11 +34,11 @@ export function OtherDeviceTile({ address, shared = false }: OtherDeviceTileProp
           onClick={() => setShown(!shown)}
         >
           <QrCodeIcon size={20} />
-          {shown ? "QR-Code ausblenden" : "QR-Code zeigen"}
+          {shown ? words.hide : words.show}
         </button>
       </div>
       <div class="qr" id={codeId} hidden={!shown}>
-        {shown && <QrCode content={address} label={`QR-Code mit der Adresse ${address}`} />}
+        {shown && <QrCode content={address} label={words.codeLabel(address)} />}
         <p class="qr__address">{address}</p>
       </div>
     </section>

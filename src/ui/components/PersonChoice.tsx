@@ -1,4 +1,5 @@
 import type { Person } from "../../domain/task";
+import { t } from "../../i18n";
 import { RadioGroup } from "./fields";
 
 interface PersonChoiceProps {
@@ -14,7 +15,7 @@ export function PersonChoice({ labels, value, onChange, error }: PersonChoicePro
   return (
     <RadioGroup
       name="ich-bin"
-      legend="Ich bin"
+      legend={t().names.iAm}
       choices={[
         { value: "personA", label: labels.personA },
         { value: "personB", label: labels.personB },

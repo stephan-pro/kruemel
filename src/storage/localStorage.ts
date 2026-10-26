@@ -33,7 +33,7 @@ export function readKey(store: KeyValueStore, key: string): string | null {
   try {
     return store.getItem(key);
   } catch (error) {
-    throw new StorageError("Der Browser-Speicher ist nicht verfügbar.", [String(error)]);
+    throw new StorageError("unavailable", [String(error)]);
   }
 }
 
@@ -41,10 +41,7 @@ export function writeKey(store: KeyValueStore, key: string, value: string): void
   try {
     store.setItem(key, value);
   } catch (error) {
-    throw new StorageError(
-      "Speichern nicht möglich: Der Browser-Speicher ist voll oder gesperrt. Bitte jetzt eine Sicherung herunterladen.",
-      [String(error)],
-    );
+    throw new StorageError("full", [String(error)]);
   }
 }
 
@@ -52,9 +49,7 @@ export function removeKey(store: KeyValueStore, key: string): void {
   try {
     store.removeItem(key);
   } catch (error) {
-    throw new StorageError("Löschen nicht möglich: Der Browser-Speicher ist gesperrt.", [
-      String(error),
-    ]);
+    throw new StorageError("blocked", [String(error)]);
   }
 }
 
@@ -76,14 +71,11 @@ export function createLocalStorage(options: LocalStorageOptions): AppStorage {
       try {
         parsed = JSON.parse(text);
       } catch {
-        throw new StorageError("Die gespeicherten Daten sind beschädigt.");
+        throw new StorageError("damaged");
       }
       const result = parseAppData(parsed);
       if (!result.ok) {
-        throw new StorageError(
-          "Die gespeicherten Daten sind unvollständig oder beschädigt.",
-          result.errors,
-        );
+        throw new StorageError("incomplete", result.errors);
       }
       return result.data;
     },

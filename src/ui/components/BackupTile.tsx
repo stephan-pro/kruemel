@@ -1,13 +1,14 @@
 import { Download, Upload } from "lucide-preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { CalendarDay } from "../../domain/date";
+import { t } from "../../i18n";
 import type { AppData } from "../../storage/appData";
 import {
   autoBackupFileName,
   exportData,
   exportFileName,
   importData,
-  importSizeError,
+  importTooBig,
 } from "../../storage/exportImport";
 import { downloadTextFile } from "../download";
 import { errorText } from "../errorText";
@@ -35,10 +36,16 @@ interface PendingImport {
   readonly fileName: string;
 }
 
+/**
+ * A text chosen now and read when it is drawn, so a switch of the language changes a message
+ * that is already on the screen.
+ */
+type Later = () => string;
+
 /** Why a file was not taken: a sentence, plus where exactly it is wrong. */
 interface ImportProblem {
-  readonly title: string;
-  readonly message: string;
+  readonly title: Later;
+  readonly message: Later;
   readonly details: readonly string[];
 }
 
@@ -53,9 +60,11 @@ function contentsOf(data: AppData): string {
  */
 export function BackupTile({ data, today, shared = false, onImport }: BackupTileProps) {
   /** Says that nothing was changed: the first thing to know after a failed import. */
-  const unchanged = (reason: string) =>
-    `${reason} ${shared ? SHARED_TEXTS.unchanged : "Deine Daten auf diesem Gerät sind unverändert."}`;
-  const [status, setStatus] = useState("");
+  const unchanged = (reason: Later): Later => {
+    return () => `${reason()} ${shared ? SHARED_TEXTS.unchanged : t().backup.unchanged}`;
+  };
+  const importFailed: Later = () => t().backup.importFailed;
+  const [status, setStatus] = useState<{ readonly text: Later }>();
   const [problem, setProblem] = useState<ImportProblem>();
   const [pending, setPending] = useState<PendingImport>();
   const [returnFocusCount, setReturnFocusCount] = useState(0);
@@ -76,12 +85,12 @@ export function BackupTile({ data, today, shared = false, onImport }: BackupTile
     setProblem(undefined);
     try {
       downloadTextFile(fileName, exportData(data), "application/json");
-      setStatus(exportNotice(fileName));
+      setStatus({ text: () => exportNotice(fileName) });
     } catch (error) {
-      setStatus("");
+      setStatus(undefined);
       setProblem({
-        title: "Sicherung nicht heruntergeladen",
-        message: errorText(error),
+        title: () => t().backup.downloadFailed,
+        message: () => errorText(error),
         details: [],
       });
     }
@@ -90,10 +99,10 @@ export function BackupTile({ data, today, shared = false, onImport }: BackupTile
   function chooseFile(button: HTMLButtonElement) {
     importButton.current = button;
     if (shared && !navigator.onLine) {
-      setStatus("");
+      setStatus(undefined);
       setProblem({
-        title: "Sicherung nicht eingespielt",
-        message: unchanged(SHARED_TEXTS.importOffline),
+        title: importFailed,
+        message: unchanged(() => SHARED_TEXTS.importOffline),
         details: [],
       });
       return;
@@ -110,11 +119,14 @@ export function BackupTile({ data, today, shared = false, onImport }: BackupTile
     if (file === undefined) {
       return;
     }
-    setStatus("");
+    setStatus(undefined);
     setProblem(undefined);
-    const tooBig = importSizeError(file.size);
-    if (tooBig !== undefined) {
-      setProblem({ title: "Sicherung nicht eingespielt", message: unchanged(tooBig), details: [] });
+    if (importTooBig(file.size)) {
+      setProblem({
+        title: importFailed,
+        message: unchanged(() => t().backup.tooBig),
+        details: [],
+      });
       reset();
       return;
     }
@@ -123,8 +135,8 @@ export function BackupTile({ data, today, shared = false, onImport }: BackupTile
       text = await file.text();
     } catch {
       setProblem({
-        title: "Sicherung nicht eingespielt",
-        message: unchanged("Die Datei lässt sich nicht lesen."),
+        title: importFailed,
+        message: unchanged(() => t().backup.unreadable),
         details: [],
       });
       reset();
@@ -136,8 +148,8 @@ export function BackupTile({ data, today, shared = false, onImport }: BackupTile
       setPending({ data: result.data, fileName: file.name });
     } else {
       setProblem({
-        title: "Sicherung nicht eingespielt",
-        message: unchanged("Die Datei ist keine brauchbare Sicherung."),
+        title: importFailed,
+        message: unchanged(() => t().backup.notABackup),
         details: result.errors,
       });
     }
@@ -159,11 +171,11 @@ export function BackupTile({ data, today, shared = false, onImport }: BackupTile
     try {
       downloadTextFile(backupName, exportData(data), "application/json");
       await onImport(chosen.data);
-      setStatus(importNotice(contentsOf(chosen.data), backupName));
+      setStatus({ text: () => importNotice(contentsOf(chosen.data), backupName) });
     } catch (error) {
       setProblem({
-        title: "Sicherung nicht eingespielt",
-        message: unchanged(errorText(error)),
+        title: importFailed,
+        message: unchanged(() => errorText(error)),
         details: [],
       });
     } finally {
@@ -172,36 +184,30 @@ export function BackupTile({ data, today, shared = false, onImport }: BackupTile
     }
   }
 
+  const words = t().backup;
   return (
     <section class="tile tile--narrow form" aria-labelledby="sicherung">
       <h2 class="tile__title" id="sicherung">
-        Sicherung
+        {words.title}
       </h2>
       <p class="muted">
-        {shared
-          ? SHARED_TEXTS.backupIntro
-          : "Alle Aufgaben, Erledigungen und die Namen als Datei, zum Aufbewahren oder zum Übertragen."}{" "}
-        „Ich bin“ und die Darstellung gehören zum Gerät und stehen nicht darin.
+        {shared ? SHARED_TEXTS.backupIntro : words.intro} {words.deviceNote}
       </p>
 
       <div class="backup__block">
-        <h3 class="backup__title">Herunterladen</h3>
-        <p>Jetzt auf diesem Gerät: {contentsOf(data)}.</p>
+        <h3 class="backup__title">{words.downloadTitle}</h3>
+        <p>{words.nowOnDevice(contentsOf(data))}</p>
         <div class="button-row">
           <button class="btn btn--primary" type="button" onClick={download}>
             <Download size={20} />
-            Sicherung herunterladen
+            {words.download}
           </button>
         </div>
       </div>
 
       <div class="backup__block">
-        <h3 class="backup__title">Einspielen</h3>
-        <p>
-          {shared
-            ? SHARED_TEXTS.importIntro
-            : "Ersetzt alle Daten auf diesem Gerät durch die aus einer Sicherungsdatei. Vorher lädt die App automatisch eine Sicherung der jetzigen Daten herunter."}
-        </p>
+        <h3 class="backup__title">{words.importTitle}</h3>
+        <p>{shared ? SHARED_TEXTS.importIntro : words.importIntro}</p>
         <div class="button-row">
           <button
             class="btn btn--secondary"
@@ -209,7 +215,7 @@ export function BackupTile({ data, today, shared = false, onImport }: BackupTile
             onClick={(event) => chooseFile(event.currentTarget)}
           >
             <Upload size={20} />
-            Sicherung einspielen …
+            {words.importButton}
           </button>
         </div>
         {/* Opened by the button above; hidden, so the button is the one control to find and focus. */}
@@ -224,36 +230,31 @@ export function BackupTile({ data, today, shared = false, onImport }: BackupTile
       </div>
 
       {problem && (
-        <ErrorAlert title={problem.title}>
-          <p>{problem.message}</p>
+        <ErrorAlert title={problem.title()}>
+          <p>{problem.message()}</p>
           <ErrorDetails details={problem.details} />
         </ErrorAlert>
       )}
       <p class="form-status" role="status">
-        {status}
+        {status?.text() ?? ""}
       </p>
 
       <ConfirmDialog
         open={pending !== undefined}
-        title="Sicherung einspielen?"
-        confirmLabel="Ja, Daten ersetzen"
+        title={words.question}
+        confirmLabel={words.confirm}
         onConfirm={() => void confirm()}
         onCancel={cancel}
       >
         {pending && (
           <>
-            <p>
-              Die Datei „{pending.fileName}“ enthält {contentsOf(pending.data)}.
-            </p>
+            <p>{words.fileContains(pending.fileName, contentsOf(pending.data))}</p>
             <p>
               {shared
                 ? SHARED_TEXTS.importReplaces(contentsOf(data))
-                : `Auf diesem Gerät sind jetzt ${contentsOf(data)}. Sie werden alle ersetzt; das lässt sich nicht rückgängig machen.`}
+                : words.replaces(contentsOf(data))}
             </p>
-            <p>
-              Vorher lädt die App automatisch eine Sicherung der jetzigen Daten als „
-              {autoBackupFileName(today)}“ herunter.
-            </p>
+            <p>{words.autoCopy(autoBackupFileName(today))}</p>
           </>
         )}
       </ConfirmDialog>

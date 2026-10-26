@@ -1,5 +1,12 @@
 import { useEffect, useState } from "preact/hooks";
-import { AUTH_MESSAGES, type Auth, AuthError, emailAddress, type Session } from "../../auth/auth";
+import {
+  AUTH_MESSAGES,
+  type Auth,
+  AuthError,
+  type AuthFailure,
+  emailAddress,
+  type Session,
+} from "../../auth/auth";
 import { ACCOUNT_TEXTS, CODE_DIGITS, RESEND_AFTER_SECONDS } from "../accountTexts";
 import { TextField, useFieldErrorFocus } from "../components/fields";
 import { LanguageSwitch } from "../components/LanguageSwitch";
@@ -23,9 +30,20 @@ interface SignInPageProps {
 const EMAIL_FIELD = "anmelden-email";
 const CODE_FIELD = "anmelden-code";
 
-/** What a refused step says to the person; the service's own (English) text is never shown. */
-function messageOf(error: unknown): string {
-  return AUTH_MESSAGES[error instanceof AuthError ? error.failure : "unknown"];
+/** What is wrong at a field: a refused step, or a code that cannot be right at first sight. */
+type Problem = AuthFailure | "codeFormat";
+
+/** Why a step was refused; the service's own (English) text is never shown. */
+function problemOf(error: unknown): Problem {
+  return error instanceof AuthError ? error.failure : "unknown";
+}
+
+/**
+ * What a problem says to the person, in the language set now. The page keeps the problem, not
+ * the sentence, so a switch of the language changes a message that is on the screen.
+ */
+function problemText(problem: Problem): string {
+  return problem === "codeFormat" ? ACCOUNT_TEXTS.codeFormat : AUTH_MESSAGES[problem];
 }
 
 /**
@@ -37,8 +55,9 @@ export function SignInPage({ auth, onSignedIn, notice: farewell, invite }: SignI
   const [step, setStep] = useState<CodeStep | undefined>(() => rememberedStep());
   const [email, setEmail] = useState(step?.email ?? "");
   const [code, setCode] = useState("");
-  const [error, setError] = useState<string>();
-  const [notice, setNotice] = useState<string>();
+  const [error, setError] = useState<Problem>();
+  /** A new code was sent on request ("Code erneut senden"). */
+  const [resent, setResent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [canResend, setCanResend] = useState(false);
   /** Each refusal moves the focus to its field or is read out once. */
@@ -58,10 +77,10 @@ export function SignInPage({ auth, onSignedIn, notice: farewell, invite }: SignI
     return () => clearTimeout(timer);
   }, [step]);
 
-  function fail(message: string, fieldId: string) {
-    setError(message);
-    setNotice(undefined);
-    report(fieldId, message);
+  function fail(problem: Problem, fieldId: string) {
+    setError(problem);
+    setResent(false);
+    report(fieldId, problemText(problem));
   }
 
   /** Runs one step at a time; a second tap while it runs does nothing. */
@@ -73,7 +92,7 @@ export function SignInPage({ auth, onSignedIn, notice: farewell, invite }: SignI
     try {
       await action();
     } catch (refused) {
-      fail(messageOf(refused), fieldId);
+      fail(problemOf(refused), fieldId);
     } finally {
       setBusy(false);
     }
@@ -93,7 +112,7 @@ export function SignInPage({ auth, onSignedIn, notice: farewell, invite }: SignI
     event.preventDefault();
     void run(async () => {
       await sendCode(emailAddress(email));
-      setNotice(undefined);
+      setResent(false);
     }, EMAIL_FIELD);
   }
 
@@ -104,7 +123,7 @@ export function SignInPage({ auth, onSignedIn, notice: farewell, invite }: SignI
     }
     const digits = code.replace(/\s/g, "");
     if (!new RegExp(`^\\d{${CODE_DIGITS}}$`).test(digits)) {
-      fail(ACCOUNT_TEXTS.codeFormat, CODE_FIELD);
+      fail("codeFormat", CODE_FIELD);
       return;
     }
     void run(async () => {
@@ -120,7 +139,7 @@ export function SignInPage({ auth, onSignedIn, notice: farewell, invite }: SignI
     }
     void run(async () => {
       await sendCode(step.email);
-      setNotice(ACCOUNT_TEXTS.codeResent);
+      setResent(true);
       document.getElementById(CODE_FIELD)?.focus();
     }, CODE_FIELD);
   }
@@ -129,8 +148,10 @@ export function SignInPage({ auth, onSignedIn, notice: farewell, invite }: SignI
     rememberStep(undefined);
     setStep(undefined);
     setError(undefined);
-    setNotice(undefined);
+    setResent(false);
   }
+
+  const errorMessage = error === undefined ? undefined : problemText(error);
 
   if (step === undefined) {
     return (
@@ -153,7 +174,7 @@ export function SignInPage({ auth, onSignedIn, notice: farewell, invite }: SignI
               type="email"
               autocomplete="email"
               value={email}
-              error={error}
+              error={errorMessage}
               onInput={setEmail}
             />
             <div class="button-row">
@@ -184,7 +205,7 @@ export function SignInPage({ auth, onSignedIn, notice: farewell, invite }: SignI
             autocomplete="one-time-code"
             narrow
             value={code}
-            error={error}
+            error={errorMessage}
             onInput={setCode}
           />
           <div class="button-row">
@@ -193,7 +214,7 @@ export function SignInPage({ auth, onSignedIn, notice: farewell, invite }: SignI
             </button>
           </div>
           <p class="form-status" role="status">
-            {notice ?? ""}
+            {resent ? ACCOUNT_TEXTS.codeResent : ""}
           </p>
           {status}
         </form>

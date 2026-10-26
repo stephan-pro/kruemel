@@ -5,7 +5,9 @@ import {
   type PersonNameInput,
 } from "../../domain/personNames";
 import type { Person } from "../../domain/task";
+import { t } from "../../i18n";
 import { errorText } from "../errorText";
+import { personNameErrorText } from "../formErrors";
 import { ErrorAlert } from "./Alert";
 import { TextField, useFieldErrorFocus } from "./fields";
 import { PersonChoice } from "./PersonChoice";
@@ -16,12 +18,13 @@ interface NamesFormProps {
   readonly submitLabel: string;
   /** Saves; rejects with an `Error` whose message is shown to the user. */
   readonly onSubmit: (names: PersonNameInput, person: Person) => Promise<void>;
-  /** Shown (and announced) after a successful save, e.g. "Gespeichert." */
+  /** Shown (and announced) after a successful save, e.g. "Saved." */
   readonly savedMessage?: string;
 }
 
 interface FieldErrors extends PersonNameErrors {
-  person?: string;
+  /** "Ich bin" was not chosen. */
+  person?: boolean;
 }
 
 /** The two names plus "Ich bin"; used for the first-time setup and on the settings page. */
@@ -53,17 +56,17 @@ export function NamesForm({
     const checked = checkPersonNames(names);
     const found: FieldErrors = checked.ok ? {} : { ...checked.errors };
     if (person === undefined) {
-      found.person = "Bitte auswählen, wer dieses Gerät benutzt.";
+      found.person = true;
     }
     setErrors(found);
     setSaveError(undefined);
     if (!checked.ok || person === undefined) {
       if (found.personA) {
-        report("name-personA", found.personA);
+        report("name-personA", personNameErrorText(found.personA));
       } else if (found.personB) {
-        report("name-personB", found.personB);
+        report("name-personB", personNameErrorText(found.personB));
       } else {
-        report("ich-bin-personA", found.person ?? "");
+        report("ich-bin-personA", t().formErrors.personMissing);
       }
       return;
     }
@@ -79,9 +82,10 @@ export function NamesForm({
     }
   }
 
+  const words = t().names;
   const labels = {
-    personA: names.personA.trim() || "Erste Person",
-    personB: names.personB.trim() || "Zweite Person",
+    personA: names.personA.trim() || words.firstPerson,
+    personB: names.personB.trim() || words.secondPerson,
   };
 
   return (
@@ -89,25 +93,25 @@ export function NamesForm({
       <form class="form" onSubmit={submit} noValidate>
         <TextField
           id="name-personA"
-          label="Name der ersten Person"
+          label={words.firstName}
           value={names.personA}
-          error={errors.personA}
+          error={errors.personA && personNameErrorText(errors.personA)}
           onInput={(value) => edit(() => setNames({ ...names, personA: value }))}
         />
         <TextField
           id="name-personB"
-          label="Name der zweiten Person"
+          label={words.secondName}
           value={names.personB}
-          error={errors.personB}
+          error={errors.personB && personNameErrorText(errors.personB)}
           onInput={(value) => edit(() => setNames({ ...names, personB: value }))}
         />
         <PersonChoice
           labels={labels}
           value={person}
-          error={errors.person}
+          error={errors.person ? t().formErrors.personMissing : undefined}
           onChange={(chosen) => edit(() => setPerson(chosen))}
         />
-        {saveError && <ErrorAlert title="Nicht gespeichert">{saveError}</ErrorAlert>}
+        {saveError && <ErrorAlert title={t().common.notSaved}>{saveError}</ErrorAlert>}
         <div class="button-row">
           <button class="btn btn--primary" type="submit">
             {submitLabel}

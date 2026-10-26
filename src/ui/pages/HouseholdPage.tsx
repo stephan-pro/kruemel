@@ -7,6 +7,7 @@ import { ErrorAlert } from "../components/Alert";
 import { TextField, useFieldErrorFocus } from "../components/fields";
 import { LegalLinks } from "../components/LegalLinks";
 import { PageTitle } from "../components/PageTitle";
+import { personNameErrorText } from "../formErrors";
 import { HOUSEHOLD_TEXTS, LEAVE_TEXTS } from "../householdTexts";
 import { friendInviteTokenFrom, inviteTokenFrom } from "../route";
 
@@ -17,6 +18,10 @@ const LINK_FIELD = "haushalt-einladung";
 /** What a refused step says to the person. */
 export function householdMessage(error: unknown): string {
   return HOUSEHOLD_MESSAGES[error instanceof HouseholdError ? error.failure : "unknown"];
+}
+
+function linkErrorText(problem: "friend" | "notAnInvite"): string {
+  return problem === "friend" ? HOUSEHOLD_TEXTS.friendLinkHere : HOUSEHOLD_TEXTS.notAnInvite;
 }
 
 interface HouseholdPageProps {
@@ -39,7 +44,8 @@ export function HouseholdPage({ onCreate, onInvite, notice }: HouseholdPageProps
   const [failed, setFailed] = useState<string>();
   const [busy, setBusy] = useState(false);
   const [link, setLink] = useState("");
-  const [linkError, setLinkError] = useState<string>();
+  /** What is wrong with the pasted link; the sentence is read when drawing (language switch). */
+  const [linkError, setLinkError] = useState<"friend" | "notAnInvite">();
   const { report, status } = useFieldErrorFocus();
 
   async function create(event: Event) {
@@ -52,7 +58,8 @@ export function HouseholdPage({ onCreate, onInvite, notice }: HouseholdPageProps
     setFailed(undefined);
     if (!checked.ok) {
       const { personA, personB } = checked.errors;
-      report(personA ? OWN_NAME_FIELD : OTHER_NAME_FIELD, personA ?? personB ?? "");
+      const first = personA ?? personB;
+      report(personA ? OWN_NAME_FIELD : OTHER_NAME_FIELD, first ? personNameErrorText(first) : "");
       return;
     }
     setBusy(true);
@@ -69,12 +76,9 @@ export function HouseholdPage({ onCreate, onInvite, notice }: HouseholdPageProps
     event.preventDefault();
     const token = inviteTokenFrom(link);
     if (token === undefined) {
-      const message =
-        friendInviteTokenFrom(link) !== undefined
-          ? HOUSEHOLD_TEXTS.friendLinkHere
-          : HOUSEHOLD_TEXTS.notAnInvite;
-      setLinkError(message);
-      report(LINK_FIELD, message);
+      const problem = friendInviteTokenFrom(link) !== undefined ? "friend" : "notAnInvite";
+      setLinkError(problem);
+      report(LINK_FIELD, linkErrorText(problem));
       return;
     }
     onInvite(token);
@@ -97,14 +101,14 @@ export function HouseholdPage({ onCreate, onInvite, notice }: HouseholdPageProps
               label={HOUSEHOLD_TEXTS.ownNameLabel}
               autocomplete="given-name"
               value={names.personA}
-              error={errors.personA}
+              error={errors.personA && personNameErrorText(errors.personA)}
               onInput={(personA) => setNames({ ...names, personA })}
             />
             <TextField
               id={OTHER_NAME_FIELD}
               label={HOUSEHOLD_TEXTS.otherNameLabel}
               value={names.personB}
-              error={errors.personB}
+              error={errors.personB && personNameErrorText(errors.personB)}
               onInput={(personB) => setNames({ ...names, personB })}
             />
             {failed && <ErrorAlert title={HOUSEHOLD_TEXTS.createFailed}>{failed}</ErrorAlert>}
@@ -125,7 +129,7 @@ export function HouseholdPage({ onCreate, onInvite, notice }: HouseholdPageProps
               id={LINK_FIELD}
               label={HOUSEHOLD_TEXTS.inviteLinkField}
               value={link}
-              error={linkError}
+              error={linkError && linkErrorText(linkError)}
               onInput={(value) => {
                 setLink(value);
                 setLinkError(undefined);

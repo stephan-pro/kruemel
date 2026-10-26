@@ -96,30 +96,26 @@ export class SyncStateStore {
     try {
       parsed = JSON.parse(text);
     } catch {
-      throw new StorageError("Die lokale Kopie der gemeinsamen Daten ist beschädigt.");
+      throw new StorageError("copyDamaged");
     }
     const { base, cursor, outbox, rejected } = (parsed ?? {}) as Record<string, unknown>;
     const result = parseAppData(base);
     if (!result.ok) {
       throw new StorageError(
-        "Die lokale Kopie der gemeinsamen Daten ist unvollständig oder beschädigt.",
+        "copyIncomplete",
         result.errors.map((error) => `Kopie: ${error}`),
       );
     }
     if (!(cursor === null || typeof cursor === "string")) {
-      throw new StorageError("Die lokale Kopie der gemeinsamen Daten ist beschädigt.", [
-        "Kopie.cursor: erwartet Text oder nichts",
-      ]);
+      throw new StorageError("copyDamaged", ["Kopie.cursor: erwartet Text oder nichts"]);
     }
     if (!Array.isArray(outbox) || !outbox.every(isChange)) {
-      throw new StorageError("Die wartenden Änderungen sind beschädigt.", [
-        "Kopie.outbox: erwartet eine Liste von Änderungen",
-      ]);
+      throw new StorageError("queueDamaged", ["Kopie.outbox: erwartet eine Liste von Änderungen"]);
     }
     if (
       !(rejected === undefined || (Array.isArray(rejected) && rejected.every(isRejectedChange)))
     ) {
-      throw new StorageError("Die nicht gespeicherten Änderungen sind beschädigt.", [
+      throw new StorageError("rejectedDamaged", [
         "Kopie.rejected: erwartet eine Liste abgelehnter Änderungen",
       ]);
     }

@@ -6,7 +6,7 @@ import type { CalendarDay } from "../domain/date";
 import type { Language } from "./language";
 
 /** The locale used for each language. English uses the British forms: 24-hour clock, day first. */
-const LOCALES: Readonly<Record<Language, string>> = { de: "de-DE", en: "en-GB" };
+export const LOCALES: Readonly<Record<Language, string>> = { de: "de-DE", en: "en-GB" };
 
 const formatters = new Map<string, Intl.DateTimeFormat>();
 

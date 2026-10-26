@@ -2,6 +2,7 @@ import { expect, type Locator, type Page, test } from "@playwright/test";
 import { demoData } from "../../src/demo/demoData";
 import { calendarDay } from "../../src/domain/date";
 import { TASK_SYMBOLS } from "../../src/domain/taskSymbols";
+import { de } from "../../src/i18n/de";
 import type { AppData } from "../../src/storage/appData";
 import { expectNoAccessibilityViolations } from "./axe";
 import {
@@ -85,7 +86,7 @@ test.describe("F8 Symbol im Aufgabenformular", () => {
     await expect(page.locator("legend", { hasText: "Symbol" })).toBeVisible();
     await expect(group.getByRole("radio")).toHaveCount(TASK_SYMBOLS.length);
     for (const symbol of TASK_SYMBOLS) {
-      await expect(symbolRadio(page, symbol.label)).toHaveCount(1);
+      await expect(symbolRadio(page, de.symbols[symbol.id])).toHaveCount(1);
     }
     await expect(symbolRadio(page, "Standard (Haus)")).toBeChecked();
     await expect(page.getByText("Gewählt: Standard (Haus)")).toBeVisible();

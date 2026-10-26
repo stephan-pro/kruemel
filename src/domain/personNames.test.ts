@@ -19,7 +19,7 @@ describe("F5 Namen der beiden Personen (Ersteinrichtung)", () => {
   it("F5 Ein leerer Name wird beim passenden Feld gemeldet", () => {
     const result = checkPersonNames({ personA: "Alex", personB: "   " });
 
-    expect(result).toEqual({ ok: false, errors: { personB: "Bitte einen Namen eingeben." } });
+    expect(result).toEqual({ ok: false, errors: { personB: { code: "nameEmpty" } } });
   });
 
   it("F5 Fehlen beide Namen, werden beide Felder gemeldet", () => {
@@ -27,17 +27,14 @@ describe("F5 Namen der beiden Personen (Ersteinrichtung)", () => {
 
     expect(result).toEqual({
       ok: false,
-      errors: { personA: "Bitte einen Namen eingeben.", personB: "Bitte einen Namen eingeben." },
+      errors: { personA: { code: "nameEmpty" }, personB: { code: "nameEmpty" } },
     });
   });
 
   it("F5 Gleiche Namen werden abgelehnt, auch bei anderer Groß-/Kleinschreibung", () => {
     const result = checkPersonNames({ personA: "Alex", personB: " alex" });
 
-    expect(result).toEqual({
-      ok: false,
-      errors: { personB: "Die beiden Namen müssen sich unterscheiden." },
-    });
+    expect(result).toEqual({ ok: false, errors: { personB: { code: "namesEqual" } } });
   });
 
   it("F5 Ein zu langer Name wird abgelehnt, die Höchstlänge selbst ist erlaubt", () => {
@@ -46,7 +43,7 @@ describe("F5 Namen der beiden Personen (Ersteinrichtung)", () => {
     expect(checkPersonNames({ personA: longest, personB: "Robin" }).ok).toBe(true);
     expect(checkPersonNames({ personA: `${longest}x`, personB: "Robin" })).toEqual({
       ok: false,
-      errors: { personA: `Der Name darf höchstens ${MAX_NAME_LENGTH} Zeichen lang sein.` },
+      errors: { personA: { code: "nameTooLong", limit: MAX_NAME_LENGTH } },
     });
   });
 });

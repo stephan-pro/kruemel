@@ -4,48 +4,50 @@
 // the end-to-end tests). Both pass the same series of tests (`auth.contract.ts`). There are no
 // passwords here and no session or crypto logic of our own (S1, S4).
 
+import { t } from "../i18n";
+import { liveTexts } from "../i18n/live";
+
 export interface Session {
   readonly userId: string;
   readonly email: string;
 }
 
-/** Why a sign-in step failed; `AUTH_MESSAGES` says it to the person. */
-export type AuthFailure =
-  /** The address does not look like an e-mail address. */
-  | "invalidEmail"
-  /** The code is wrong. */
-  | "wrongCode"
-  /** The code was valid once but its time ran out, or it was used up. */
-  | "expiredCode"
-  /** Too many tries, or a new code asked for too soon. */
-  | "tooManyTries"
-  /** No connection to the sign-in service (no network, or the service does not answer). */
-  | "offline"
-  /**
-   * The service does not let this address sign in: a new address without an invite (E2-5b), or
-   * new sign-ups switched off.
-   */
-  | "notAllowed"
-  /** A new address came with an invite that does not work (unknown, used, expired, withdrawn). */
-  | "inviteInvalid"
-  /** Anything else the service refused. */
-  | "unknown";
+/**
+ * Why a sign-in step failed; `AUTH_MESSAGES` says it to the person.
+ * - `invalidEmail`: the address does not look like an e-mail address.
+ * - `wrongCode`: the code is wrong.
+ * - `expiredCode`: the code was valid once but its time ran out, or it was used up.
+ * - `tooManyTries`: too many tries, or a new code asked for too soon.
+ * - `offline`: no connection to the sign-in service (no network, or it does not answer).
+ * - `notAllowed`: the service does not let this address sign in: a new address without an invite
+ *   (E2-5b), or new sign-ups switched off.
+ * - `inviteInvalid`: a new address came with an invite that does not work (unknown, used,
+ *   expired, withdrawn).
+ * - `unknown`: anything else the service refused.
+ */
+export const AUTH_FAILURES = [
+  "invalidEmail",
+  "wrongCode",
+  "expiredCode",
+  "tooManyTries",
+  "offline",
+  "notAllowed",
+  "inviteInvalid",
+  "unknown",
+] as const;
 
-export const AUTH_MESSAGES: Readonly<Record<AuthFailure, string>> = {
-  invalidEmail: "Bitte eine gültige E-Mail-Adresse eingeben.",
-  wrongCode: "Der Code stimmt nicht. Bitte prüfen und erneut eingeben.",
-  expiredCode: "Der Code ist abgelaufen. Bitte einen neuen anfordern.",
-  tooManyTries: "Zu viele Versuche. Bitte kurz warten und dann einen neuen Code anfordern.",
-  offline: "Keine Verbindung zum Anmeldedienst. Bitte Internet prüfen und erneut versuchen.",
-  notAllowed:
-    "Krümel ist gerade nur mit Einladung nutzbar. Frag jemanden, der Krümel schon nutzt, nach einem Einladungslink. Hast du schon ein Konto? Dann prüf deine Adresse.",
-  inviteInvalid:
-    "Dein Einladungslink gilt nicht mehr: Er ist abgelaufen, schon benutzt oder zurückgezogen. Frag nach einem neuen Link. Hast du schon ein Konto? Dann prüf deine Adresse.",
-  unknown: "Die Anmeldung hat nicht geklappt. Bitte später erneut versuchen.",
-};
+export type AuthFailure = (typeof AUTH_FAILURES)[number];
 
-/** How long a code is valid (the same in the real project, `supabase/config.toml` and the fakes). */
-export const CODE_MINUTES = 10;
+/**
+ * What a failure says to the person, in the language set when it is read (the texts are in
+ * `src/i18n/`). Read it when showing the message, not when the failure happens.
+ */
+export const AUTH_MESSAGES: Readonly<Record<AuthFailure, string>> = liveTexts(
+  AUTH_FAILURES,
+  (failure) => t().errors.auth[failure],
+);
+
+export { CODE_MINUTES } from "./limits";
 
 export class AuthError extends Error {
   readonly failure: AuthFailure;

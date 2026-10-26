@@ -1,5 +1,6 @@
 import { CircleAlert } from "lucide-preact";
 import type { ComponentChildren } from "preact";
+import { t } from "../../i18n";
 
 interface ErrorAlertProps {
   /** Short statement of what failed ("Nicht gespeichert"). */
@@ -30,7 +31,7 @@ export function ErrorDetails({ details }: { readonly details: readonly string[] 
       )}
       {placed.length > 0 && (
         <details class="error-details">
-          <summary>Details für die Fehlersuche</summary>
+          <summary>{t().errors.details}</summary>
           <ul class="bullet-list">
             {placed.map((detail) => (
               <li key={detail}>{detail}</li>

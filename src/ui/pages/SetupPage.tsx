@@ -1,5 +1,6 @@
 import type { PersonNameInput } from "../../domain/personNames";
 import type { Person } from "../../domain/task";
+import { t } from "../../i18n";
 import { NamesForm } from "../components/NamesForm";
 import { PageTitle } from "../components/PageTitle";
 
@@ -9,19 +10,16 @@ interface SetupPageProps {
 
 /** First start: the names of the two people and who uses this device (F5). */
 export function SetupPage({ onSubmit }: SetupPageProps) {
+  const words = t().names;
   return (
     <>
-      <PageTitle title="Ersteinrichtung" />
+      <PageTitle title={words.setupTitle} />
       <div class="tile tile--narrow">
-        <p class="intro">
-          Willkommen bei Krümel. Trag die Namen der beiden Personen ein, die den Haushalt gemeinsam
-          organisieren, und wähle, wer dieses Gerät benutzt. Beides kannst du später in den
-          Einstellungen ändern.
-        </p>
+        <p class="intro">{words.setupIntro}</p>
         <NamesForm
           initialNames={{ personA: "", personB: "" }}
           initialPerson={undefined}
-          submitLabel="Los geht’s"
+          submitLabel={words.setupSubmit}
           onSubmit={onSubmit}
         />
       </div>
