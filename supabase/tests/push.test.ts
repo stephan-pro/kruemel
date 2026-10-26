@@ -127,7 +127,10 @@ describe("NT-a Geräte für Benachrichtigungen (Datenbank)", () => {
     // A person reads the language of their own devices, and cannot write it directly.
     const own = await alex.client.from("push_devices").select("locale");
     expect(own.data).toEqual([{ locale: "de" }]);
-    const written = await alex.client.from("push_devices").update({ locale: "en" });
+    const written = await alex.client
+      .from("push_devices")
+      .update({ locale: "en" })
+      .eq("user_id", alex.id);
     expect(written.error?.message).toMatch(/permission denied/);
   });
 
