@@ -7,6 +7,8 @@ interface ErrorAlertProps {
   readonly title: string;
   /** The explanation; a text becomes a paragraph. */
   readonly children: ComponentChildren;
+  /** On phones: sits above the navigation bar, in sight wherever the list is scrolled to. */
+  readonly floating?: boolean;
 }
 
 /** A finding with the place it refers to ("tasks[0].assignee: …", "Kopie: …"). */
@@ -44,9 +46,9 @@ export function ErrorDetails({ details }: { readonly details: readonly string[] 
 }
 
 /** A problem the user should know about right away; announced by screen readers (`role="alert"`). */
-export function ErrorAlert({ title, children }: ErrorAlertProps) {
+export function ErrorAlert({ title, children, floating }: ErrorAlertProps) {
   return (
-    <div class="alert" role="alert">
+    <div class={floating ? "alert alert--floating" : "alert"} role="alert">
       <CircleAlert class="alert__icon" size={22} />
       <div class="alert__body">
         <p class="alert__title">{title}</p>

@@ -239,10 +239,15 @@ export function textFile(name: string, text: string) {
  * data (`kruemel:<household>:<person>:sync`) with the changes still waiting applied.
  */
 export async function storedData(page: Page): Promise<AppData> {
-  const text = await page.evaluate(() => {
-    const key = Object.keys(localStorage).find((name) => /^kruemel:[^:]+:[^:]+:sync$/.test(name));
-    return key === undefined ? null : localStorage.getItem(key);
-  });
+  const text = await stableRead(page, () =>
+    page.evaluate(async () => {
+      // The app writes inside this lock; Web Locks are served in order, so once the lock is ours,
+      // every write queued before the call has been made.
+      await navigator.locks?.request("kruemel-sync-state", async () => undefined);
+      const key = Object.keys(localStorage).find((name) => /^kruemel:[^:]+:[^:]+:sync$/.test(name));
+      return key === undefined ? null : localStorage.getItem(key);
+    }),
+  );
   const state = JSON.parse(text ?? "null") as SyncState | null;
   return (state === null ? null : viewOf(state.base, state.outbox)) as AppData;
 }
@@ -267,6 +272,26 @@ export async function overflowing(page: Page): Promise<string[]> {
 
 /** Mode `local`: what the app has stored right now, as the app would read it back. */
 export async function localData(page: Page): Promise<AppData> {
-  const text = await page.evaluate((key) => localStorage.getItem(key), dataKey);
+  const text = await stableRead(page, () =>
+    page.evaluate((key) => localStorage.getItem(key), dataKey),
+  );
   return JSON.parse(text ?? "null") as AppData;
+}
+
+/**
+ * Reads the browser storage once it has stopped changing: the app saves a moment after it shows a
+ * change, so a read right after a click can see the old state. Waits until two reads 50 ms apart
+ * agree (at most 2 s), instead of every test having to poll.
+ */
+async function stableRead(page: Page, read: () => Promise<string | null>): Promise<string | null> {
+  let last = await read();
+  for (let attempt = 0; attempt < 40; attempt++) {
+    await page.waitForTimeout(50);
+    const next = await read();
+    if (next === last) {
+      return next;
+    }
+    last = next;
+  }
+  return last;
 }

@@ -238,7 +238,11 @@ export function useTaskActions(input: TaskActionsInput) {
           )}
         </section>
       )}
-      {error && <ErrorAlert title={t().common.notSaved}>{errorText(error.cause)}</ErrorAlert>}
+      {error && (
+        <ErrorAlert floating title={t().common.notSaved}>
+          {errorText(error.cause)}
+        </ErrorAlert>
+      )}
     </>
   );
 
